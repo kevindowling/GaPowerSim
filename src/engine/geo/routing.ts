@@ -10,7 +10,7 @@
  */
 
 import { neighbors, cellDistance, HEX_WIDTH_KM, type GridSpec } from './hex.ts'
-import { OUTSIDE_STATE, type HexGrid } from './mapTypes.ts'
+import { OUTSIDE_STATE, PROTECT, PROTECT_BLOCKING, type HexGrid } from './mapTypes.ts'
 
 /** Relative difficulty of building across each physiographic province. */
 const TERRAIN_COST: Record<number, number> = {
@@ -30,12 +30,24 @@ export interface RouteWeights {
   landValue: number
   /** Cost of a single cell of straight-line distance, in arbitrary units. */
   distance: number
+  /** Penalty for a cell of open water — a long span on tall structures. */
+  water: number
+  /** Penalty for a cell of wetland — matting, a federal permit, and a season. */
+  wetland: number
 }
 
+/**
+ * Water is priced above people per cell but below a populated crossing overall,
+ * because a river is a few cells wide and a town is many. The intended
+ * behaviour: the router will detour several kilometres to find a narrow
+ * crossing, and will still cross rather than run a line through a subdivision.
+ */
 export const DEFAULT_WEIGHTS: RouteWeights = {
   population: 7,
   landValue: 2.5,
   distance: 1,
+  water: 9,
+  wetland: 6,
 }
 
 /** Per-cell traversal cost. Infinity means impassable. */
@@ -45,16 +57,28 @@ export function cellCost(grid: HexGrid, cell: number, w: RouteWeights): number {
   const terrain = TERRAIN_COST[grid.terrain[cell]] ?? 1
   if (!Number.isFinite(terrain)) return Infinity
 
-  // Protected land is not routable at all. (This layer is all zero until the
-  // M6 pass supplies parks, wetlands and historic sites.)
-  if (grid.protection[cell] !== 0) return Infinity
+  const protection = grid.protection[cell]
+
+  // Parks, wilderness and historic sites are refusals. A route does not price
+  // its way through these; it goes around them or it does not get built.
+  if ((protection & PROTECT_BLOCKING) !== 0) return Infinity
 
   const density = grid.population[cell] / 255
   const value = Math.min(1, grid.landValue[cell] / 50_000)
 
+  // Water and wetland are crossable and expensive, which is the honest model:
+  // a river crossing is a long span on tall structures, and a wetland crossing
+  // is matting, a Section 404 permit, and a season of schedule. Priced high
+  // enough that the router prefers to go around a few kilometres, low enough
+  // that a crossing wins when going around is genuinely worse.
+  let wet = 0
+  if ((protection & PROTECT.WATER) !== 0) wet += w.water
+  if ((protection & PROTECT.WETLAND) !== 0) wet += w.wetland
+
   return w.distance * terrain
     + w.population * density ** 1.5
     + w.landValue * value ** 1.3
+    + wet
 }
 
 /** Minimal binary heap keyed by float priority. */

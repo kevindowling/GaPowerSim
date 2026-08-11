@@ -61,3 +61,31 @@ export interface MapData {
 
 /** Sentinel stored in the county layer for cells outside Georgia. */
 export const OUTSIDE_STATE = 255
+
+
+/**
+ * Bitflags in the `protection` layer.
+ *
+ * These are graded, not binary. Routing used to treat any non-zero protection
+ * as impassable, which is wrong in the direction that matters: a transmission
+ * line absolutely can cross a wetland — thousands do — it just costs a Section
+ * 404 permit, a longer schedule, and a construction method that is far more
+ * expensive than driving poles into a field. Treating it as a wall would hide
+ * the real tradeoff, which is money and time against going around.
+ *
+ * What genuinely blocks a route is different: a national park, a wilderness
+ * area, a historic site. Those are refusals, not line items.
+ */
+export const PROTECT = {
+  /** Open water: river channel, lake, reservoir. Crossable, at a price. */
+  WATER: 1 << 0,
+  /** Swamp, marsh, bog. Crossable; triggers a federal permit. */
+  WETLAND: 1 << 1,
+  /** State or national park, wildlife refuge, wilderness. Refused. */
+  PARK: 1 << 2,
+  /** Listed historic site or cemetery. Refused. */
+  HISTORIC: 1 << 3,
+} as const
+
+/** Flags that make a cell genuinely unroutable, rather than merely expensive. */
+export const PROTECT_BLOCKING = PROTECT.PARK | PROTECT.HISTORIC

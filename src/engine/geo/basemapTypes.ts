@@ -84,3 +84,69 @@ export interface Road {
   cls: RoadClass
   points: [number, number][]
 }
+
+// --- hydrology -----------------------------------------------------------
+
+export const HYDROLOGY_VERSION = 1
+
+/**
+ * Water is not scenery in this game.
+ *
+ * It is the sharpest local objection to the Americus project — Sumter is
+ * farm country and the fight there is about the aquifer, not the grid. It is
+ * a hard constraint on thermal generation, which has to be able to reject
+ * heat somewhere. And it is what makes a corridor expensive: crossing a river
+ * is a structure and a Section 404 permit, and a wetland crossing is a
+ * schedule risk long before it is a cost.
+ */
+export type WaterKind =
+  /** Named river or major stream. */
+  | 'river'
+  /** Minor stream or creek. */
+  | 'stream'
+  /** Lake, pond or impoundment. */
+  | 'lake'
+  /** Reservoir — a lake somebody built, usually for cooling or supply. */
+  | 'reservoir'
+  /** Swamp, marsh or bog. Passable, permit-triggering, and slow. */
+  | 'wetland'
+
+/** A linear watercourse. Coordinates are lon/lat; the loader projects them. */
+export interface WaterwayWire {
+  k: 'river' | 'stream'
+  /** Name where OSM has one, for labelling a crossing in the takings report. */
+  n?: string
+  p: [number, number][]
+}
+
+/** An areal water feature: outer ring only, holes are not worth the bytes. */
+export interface WaterBodyWire {
+  k: 'lake' | 'reservoir' | 'wetland'
+  n?: string
+  p: [number, number][]
+}
+
+export interface HydrologyFile {
+  version: number
+  /** 'state' for the statewide tier, or a county FIPS. */
+  scope: string
+  scopeName: string
+  source: string
+  attribution: string
+  license: string
+  waterways: WaterwayWire[]
+  bodies: WaterBodyWire[]
+}
+
+/** Projected, ready to draw. */
+export interface Waterway {
+  kind: 'river' | 'stream'
+  name: string | null
+  points: [number, number][]
+}
+
+export interface WaterBody {
+  kind: 'lake' | 'reservoir' | 'wetland'
+  name: string | null
+  ring: [number, number][]
+}

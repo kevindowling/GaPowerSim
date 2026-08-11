@@ -210,6 +210,31 @@ if (existsSync(imageryPath)) {
   warnings.push('basemap: no aerial imagery vendored (run `npm run fetch:imagery`)')
 }
 
+// Hydrology is checked the same way as roads: optional, but if it is here it
+// must carry its ODbL attribution, because the game renders it.
+const hydroDir = resolve(DATA, 'hydrology')
+if (existsSync(hydroDir)) {
+  const files = readdirSync(hydroDir).filter((f) => f.endsWith('.json'))
+  let ways = 0
+  let bodies = 0
+  for (const f of files) {
+    const file = JSON.parse(readFileSync(resolve(hydroDir, f), 'utf8')) as {
+      waterways?: unknown[]; bodies?: unknown[]; attribution?: string
+    }
+    ways += file.waterways?.length ?? 0
+    bodies += file.bodies?.length ?? 0
+    check(!!file.attribution,
+      `hydrology/${f}: no attribution — ODbL requires crediting OpenStreetMap contributors`)
+  }
+  console.log(`hydrology      ${files.length} file(s), ${ways.toLocaleString()} watercourses, ` +
+    `${bodies.toLocaleString()} water bodies`)
+} else {
+  warnings.push(
+    'hydrology: none vendored — rivers and wetlands are missing from the map AND ' +
+    'from the routing cost surface (run `npm run fetch:hydrology -- --state`)',
+  )
+}
+
 const roadsDir = resolve(DATA, 'roads')
 if (existsSync(roadsDir)) {
   const files = readdirSync(roadsDir).filter((f) => f.endsWith('.json'))

@@ -79,7 +79,7 @@ export function App({ embedded = false }: { embedded?: boolean }) {
     selectCorridor, offerAll, setOffer, condemnParcel, abandon, parcelById,
     alerts, setSpeed, setPolicy, setVegetationSpend, setMaintenanceDeferred, dismissAlerts,
     chooseHearing, dismissTutorial, restoreTutorial, finishDebrief, cancelPlant,
-    imagery, roads, stateRoads, ensureBasemap,
+    imagery, roads, stateRoads, stateWater, water, ensureBasemap,
   } = useGame()
 
   const [overlay, setOverlay] = useState<Overlay>('none')
@@ -88,6 +88,7 @@ export function App({ embedded = false }: { embedded?: boolean }) {
   // legible, and a player should not have to discover it to benefit from it.
   const [showImagery, setShowImagery] = useState(true)
   const [showRoads, setShowRoads] = useState(true)
+  const [showWater, setShowWater] = useState(true)
   const [hoverName, setHoverName] = useState<string | null>(null)
   const [hoverCell, setHoverCellLocal] = useState<CellReadout | null>(null)
   const [scale, setScale] = useState(1)
@@ -197,6 +198,16 @@ export function App({ embedded = false }: { embedded?: boolean }) {
     () => [...(stateRoads?.roads ?? []), ...(roads?.roads ?? [])],
     [stateRoads, roads],
   )
+
+  const waterways = useMemo(
+    () => [...(stateWater?.waterways ?? []), ...(water?.waterways ?? [])],
+    [stateWater, water],
+  )
+  const waterBodies = useMemo(
+    () => [...(stateWater?.bodies ?? []), ...(water?.bodies ?? [])],
+    [stateWater, water],
+  )
+  const hasWater = waterways.length > 0 || waterBodies.length > 0
 
   const imageryDraw = useMemo(
     () => (imagery
@@ -339,6 +350,9 @@ export function App({ embedded = false }: { embedded?: boolean }) {
             storms={game.realtime?.storms}
             imagery={imageryDraw}
             roads={allRoads}
+            waterways={waterways}
+            waterBodies={waterBodies}
+            showWater={showWater}
             showImagery={showImagery}
             showRoads={showRoads}
             focus={focus}
@@ -389,6 +403,16 @@ export function App({ embedded = false }: { embedded?: boolean }) {
                 Roads
               </label>
             )}
+            {hasWater && (
+              <label className="check">
+                <input
+                  type="checkbox"
+                  checked={showWater}
+                  onChange={(e) => setShowWater(e.target.checked)}
+                />
+                Water
+              </label>
+            )}
             </div>
             {/* A layer nobody understands is a layer nobody switches to, so the
                 active one says what it is for and which way the colour runs. */}
@@ -431,12 +455,19 @@ export function App({ embedded = false }: { embedded?: boolean }) {
           {/* Attribution is a licence obligation for the road data, not a
               courtesy, so it renders whenever the layer is on rather than
               living in a README. */}
-          {((showImagery && imagery) || (showRoads && (stateRoads || roads))) && (
+          {((showImagery && imagery)
+            || (showRoads && (stateRoads || roads))
+            || (showWater && hasWater)) && (
             <p className="map-attribution">
-              {[
+              {/* One credit covers roads and water — both are OpenStreetMap —
+                  so the same string is not printed twice. */}
+              {[...new Set([
                 showImagery && imagery ? imagery.manifest.attribution : null,
                 showRoads ? (stateRoads?.attribution ?? roads?.attribution ?? null) : null,
-              ].filter(Boolean).join(' · ')}
+                showWater && hasWater
+                  ? (stateWater?.attribution ?? water?.attribution ?? null)
+                  : null,
+              ].filter(Boolean))].join(' · ')}
             </p>
           )}
 

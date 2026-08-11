@@ -13,6 +13,7 @@
 import { project } from '../engine/geo/projection.ts'
 import type {
   ImageryManifest, RoadsFile, Road, RoadClass,
+  HydrologyFile, Waterway, WaterBody,
 } from '../engine/geo/basemapTypes.ts'
 
 export interface Imagery {
@@ -28,8 +29,16 @@ export interface CountyRoads {
   roads: Road[]
 }
 
+export interface Hydrology {
+  scope: string
+  attribution: string
+  waterways: Waterway[]
+  bodies: WaterBody[]
+}
+
 let imageryPromise: Promise<Imagery | null> | null = null
 const roadCache = new Map<string, Promise<CountyRoads | null>>()
+const hydroCache = new Map<string, Promise<Hydrology | null>>()
 
 async function getJson<T>(path: string): Promise<T | null> {
   const url = new URL(path, document.baseURI).href
@@ -111,8 +120,45 @@ export const loadStateRoads = (): Promise<CountyRoads | null> => loadRoads('stat
 /** Full local road network for one county. */
 export const loadCountyRoads = (fips: string): Promise<CountyRoads | null> => loadRoads(fips)
 
+/**
+ * Rivers, lakes and wetlands. Same two tiers as roads: 'state' is major rivers
+ * and open water statewide, a county FIPS is every creek and swamp locally.
+ */
+export function loadHydrology(key: string): Promise<Hydrology | null> {
+  const existing = hydroCache.get(key)
+  if (existing) return existing
+
+  const promise = (async (): Promise<Hydrology | null> => {
+    const file = await getJson<HydrologyFile>(`data/hydrology/${key}.json`)
+    if (!file) return null
+    if (!file.waterways?.length && !file.bodies?.length) return null
+
+    return {
+      scope: file.scope,
+      attribution: file.attribution,
+      waterways: file.waterways.map((w) => ({
+        kind: w.k,
+        name: w.n ?? null,
+        points: w.p.map(([lon, lat]) => project(lon, lat)),
+      })),
+      bodies: file.bodies.map((b) => ({
+        kind: b.k,
+        name: b.n ?? null,
+        ring: b.p.map(([lon, lat]) => project(lon, lat)),
+      })),
+    }
+  })()
+
+  hydroCache.set(key, promise)
+  return promise
+}
+
+export const loadStateHydrology = (): Promise<Hydrology | null> => loadHydrology('state')
+export const loadCountyHydrology = (fips: string): Promise<Hydrology | null> => loadHydrology(fips)
+
 /** Drop cached basemap data, so a new game re-reads it. */
 export function clearBasemapCache(): void {
   imageryPromise = null
   roadCache.clear()
+  hydroCache.clear()
 }

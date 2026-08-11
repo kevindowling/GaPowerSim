@@ -21,7 +21,8 @@
     "check:build": "tsx scripts/check-build.ts",
     "data": "npm run build:geo && npm run build:hexgrid && npm run build:parcels && npm run verify:data",
     "fetch:roads": "tsx scripts/fetch-roads.ts",
-    "fetch:imagery": "tsx scripts/fetch-imagery.ts"
+    "fetch:imagery": "tsx scripts/fetch-imagery.ts",
+    "fetch:hydrology": "tsx scripts/fetch-hydrology.ts"
   },
   "dependencies": {
     "polygon-clipping": "^0.15.7",

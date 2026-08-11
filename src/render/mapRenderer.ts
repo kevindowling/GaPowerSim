@@ -20,7 +20,7 @@ import type { MultiPoly } from '../engine/geo/polygon.ts'
 import { ICONS, type IconKey } from './icons.ts'
 import { project } from '../engine/geo/projection.ts'
 import { CITIES } from '../data/cities.ts'
-import type { Road } from '../engine/geo/basemapTypes.ts'
+import type { Road, Waterway, WaterBody } from '../engine/geo/basemapTypes.ts'
 
 /** Cell size in px/km below which hexes are not drawn at all. */
 const HEX_FADE_IN = 6
@@ -41,6 +41,11 @@ const IMAGERY_FADE_FULL = 22
    choosing a corridor long before individual parcels matter. */
 const ROAD_FADE_IN = 5
 const ROAD_FADE_FULL = 12
+
+/* Water is drawn from the very start. Where the rivers are is a statewide fact
+   about the state and shapes which counties a campaign can reach, so unlike
+   roads it never fades out entirely. */
+const WATER_MIN_ALPHA = 0.55
 
 const PARCEL_FILL: Record<ParcelTint, string> = {
   taken: 'rgba(232,163,61,0.30)',
@@ -147,6 +152,10 @@ export interface RenderOptions {
   /** Whether the player has the aerial layer switched on. */
   showImagery?: boolean
   showRoads?: boolean
+  /** Rivers, lakes and wetlands for the visible scope. */
+  waterways?: readonly Waterway[]
+  waterBodies?: readonly WaterBody[]
+  showWater?: boolean
 }
 
 /** Decoded imagery plus where it sits, in projected kilometres. */
@@ -312,6 +321,12 @@ export class MapRenderer {
 
     const hexAlpha = opts.showHexes ? smoothstep(HEX_FADE_IN, HEX_FADE_FULL, cam.scale) : 0
     if (hexAlpha > 0.01) this.drawHexes(ctx, cam, vp, hexAlpha)
+
+    // Water sits above the imagery and under everything the player acts on.
+    // Drawn before roads so a bridge reads as crossing the river, not under it.
+    if (opts.showWater !== false && (opts.waterways?.length || opts.waterBodies?.length)) {
+      this.drawWater(ctx, cam, vp, opts.waterways ?? [], opts.waterBodies ?? [], imageryAlpha)
+    }
 
     if (opts.showRoads && opts.roads?.length) {
       const roadAlpha = smoothstep(ROAD_FADE_IN, ROAD_FADE_FULL, cam.scale)
@@ -630,6 +645,93 @@ export class MapRenderer {
         imagery.images[i], sx, sy,
         (maxX - minX) * cam.scale, (maxY - minY) * cam.scale,
       )
+    }
+    ctx.restore()
+  }
+
+  /**
+   * Rivers, lakes and wetlands.
+   *
+   * Water bodies fill; watercourses stroke, widening with zoom so a creek reads
+   * as a thread statewide and a channel up close. Wetland gets a hatch rather
+   * than a fill, because it is not open water and a player deciding where to
+   * put a corridor needs to tell the difference: one is a span, the other is a
+   * permit.
+   */
+  private drawWater(
+    ctx: CanvasRenderingContext2D, cam: Camera, vp: Viewport,
+    ways: readonly Waterway[], bodies: readonly WaterBody[], overPhoto: number,
+  ): void {
+    const vis = cam.visibleBounds(vp)
+    // Over aerial photography the real water is already visible, so the layer
+    // steps back to an outline rather than painting over the thing it describes.
+    const alpha = WATER_MIN_ALPHA + (1 - WATER_MIN_ALPHA) * (1 - overPhoto)
+
+    ctx.save()
+    ctx.lineJoin = 'round'
+    ctx.lineCap = 'round'
+
+    for (const body of bodies) {
+      const ring = body.ring
+      if (ring.length < 3) continue
+      let visible = false
+      for (const [wx, wy] of ring) {
+        if (wx >= vis.minX && wx <= vis.maxX && wy >= vis.minY && wy <= vis.maxY) {
+          visible = true
+          break
+        }
+      }
+      if (!visible) continue
+
+      ctx.beginPath()
+      for (let i = 0; i < ring.length; i++) {
+        const [px, py] = cam.toScreen(ring[i][0], ring[i][1], vp)
+        if (i === 0) ctx.moveTo(px, py)
+        else ctx.lineTo(px, py)
+      }
+      ctx.closePath()
+
+      if (body.kind === 'wetland') {
+        ctx.globalAlpha = alpha * 0.5
+        ctx.fillStyle = PALETTE.wetland
+        ctx.fill()
+        ctx.globalAlpha = alpha * 0.8
+        ctx.lineWidth = 1
+        ctx.setLineDash([3, 3])
+        ctx.strokeStyle = PALETTE.waterDeep
+        ctx.stroke()
+        ctx.setLineDash([])
+      } else {
+        ctx.globalAlpha = alpha * (overPhoto > 0.5 ? 0.45 : 0.95)
+        ctx.fillStyle = body.kind === 'reservoir' ? PALETTE.waterDeep : PALETTE.water
+        ctx.fill()
+      }
+    }
+
+    for (const way of ways) {
+      const pts = way.points
+      if (pts.length < 2) continue
+      let visible = false
+      for (const [wx, wy] of pts) {
+        if (wx >= vis.minX && wx <= vis.maxX && wy >= vis.minY && wy <= vis.maxY) {
+          visible = true
+          break
+        }
+      }
+      if (!visible) continue
+
+      ctx.beginPath()
+      for (let i = 0; i < pts.length; i++) {
+        const [px, py] = cam.toScreen(pts[i][0], pts[i][1], vp)
+        if (i === 0) ctx.moveTo(px, py)
+        else ctx.lineTo(px, py)
+      }
+      // A river should look like a river when you are close to it.
+      const base = way.kind === 'river' ? 1.6 : 0.9
+      ctx.globalAlpha = alpha
+      ctx.lineWidth = Math.min(9, base * (1 + cam.scale / 14))
+      ctx.strokeStyle = PALETTE.water
+      ctx.stroke()
     }
     ctx.restore()
   }

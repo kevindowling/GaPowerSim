@@ -20,6 +20,7 @@ export const PALETTE = {
 
   // Roads are context, not a decision surface, so they stay desaturated —
   // and readable over both the land tones and aerial photography.
+  wetland: '#9FB59A',
   roadMajor: '#8C7F63',
   roadMinor: '#A79C84',
 
