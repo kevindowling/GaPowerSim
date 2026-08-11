@@ -74,12 +74,19 @@ export function loadImagery(): Promise<Imagery | null> {
   return imageryPromise
 }
 
-export function loadCountyRoads(fips: string): Promise<CountyRoads | null> {
-  const existing = roadCache.get(fips)
+/**
+ * Roads come in two tiers and both go through here.
+ *
+ * `'state'` is interstates and highways for all of Georgia, small enough to
+ * load at startup — the game is statewide, and Sumter is only the tutorial.
+ * A county FIPS is the full local network, loaded when the player works there.
+ */
+export function loadRoads(key: string): Promise<CountyRoads | null> {
+  const existing = roadCache.get(key)
   if (existing) return existing
 
   const promise = (async (): Promise<CountyRoads | null> => {
-    const file = await getJson<RoadsFile>(`data/roads/${fips}.json`)
+    const file = await getJson<RoadsFile>(`data/roads/${key}.json`)
     if (!file || !file.roads?.length) return null
 
     const roads: Road[] = file.roads.map((w) => ({
@@ -94,9 +101,15 @@ export function loadCountyRoads(fips: string): Promise<CountyRoads | null> {
     }
   })()
 
-  roadCache.set(fips, promise)
+  roadCache.set(key, promise)
   return promise
 }
+
+/** Interstates and highways for the whole state. */
+export const loadStateRoads = (): Promise<CountyRoads | null> => loadRoads('state')
+
+/** Full local road network for one county. */
+export const loadCountyRoads = (fips: string): Promise<CountyRoads | null> => loadRoads(fips)
 
 /** Drop cached basemap data, so a new game re-reads it. */
 export function clearBasemapCache(): void {

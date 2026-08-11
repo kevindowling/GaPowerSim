@@ -21,7 +21,9 @@ import { scenario, type Scenario } from '../data/scenarios.ts'
 import { project } from '../engine/geo/projection.ts'
 import { pointToCell } from '../engine/geo/hex.ts'
 import type { LineClassId } from '../data/transmission.ts'
-import { loadImagery, loadCountyRoads, type Imagery, type CountyRoads } from '../data/loadBasemap.ts'
+import {
+  loadImagery, loadStateRoads, loadCountyRoads, type Imagery, type CountyRoads,
+} from '../data/loadBasemap.ts'
 import { loadCountyParcels, clearParcelCache, type CountyParcels } from '../data/loadParcels.ts'
 import {
   planCorridor, commitCorridor, offerAll as engineOfferAll, setOffer as engineSetOffer,
@@ -56,7 +58,9 @@ interface Store {
   parcelsLoading: boolean
   /** Aerial photography for the study area; null when it has not been vendored. */
   imagery: Imagery | null
-  /** Road centrelines for the contract's county; null when not vendored. */
+  /** Interstates and highways for all of Georgia; null when not vendored. */
+  stateRoads: CountyRoads | null
+  /** Full local road network for the contract's county; null when not vendored. */
   roads: CountyRoads | null
   parcelError: string | null
 
@@ -150,6 +154,7 @@ export const useGame = create<Store>((set, get) => ({
   parcels: null,
   parcelsLoading: false,
   imagery: null,
+  stateRoads: null,
   roads: null,
   parcelError: null,
   plan: null,
@@ -177,7 +182,7 @@ export const useGame = create<Store>((set, get) => ({
     set({
       game, scenario: sc, showBriefing: true, headlines: [], tool: { kind: 'none' },
       parcels: null, plan: null, selectedCorridor: null, parcelError: null,
-      imagery: null, roads: null,
+      imagery: null, stateRoads: null, roads: null,
       alerts: [],
     })
   },
@@ -244,13 +249,17 @@ export const useGame = create<Store>((set, get) => ({
   dismissHeadlines: () => set({ headlines: [] }),
 
   ensureBasemap: async () => {
-    const { game, imagery, roads } = get()
-    if (!game || (imagery && roads)) return
-    const [img, rd] = await Promise.all([
+    const { game, imagery, stateRoads, roads } = get()
+    if (!game || (imagery && stateRoads && roads)) return
+    // Statewide roads and the county detail load together; they are separate
+    // files so that a player who never leaves the statewide view never pays for
+    // a county's farm tracks.
+    const [img, sr, rd] = await Promise.all([
       imagery ? Promise.resolve(imagery) : loadImagery(),
+      stateRoads ? Promise.resolve(stateRoads) : loadStateRoads(),
       roads ? Promise.resolve(roads) : loadCountyRoads(game.contract.countyFips),
     ])
-    set({ imagery: img, roads: rd })
+    set({ imagery: img, stateRoads: sr, roads: rd })
   },
 
   ensureParcels: async () => {

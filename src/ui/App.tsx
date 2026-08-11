@@ -79,7 +79,7 @@ export function App({ embedded = false }: { embedded?: boolean }) {
     selectCorridor, offerAll, setOffer, condemnParcel, abandon, parcelById,
     alerts, setSpeed, setPolicy, setVegetationSpend, setMaintenanceDeferred, dismissAlerts,
     chooseHearing, dismissTutorial, restoreTutorial, finishDebrief, cancelPlant,
-    imagery, roads, ensureBasemap,
+    imagery, roads, stateRoads, ensureBasemap,
   } = useGame()
 
   const [overlay, setOverlay] = useState<Overlay>('none')
@@ -189,6 +189,14 @@ export function App({ embedded = false }: { embedded?: boolean }) {
     }
     return tints
   }, [plan, game?.corridors, selectedCorridor])
+
+  // Statewide highways always; the county's full network layered on when it has
+  // loaded. Drawn as one list because the renderer already fades classes by
+  // zoom, so the tiers self-sort without extra bookkeeping.
+  const allRoads = useMemo(
+    () => [...(stateRoads?.roads ?? []), ...(roads?.roads ?? [])],
+    [stateRoads, roads],
+  )
 
   const imageryDraw = useMemo(
     () => (imagery
@@ -330,7 +338,7 @@ export function App({ embedded = false }: { embedded?: boolean }) {
             hoverParcel={hoverParcel}
             storms={game.realtime?.storms}
             imagery={imageryDraw}
-            roads={roads?.roads}
+            roads={allRoads}
             showImagery={showImagery}
             showRoads={showRoads}
             focus={focus}
@@ -371,7 +379,7 @@ export function App({ embedded = false }: { embedded?: boolean }) {
                 Aerial
               </label>
             )}
-            {roads && (
+            {(stateRoads || roads) && (
               <label className="check">
                 <input
                   type="checkbox"
@@ -423,11 +431,11 @@ export function App({ embedded = false }: { embedded?: boolean }) {
           {/* Attribution is a licence obligation for the road data, not a
               courtesy, so it renders whenever the layer is on rather than
               living in a README. */}
-          {((showImagery && imagery) || (showRoads && roads)) && (
+          {((showImagery && imagery) || (showRoads && (stateRoads || roads))) && (
             <p className="map-attribution">
               {[
                 showImagery && imagery ? imagery.manifest.attribution : null,
-                showRoads && roads ? roads.attribution : null,
+                showRoads ? (stateRoads?.attribution ?? roads?.attribution ?? null) : null,
               ].filter(Boolean).join(' · ')}
             </p>
           )}

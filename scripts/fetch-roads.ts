@@ -8,18 +8,36 @@
  * structure and a permit. A player who can see the roads can see why a route
  * that looks longer is cheaper.
  *
- * Two ways to run this:
+ * TWO TIERS, because the map is statewide but the puzzle is local.
  *
- *   npm run fetch:roads -- --county 13261
- *       Queries an Overpass API endpoint directly. Needs outbound network.
+ *   state    Interstates and highways for the whole of Georgia, in one file
+ *            small enough to load at startup. This is the layer that makes the
+ *            statewide view legible — where the corridors of the state already
+ *            run, and which counties a campaign can plausibly reach.
+ *   county   Every road down to farm tracks, for one county, loaded only when
+ *            the player is working there. A rural county's full network is
+ *            larger than the statewide major-road file on its own, so this
+ *            cannot be the thing that loads at startup.
  *
- *   npm run fetch:roads -- --county 13261 --file <path.geojson>
+ * Sumter is the tutorial, not the extent of the game, so the statewide tier is
+ * the default and the per-county tier is the detail pass on top of it.
+ *
+ * Ways to run this:
+ *
+ *   npm run fetch:roads -- --state
+ *       Interstates and highways for all of Georgia.
+ *
+ *   npm run fetch:roads -- --county 13261 --name Sumter
+ *       Full detail for one county.
+ *
+ *   ... --file <path.geojson>
  *       Reads a GeoJSON FeatureCollection of LineStrings you downloaded
- *       elsewhere — an Overpass export, a Geofabrik extract clipped with ogr2ogr,
- *       anything with `highway` tags. Use this when egress is restricted.
+ *       elsewhere — an Overpass export, a Geofabrik extract clipped with
+ *       ogr2ogr, anything with `highway` tags. Use this when egress is
+ *       restricted. Works with either tier.
  *
- * Output: public/data/roads/<fips>.json, committed to the repo. Nothing is
- * fetched at runtime.
+ * Output: public/data/roads/state.json or <fips>.json, committed to the repo.
+ * Nothing is fetched at runtime.
  *
  * LICENSING — this matters and is not optional. OpenStreetMap data is ODbL-1.0.
  * Using it requires attributing "© OpenStreetMap contributors", and the
@@ -59,24 +77,37 @@ function classify(highway: string): RoadClass | null {
   }
 }
 
-interface Args { county: string; file: string | null; name: string }
+interface Args { county: string; file: string | null; name: string; state: boolean }
 
 function parseArgs(): Args {
   const argv = process.argv.slice(2)
   let county = ''
   let file: string | null = null
   let name = ''
+  let state = false
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--county') county = argv[++i] ?? ''
     else if (argv[i] === '--file') file = argv[++i] ?? null
     else if (argv[i] === '--name') name = argv[++i] ?? ''
+    else if (argv[i] === '--state') state = true
   }
-  if (!/^13\d{3}$/.test(county)) {
-    console.error('Usage: fetch:roads -- --county <13xxx> [--file <geojson>] [--name <County>]')
+  if (!state && !/^13\d{3}$/.test(county)) {
+    console.error(
+      'Usage: fetch:roads -- --state              (interstates and highways, all of Georgia)\n' +
+      '       fetch:roads -- --county <13xxx>     (full detail, one county)\n' +
+      '       ... [--file <geojson>] [--name <County>]',
+    )
     process.exit(1)
   }
-  return { county, file, name }
+  return { county, file, name, state }
 }
+
+/**
+ * The statewide tier keeps only the classes worth seeing at statewide zoom.
+ * Including local streets here would multiply the file by roughly twenty for
+ * detail that is sub-pixel until the player has already zoomed into a county.
+ */
+const STATE_CLASSES: ReadonlySet<RoadClass> = new Set<RoadClass>([0, 1])
 
 /**
  * Douglas–Peucker, in degrees. The tolerance is deliberately coarse: at the
@@ -132,11 +163,21 @@ function round(points: [number, number][]): [number, number][] {
   return out
 }
 
-async function fromOverpass(fips: string): Promise<unknown> {
-  // Overpass knows US counties by their FIPS via the `nist` ref on the
-  // administrative relation; querying by area keeps the download to one county.
-  const query = `
-[out:json][timeout:180];
+async function fromOverpass(fips: string, statewide: boolean): Promise<unknown> {
+  // Overpass knows US counties by their FIPS via the `ref:fips` tag on the
+  // administrative relation; querying by area keeps the download scoped.
+  //
+  // The statewide query filters to major classes inside Overpass rather than
+  // downloading everything and discarding it here — Georgia's full road network
+  // is hundreds of megabytes, and asking for it would be rude as well as slow.
+  const query = statewide
+    ? `
+[out:json][timeout:900];
+area["boundary"="administrative"]["admin_level"="4"]["ref:fips"="13"]->.state;
+way(area.state)["highway"~"^(motorway|trunk|primary)(_link)?$"];
+out geom;`
+    : `
+[out:json][timeout:300];
 area["boundary"="administrative"]["admin_level"="6"]["ref:fips"="${fips}"]->.county;
 way(area.county)["highway"];
 out geom;`
@@ -205,9 +246,13 @@ async function main(): Promise<void> {
     wires = fromGeoJson(JSON.parse(readFileSync(args.file, 'utf8')))
     source = `OpenStreetMap via local extract (${args.file.split('/').pop()})`
   } else {
-    wires = fromOverpassJson(await fromOverpass(args.county))
+    wires = fromOverpassJson(await fromOverpass(args.county, args.state))
     source = `OpenStreetMap via Overpass (${OVERPASS})`
   }
+
+  // The statewide tier drops everything below a highway, whichever way the data
+  // arrived — a --file extract may well carry the lot.
+  if (args.state) wires = wires.filter((w) => STATE_CLASSES.has(w.c))
 
   if (wires.length === 0) {
     console.error(
@@ -236,8 +281,8 @@ async function main(): Promise<void> {
 
   const file: RoadsFile = {
     version: ROADS_VERSION,
-    countyFips: args.county,
-    countyName: args.name || args.county,
+    countyFips: args.state ? 'state' : args.county,
+    countyName: args.state ? 'Georgia' : (args.name || args.county),
     source,
     attribution: ATTRIBUTION,
     license: LICENSE,
@@ -245,7 +290,7 @@ async function main(): Promise<void> {
   }
 
   mkdirSync(OUT_DIR, { recursive: true })
-  const path = resolve(OUT_DIR, `${args.county}.json`)
+  const path = resolve(OUT_DIR, args.state ? 'state.json' : `${args.county}.json`)
   writeFileSync(path, JSON.stringify(file))
 
   const bytes = readFileSync(path).length

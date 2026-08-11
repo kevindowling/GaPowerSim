@@ -213,6 +213,12 @@ if (existsSync(imageryPath)) {
 const roadsDir = resolve(DATA, 'roads')
 if (existsSync(roadsDir)) {
   const files = readdirSync(roadsDir).filter((f) => f.endsWith('.json'))
+  // The statewide tier is what makes the map legible outside the tutorial
+  // county, so its absence is called out separately rather than hidden in a
+  // count of "some road files exist".
+  if (!files.includes('state.json')) {
+    warnings.push('roads: no statewide highways (run `npm run fetch:roads -- --state`)')
+  }
   let totalRoads = 0
   for (const f of files) {
     const file = JSON.parse(readFileSync(resolve(roadsDir, f), 'utf8')) as {
@@ -226,7 +232,10 @@ if (existsSync(roadsDir)) {
   }
   console.log(`roads          ${files.length} county file(s), ${totalRoads.toLocaleString()} ways`)
 } else {
-  warnings.push('basemap: no road data vendored (run `npm run fetch:roads -- --county 13261`)')
+  warnings.push(
+    'roads: none vendored — run `npm run fetch:roads -- --state` for statewide ' +
+    'highways, then `-- --county 13261 --name Sumter` for the tutorial county',
+  )
 }
 
 // --- report --------------------------------------------------------------

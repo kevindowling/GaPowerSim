@@ -143,6 +143,25 @@ const TINY_PNG = Buffer.from(
 test('draws the aerial and road layers when they have been vendored', async ({ page }) => {
   // Served from the network layer rather than committed, so the repo does not
   // ship invented roads that would look like real OSM data.
+  // Statewide highways: present from startup, because the game is statewide and
+  // Sumter is only the tutorial.
+  await page.route('**/data/roads/state.json', (route) =>
+    route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        version: 1,
+        countyFips: 'state',
+        countyName: 'Georgia',
+        source: 'test fixture',
+        attribution: '© OpenStreetMap contributors',
+        license: 'ODbL-1.0',
+        roads: [
+          { c: 0, p: [[-84.4, 33.7], [-83.0, 32.0]] },
+          { c: 1, p: [[-85.0, 31.5], [-81.5, 31.2]] },
+        ],
+      }),
+    }))
+
   await page.route('**/data/roads/13261.json', (route) =>
     route.fulfill({
       contentType: 'application/json',
@@ -196,6 +215,17 @@ test('draws the aerial and road layers when they have been vendored', async ({ p
   const attribution = page.locator('.map-attribution')
   await expect(attribution).toContainText('OpenStreetMap contributors')
   await expect(attribution).toContainText('NAIP')
+
+  // Both tiers reached the renderer, not just one of them.
+  const roadCount = await page.evaluate(() => {
+    const s = (window as unknown as { __game: any }).__game.getState()
+    return {
+      state: s.stateRoads?.roads.length ?? 0,
+      county: s.roads?.roads.length ?? 0,
+    }
+  })
+  expect(roadCount.state).toBe(2)
+  expect(roadCount.county).toBe(3)
 
   // Turning a layer off removes its attribution with it.
   await page.getByLabel('Roads').uncheck()
