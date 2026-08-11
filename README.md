@@ -30,14 +30,32 @@ npm test          # engine unit tests (vitest)
 npm run test:e2e  # browser smoke tests (playwright)
 ```
 
+## Deploying
+
+A GitHub Actions workflow at `.github/workflows/deploy.yml` typechecks, verifies
+the vendored data, runs both test suites, builds, and publishes to GitHub Pages
+on every push to the default branch. It can also be run by hand from the Actions
+tab.
+
+**One-time setup:** Settings → Pages → Build and deployment → Source →
+**GitHub Actions**. Nothing else to configure — no branch, no `/docs` folder.
+
+The site lands at `https://<user>.github.io/<repo>/`, which is a subdirectory
+rather than a domain root. A build with absolute asset paths loads perfectly on
+localhost and 404s the moment it deploys, silently, because the HTML still
+returns 200 — so `npm run check:build` asserts the paths are relative and every
+vendored data file is present, and CI runs it before publishing.
+
 ## Embedding
 
 The build is a self-contained static site with no backend and no external
 requests. Deploy `dist/` anywhere and drop one tag into the host page:
 
+Once deployed, the embed URL is the Pages URL plus `embed.html`:
+
 ```html
 <iframe
-  src="https://your-host.example/gapowersim/embed.html"
+  src="https://<user>.github.io/<repo>/embed.html"
   width="100%"
   height="720"
   style="border:0"

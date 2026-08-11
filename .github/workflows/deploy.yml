@@ -1,0 +1,111 @@
+name: Deploy to GitHub Pages
+
+# One-time setup before this can work:
+#   Settings → Pages → Build and deployment → Source: "GitHub Actions"
+# There is nothing to configure beyond that; no branch, no /docs folder.
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      # The repository's current default branch, so the game is live before any
+      # merge. Drop this line once the work lands on main.
+      - claude/georgia-power-sim-game-xbnknh
+  # Lets you redeploy from the Actions tab without pushing anything.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race. `cancel-in-progress: false` because a half-finished
+# Pages deployment is worse than a queued one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Typecheck, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Check the vendored data is intact
+        # Confirms counties/hexgrid/parcels are present and internally consistent
+        # before shipping a build that would fail to load at runtime.
+        run: npm run verify:data
+
+      - name: Unit tests
+        run: npm test
+
+      # Cached separately from node_modules: the browser is ~150 MB and changes
+      # only when the Playwright version does.
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Chromium system deps
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Browser tests
+        # This also produces the production build, since the Playwright config
+        # serves dist/ rather than a dev server.
+        run: npm run test:e2e
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: tests/.artifacts/
+          retention-days: 7
+
+      - name: Build
+        run: npm run build
+
+      - name: Confirm the build works from a subdirectory
+        # Pages serves at /<repo>/, not the domain root. A build with absolute
+        # asset paths loads fine locally and 404s once deployed, silently — so
+        # this is checked rather than assumed.
+        run: npm run check:build
+
+      - name: Disable Jekyll processing
+        run: touch dist/.nojekyll
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    name: Deploy
+    needs: verify
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

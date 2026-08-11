@@ -18,6 +18,7 @@
     "build:icons": "tsx scripts/build-icons.ts",
     "fetch:parcels": "tsx scripts/fetch-parcels.ts",
     "verify:data": "tsx scripts/verify-data.ts",
+    "check:build": "tsx scripts/check-build.ts",
     "data": "npm run build:geo && npm run build:hexgrid && npm run build:parcels && npm run verify:data"
   },
   "dependencies": {
