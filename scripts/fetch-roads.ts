@@ -48,13 +48,15 @@
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { overpassQuery } from './lib/overpass.ts'
 import { ROADS_VERSION, type RoadClass, type RoadWire, type RoadsFile } from '../src/engine/geo/basemapTypes.ts'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(__dirname, '..')
 const OUT_DIR = resolve(ROOT, 'public/data/roads')
 
-const OVERPASS = process.env.OVERPASS_URL ?? 'https://overpass-api.de/api/interpreter'
+/** Override to pin a single mirror; otherwise the client tries several. */
+const OVERPASS_URL = process.env.OVERPASS_URL ?? null
 const ATTRIBUTION = '© OpenStreetMap contributors'
 const LICENSE = 'ODbL-1.0'
 
@@ -181,14 +183,10 @@ out geom;`
 area["boundary"="administrative"]["admin_level"="6"]["ref:fips"="${fips}"]->.county;
 way(area.county)["highway"];
 out geom;`
-  const res = await fetch(OVERPASS, { method: 'POST', body: query })
-  if (!res.ok) {
-    throw new Error(
-      `Overpass returned ${res.status}. If this environment blocks egress, ` +
-      `download the data elsewhere and re-run with --file.`,
-    )
-  }
-  return res.json()
+  return overpassQuery(query, {
+    endpoints: OVERPASS_URL ? [OVERPASS_URL] : undefined,
+    log: (m) => console.error(m),
+  })
 }
 
 interface OverpassElement {
@@ -247,7 +245,7 @@ async function main(): Promise<void> {
     source = `OpenStreetMap via local extract (${args.file.split('/').pop()})`
   } else {
     wires = fromOverpassJson(await fromOverpass(args.county, args.state))
-    source = `OpenStreetMap via Overpass (${OVERPASS})`
+    source = `OpenStreetMap via Overpass${OVERPASS_URL ? ` (${OVERPASS_URL})` : ''}`
   }
 
   // The statewide tier drops everything below a highway, whichever way the data
