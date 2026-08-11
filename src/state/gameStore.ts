@@ -21,6 +21,7 @@ import { scenario, type Scenario } from '../data/scenarios.ts'
 import { project } from '../engine/geo/projection.ts'
 import { pointToCell } from '../engine/geo/hex.ts'
 import type { LineClassId } from '../data/transmission.ts'
+import { loadImagery, loadCountyRoads, type Imagery, type CountyRoads } from '../data/loadBasemap.ts'
 import { loadCountyParcels, clearParcelCache, type CountyParcels } from '../data/loadParcels.ts'
 import {
   planCorridor, commitCorridor, offerAll as engineOfferAll, setOffer as engineSetOffer,
@@ -53,6 +54,10 @@ interface Store {
   /** Parcels for the scenario county, loaded on demand. */
   parcels: CountyParcels | null
   parcelsLoading: boolean
+  /** Aerial photography for the study area; null when it has not been vendored. */
+  imagery: Imagery | null
+  /** Road centrelines for the contract's county; null when not vendored. */
+  roads: CountyRoads | null
   parcelError: string | null
 
   /** The route currently being previewed, before it is committed. */
@@ -75,6 +80,11 @@ interface Store {
   dismissHeadlines: () => void
 
   ensureParcels: () => Promise<void>
+  /**
+   * Load the optional aerial and road layers. Safe to call repeatedly and safe
+   * to fail — absent basemap data simply means those layers are not offered.
+   */
+  ensureBasemap: () => Promise<void>
   setLineClass: (classId: LineClassId) => void
   clearPlan: () => void
   commitPlan: () => void
@@ -139,6 +149,8 @@ export const useGame = create<Store>((set, get) => ({
   showBriefing: true,
   parcels: null,
   parcelsLoading: false,
+  imagery: null,
+  roads: null,
   parcelError: null,
   plan: null,
   selectedCorridor: null,
@@ -165,6 +177,7 @@ export const useGame = create<Store>((set, get) => ({
     set({
       game, scenario: sc, showBriefing: true, headlines: [], tool: { kind: 'none' },
       parcels: null, plan: null, selectedCorridor: null, parcelError: null,
+      imagery: null, roads: null,
       alerts: [],
     })
   },
@@ -229,6 +242,16 @@ export const useGame = create<Store>((set, get) => ({
   },
 
   dismissHeadlines: () => set({ headlines: [] }),
+
+  ensureBasemap: async () => {
+    const { game, imagery, roads } = get()
+    if (!game || (imagery && roads)) return
+    const [img, rd] = await Promise.all([
+      imagery ? Promise.resolve(imagery) : loadImagery(),
+      roads ? Promise.resolve(roads) : loadCountyRoads(game.contract.countyFips),
+    ])
+    set({ imagery: img, roads: rd })
+  },
 
   ensureParcels: async () => {
     const { parcels, parcelsLoading, game } = get()

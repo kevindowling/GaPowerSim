@@ -79,10 +79,15 @@ export function App({ embedded = false }: { embedded?: boolean }) {
     selectCorridor, offerAll, setOffer, condemnParcel, abandon, parcelById,
     alerts, setSpeed, setPolicy, setVegetationSpend, setMaintenanceDeferred, dismissAlerts,
     chooseHearing, dismissTutorial, restoreTutorial, finishDebrief, cancelPlant,
+    imagery, roads, ensureBasemap,
   } = useGame()
 
   const [overlay, setOverlay] = useState<Overlay>('none')
   const [showHexes, setShowHexes] = useState(true)
+  // Aerial defaults on when it exists — it is the layer that makes the place
+  // legible, and a player should not have to discover it to benefit from it.
+  const [showImagery, setShowImagery] = useState(true)
+  const [showRoads, setShowRoads] = useState(true)
   const [hoverName, setHoverName] = useState<string | null>(null)
   const [hoverCell, setHoverCellLocal] = useState<CellReadout | null>(null)
   const [scale, setScale] = useState(1)
@@ -95,6 +100,10 @@ export function App({ embedded = false }: { embedded?: boolean }) {
   const [sheetOpen, setSheetOpen] = useState(false)
 
   useEffect(() => { void load() }, [load])
+
+  // Basemap layers are optional and load in the background; the map is fully
+  // usable before they arrive, and equally usable if they never do.
+  useEffect(() => { if (game) void ensureBasemap() }, [game, ensureBasemap])
 
   useEffect(() => {
     if (mapData && !game) startScenario('americus-400')
@@ -180,6 +189,13 @@ export function App({ embedded = false }: { embedded?: boolean }) {
     }
     return tints
   }, [plan, game?.corridors, selectedCorridor])
+
+  const imageryDraw = useMemo(
+    () => (imagery
+      ? { images: imagery.images, tiles: imagery.manifest.tiles }
+      : null),
+    [imagery],
+  )
 
   const activeCorridor = game?.corridors.find((c) => c.id === selectedCorridor) ?? null
 
@@ -313,6 +329,10 @@ export function App({ embedded = false }: { embedded?: boolean }) {
             corridors={corridorDraws}
             hoverParcel={hoverParcel}
             storms={game.realtime?.storms}
+            imagery={imageryDraw}
+            roads={roads?.roads}
+            showImagery={showImagery}
+            showRoads={showRoads}
             focus={focus}
             onHoverCounty={handleHover}
             onClickCell={placeAt}
@@ -339,6 +359,28 @@ export function App({ embedded = false }: { embedded?: boolean }) {
               <input type="checkbox" checked={showHexes} onChange={(e) => setShowHexes(e.target.checked)} />
               Grid
             </label>
+            {/* Only offered when the data was actually vendored — a dead toggle
+                is worse than a missing one. */}
+            {imagery && (
+              <label className="check">
+                <input
+                  type="checkbox"
+                  checked={showImagery}
+                  onChange={(e) => setShowImagery(e.target.checked)}
+                />
+                Aerial
+              </label>
+            )}
+            {roads && (
+              <label className="check">
+                <input
+                  type="checkbox"
+                  checked={showRoads}
+                  onChange={(e) => setShowRoads(e.target.checked)}
+                />
+                Roads
+              </label>
+            )}
             </div>
             {/* A layer nobody understands is a layer nobody switches to, so the
                 active one says what it is for and which way the colour runs. */}
@@ -377,6 +419,18 @@ export function App({ embedded = false }: { embedded?: boolean }) {
           </div>
 
           <div className="scalebar"><ScaleBar pxPerKm={scale} /></div>
+
+          {/* Attribution is a licence obligation for the road data, not a
+              courtesy, so it renders whenever the layer is on rather than
+              living in a README. */}
+          {((showImagery && imagery) || (showRoads && roads)) && (
+            <p className="map-attribution">
+              {[
+                showImagery && imagery ? imagery.manifest.attribution : null,
+                showRoads && roads ? roads.attribution : null,
+              ].filter(Boolean).join(' · ')}
+            </p>
+          )}
 
         {isMobile && (
           <MobileSheet

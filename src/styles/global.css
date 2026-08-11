@@ -1472,3 +1472,25 @@ kbd {
   align-items: center;
   gap: 10px;
 }
+
+/* Licence attribution for the aerial and road layers. Small, but it renders
+   whenever those layers are on — ODbL requires it, and it belongs on the map
+   rather than in a file nobody opens. */
+.map-attribution {
+  position: absolute;
+  right: 12px;
+  bottom: 40px;
+  margin: 0;
+  font-size: 10px;
+  color: var(--ink-soft);
+  background: rgba(251, 249, 243, 0.82);
+  padding: 2px 6px;
+  border-radius: 4px;
+  pointer-events: none;
+  max-width: 60%;
+  text-align: right;
+}
+
+@media (max-width: 820px) {
+  .map-attribution { bottom: 96px; font-size: 9.5px; }
+}

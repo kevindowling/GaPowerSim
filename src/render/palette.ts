@@ -18,6 +18,11 @@ export const PALETTE = {
   water: '#A9C9D8',
   waterDeep: '#8FB6C9',
 
+  // Roads are context, not a decision surface, so they stay desaturated —
+  // and readable over both the land tones and aerial photography.
+  roadMajor: '#8C7F63',
+  roadMinor: '#A79C84',
+
   // Physiographic provinces, indexed by the TERRAIN enum in build-hexgrid.ts.
   terrain: [
     '#F2EFE6', // 0 outside Georgia

@@ -20,6 +20,7 @@ import type { MultiPoly } from '../engine/geo/polygon.ts'
 import { ICONS, type IconKey } from './icons.ts'
 import { project } from '../engine/geo/projection.ts'
 import { CITIES } from '../data/cities.ts'
+import type { Road } from '../engine/geo/basemapTypes.ts'
 
 /** Cell size in px/km below which hexes are not drawn at all. */
 const HEX_FADE_IN = 6
@@ -29,6 +30,17 @@ const HEX_FADE_FULL = 14
 /** Parcels only appear once one is big enough on screen to be a shape. */
 const PARCEL_FADE_IN = 14
 const PARCEL_FADE_FULL = 30
+
+/* Aerial imagery only earns its bandwidth once the player is close enough to
+   read what is on the ground; statewide it is a brown smear. It fades in with
+   the parcels, because that is the moment routing becomes a local decision. */
+const IMAGERY_FADE_IN = 10
+const IMAGERY_FADE_FULL = 22
+
+/* Roads come in earlier — the shape of the road network is useful for
+   choosing a corridor long before individual parcels matter. */
+const ROAD_FADE_IN = 5
+const ROAD_FADE_FULL = 12
 
 const PARCEL_FILL: Record<ParcelTint, string> = {
   taken: 'rgba(232,163,61,0.30)',
@@ -128,6 +140,19 @@ export interface RenderOptions {
   hoverParcel?: string | null
   /** Live weather during the operate phase. */
   storms?: readonly StormDraw[]
+  /** Aerial photography for the study area, when it has been vendored. */
+  imagery?: ImageryDraw | null
+  /** Road centrelines for the county being worked. */
+  roads?: readonly Road[]
+  /** Whether the player has the aerial layer switched on. */
+  showImagery?: boolean
+  showRoads?: boolean
+}
+
+/** Decoded imagery plus where it sits, in projected kilometres. */
+export interface ImageryDraw {
+  images: readonly CanvasImageSource[]
+  tiles: readonly { bounds: [number, number, number, number] }[]
 }
 
 export interface StormDraw {
@@ -274,10 +299,24 @@ export class MapRenderer {
     ctx.fillRect(0, 0, vp.width, vp.height)
 
     this.drawRaster(ctx, cam, vp, this.terrainRaster, 1)
+
+    // Imagery goes over the terrain raster and under everything else: it is the
+    // ground, and every game mark needs to read on top of it.
+    const imageryAlpha = opts.showImagery && opts.imagery
+      ? smoothstep(IMAGERY_FADE_IN, IMAGERY_FADE_FULL, cam.scale)
+      : 0
+    if (imageryAlpha > 0.01) this.drawImagery(ctx, cam, vp, opts.imagery!, imageryAlpha)
+
+    // The data overlays stay on top of the photo, or they would be invisible.
     if (this.overlayRaster) this.drawRaster(ctx, cam, vp, this.overlayRaster, 1)
 
     const hexAlpha = opts.showHexes ? smoothstep(HEX_FADE_IN, HEX_FADE_FULL, cam.scale) : 0
     if (hexAlpha > 0.01) this.drawHexes(ctx, cam, vp, hexAlpha)
+
+    if (opts.showRoads && opts.roads?.length) {
+      const roadAlpha = smoothstep(ROAD_FADE_IN, ROAD_FADE_FULL, cam.scale)
+      if (roadAlpha > 0.01) this.drawRoads(ctx, cam, vp, opts.roads, roadAlpha, imageryAlpha)
+    }
 
     // Parcels sit under the corridor so the right-of-way reads as laid across
     // them, which is what it is.
@@ -562,6 +601,95 @@ export class MapRenderer {
     ctx.arc(px, py, 3, 0, Math.PI * 2)
     ctx.fillStyle = s.ok ? PALETTE.ok : PALETTE.fault
     ctx.fill()
+    ctx.restore()
+  }
+
+  /**
+   * Aerial photography, blitted axis-aligned in world space.
+   *
+   * That is only correct because the fetch script reprojects the image into
+   * this projection and refuses to vendor anything with visible skew — see
+   * scripts/fetch-imagery.ts. Drawing a raw lon/lat export here would put the
+   * photo a few tens of metres off the parcels it is meant to explain.
+   */
+  private drawImagery(
+    ctx: CanvasRenderingContext2D, cam: Camera, vp: Viewport,
+    imagery: ImageryDraw, alpha: number,
+  ): void {
+    const vis = cam.visibleBounds(vp)
+    ctx.save()
+    ctx.globalAlpha = alpha
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
+
+    for (let i = 0; i < imagery.tiles.length; i++) {
+      const [minX, minY, maxX, maxY] = imagery.tiles[i].bounds
+      if (maxX < vis.minX || minX > vis.maxX || maxY < vis.minY || minY > vis.maxY) continue
+      const [sx, sy] = cam.toScreen(minX, maxY, vp)
+      ctx.drawImage(
+        imagery.images[i], sx, sy,
+        (maxX - minX) * cam.scale, (maxY - minY) * cam.scale,
+      )
+    }
+    ctx.restore()
+  }
+
+  /**
+   * Road centrelines.
+   *
+   * Drawn with a light casing so they stay readable over both the flat terrain
+   * palette and aerial photography, which are very different backgrounds. Width
+   * is by class and does not scale with zoom past a point — a road is a
+   * landmark here, not a measured object.
+   */
+  private drawRoads(
+    ctx: CanvasRenderingContext2D, cam: Camera, vp: Viewport,
+    roads: readonly Road[], alpha: number, overPhoto: number,
+  ): void {
+    const vis = cam.visibleBounds(vp)
+    const widths = [3.4, 2.6, 1.8, 1.1, 0.8]
+    // Minor roads would turn the county into a grey wash when zoomed out.
+    const minClass = cam.scale < 9 ? 2 : cam.scale < 16 ? 3 : 4
+
+    ctx.save()
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+
+    for (const pass of [0, 1]) {
+      for (const road of roads) {
+        if (road.cls > minClass) continue
+        const pts = road.points
+        if (pts.length < 2) continue
+
+        // Cheap reject on the first vertex' neighbourhood; roads are short.
+        let visible = false
+        for (const [wx, wy] of pts) {
+          if (wx >= vis.minX && wx <= vis.maxX && wy >= vis.minY && wy <= vis.maxY) {
+            visible = true
+            break
+          }
+        }
+        if (!visible) continue
+
+        ctx.beginPath()
+        for (let i = 0; i < pts.length; i++) {
+          const [px, py] = cam.toScreen(pts[i][0], pts[i][1], vp)
+          if (i === 0) ctx.moveTo(px, py)
+          else ctx.lineTo(px, py)
+        }
+        const w = widths[road.cls]
+        if (pass === 0) {
+          ctx.globalAlpha = alpha * (0.35 + 0.4 * overPhoto)
+          ctx.lineWidth = w + 2.4
+          ctx.strokeStyle = overPhoto > 0.5 ? 'rgba(20,18,14,0.55)' : 'rgba(255,253,246,0.85)'
+        } else {
+          ctx.globalAlpha = alpha
+          ctx.lineWidth = w
+          ctx.strokeStyle = road.cls <= 1 ? PALETTE.roadMajor : PALETTE.roadMinor
+        }
+        ctx.stroke()
+      }
+    }
     ctx.restore()
   }
 
