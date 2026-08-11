@@ -77,7 +77,11 @@ as vectors on top, and real hexagons only appear once a cell is large enough on
 screen to be worth seeing.
 
 All visuals are vector or data-driven. There is no bitmap art in this project and
-no generated imagery; the favicon is hand-written SVG.
+no AI-generated imagery. The map is drawn from data; plant, data-centre and
+transmission glyphs are vector paths from [Material Design
+Icons](https://github.com/Templarian/MaterialDesign) (Pictogrammers, Apache-2.0),
+of which only the eight the game draws are vendored — see
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). The favicon is hand-written SVG.
 
 ### The map data
 
@@ -128,9 +132,20 @@ length.
 
 Georgia has no free statewide parcel download; parcel data is county-by-county
 through ArcGIS Hub and qPublic portals. `scripts/fetch-parcels.ts` pulls a
-county, clips it to the scenario's study area, simplifies it, strips owner PII at
-ingest, and vendors the result into `public/data/parcels/`. That fetch is a
-**developer action, run once** — a player never touches a county server.
+county, strips owner PII at ingest, and vendors the result into
+`public/data/parcels/`. That fetch is a **developer action, run once** — a player
+never touches a county server.
+
+Two ways to run it:
+
+```bash
+# If you have the county's FeatureServer URL (set it in scripts/fetch-parcels.ts)
+npm run fetch:parcels -- --county 13261
+
+# Or download the layer from the county's portal as GeoJSON and point at it.
+# This needs no network access at all.
+npm run fetch:parcels -- --county 13261 --file ~/Downloads/Parcels.geojson
+```
 
 Owner *names* are synthesized rather than real. Georgia parcel ownership is
 public record, but naming identifiable private individuals at their home address
@@ -140,9 +155,11 @@ boundaries, real acreage, real assessed values; invented people. Institutional
 owners stay real where they carry meaning.
 
 > **Environment note:** the sandbox this was developed in blocks egress to
-> census.gov, ArcGIS and qPublic, so the parcel fetch has not been run here. The
-> pipeline is written to be run from an unrestricted network, and county
-> boundaries were sourced from npm instead for the same reason.
+> census.gov, ArcGIS, qPublic and the Georgia state clearinghouse — all four
+> return HTTP 403 policy denials — so the real parcel fetch could not be run
+> here, and the committed Sumter cadastre is the generated stand-in. County
+> boundaries were sourced from npm for the same reason. Use the `--file` form
+> above, or run the fetch from an unrestricted network.
 
 ## Milestones
 

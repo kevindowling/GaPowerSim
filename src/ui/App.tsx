@@ -13,9 +13,19 @@ import type {
 } from '../render/mapRenderer.ts'
 import { corridorBuffer } from '../engine/geo/polygon.ts'
 import { lineClass } from '../data/transmission.ts'
+import type { IconKey } from '../render/icons.ts'
 import { plantType, type PlantKind } from '../data/plants.ts'
 import type { SiteAssessment } from '../engine/turn/siting.ts'
 import { money, acres } from './format.ts'
+
+/** Which vector glyph stands for each generation technology. */
+const PLANT_ICON: Record<PlantKind, IconKey> = {
+  'gas-ct': 'gasCt',
+  'gas-ccgt': 'gasCcgt',
+  solar: 'solar',
+  battery: 'battery',
+  'nuclear-uprate': 'nuclear',
+}
 
 const TERRAIN_NAMES: Record<number, string> = {
   0: 'Outside Georgia',
@@ -76,6 +86,7 @@ export function App({ embedded = false }: { embedded?: boolean }) {
       cell: game.contract.siteCell,
       kind: 'datacenter',
       label: game.contract.name,
+      icon: 'dataCenter',
     }]
     for (const p of game.plants) {
       const t = plantType(p.typeId)
@@ -87,6 +98,7 @@ export function App({ embedded = false }: { embedded?: boolean }) {
           : 'plant-permitting',
         label: p.name,
         progress: total > 0 ? (total - p.quartersRemaining) / total : 0,
+        icon: PLANT_ICON[p.typeId],
       })
     }
     return out

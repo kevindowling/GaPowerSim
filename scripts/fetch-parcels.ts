@@ -23,7 +23,7 @@
  *   npm run fetch:parcels -- --county 13261 --dry-run
  */
 
-import { writeFileSync, mkdirSync, readFileSync } from 'node:fs'
+import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { project } from '../src/engine/geo/projection.ts'
@@ -92,7 +92,7 @@ interface RawFeature {
 }
 
 interface ParcelSource {
-  fetchAll(source: CountySource): Promise<RawFeature[]>
+  fetchAll(source: CountySource, filePath?: string): Promise<RawFeature[]>
 }
 
 /** ArcGIS FeatureServer, paged via resultOffset until the server stops. */
@@ -130,10 +130,26 @@ const arcgisSource: ParcelSource = {
   },
 }
 
-/** Drop a pre-downloaded GeoJSON at data-src/<fips>.geojson and use this. */
+/**
+ * Read a GeoJSON already on disk.
+ *
+ * This is the path most people will actually use: open the county's Hub page in
+ * a browser, hit Download → GeoJSON, and point this at the file. It needs no
+ * network access at all, which also makes it the only path that works from a
+ * restricted environment.
+ */
 const fileSource: ParcelSource = {
-  async fetchAll(source) {
-    const path = resolve(ROOT, `data-src/${source.fips}.geojson`)
+  async fetchAll(source, explicitPath) {
+    const path = explicitPath
+      ? resolve(process.cwd(), explicitPath)
+      : resolve(ROOT, `data-src/${source.fips}.geojson`)
+    if (!existsSync(path)) {
+      throw new Error(
+        `No GeoJSON at ${path}.\n` +
+        `  Download the parcel layer from ${source.portal} (Download → GeoJSON)\n` +
+        `  then re-run with:  npm run fetch:parcels -- --county ${source.fips} --file <path>`,
+      )
+    }
     const doc = JSON.parse(readFileSync(path, 'utf8')) as { features?: RawFeature[] }
     return doc.features ?? []
   },
@@ -146,7 +162,7 @@ function sourceFor(kind: CountySource['kind']): ParcelSource {
     case 'qpublic':
       throw new Error(
         'qPublic has no public bulk endpoint. Request a shapefile from the county ' +
-        'GIS office, convert it to GeoJSON, drop it in data-src/, and use kind: "file".',
+        'GIS office, convert it to GeoJSON, and pass it with --file <path>.',
       )
   }
 }
@@ -210,9 +226,11 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2)
   const fipsArg = args[args.indexOf('--county') + 1]
   const dryRun = args.includes('--dry-run')
+  const fileIdx = args.indexOf('--file')
+  const filePath = fileIdx >= 0 ? args[fileIdx + 1] : undefined
 
   if (!fipsArg || fipsArg.startsWith('--')) {
-    console.error('usage: npm run fetch:parcels -- --county <fips> [--dry-run]')
+    console.error('usage: npm run fetch:parcels -- --county <fips> [--file <geojson>] [--dry-run]')
     console.error(`known counties: ${COUNTIES.map((c) => `${c.fips} (${c.name})`).join(', ')}`)
     process.exit(1)
   }
@@ -223,8 +241,11 @@ async function main(): Promise<void> {
     process.exit(1)
   }
 
-  console.log(`Fetching parcels for ${source.name} County (${source.fips})…`)
-  const raw = await sourceFor(source.kind).fetchAll(source)
+  // An explicit file always wins: it needs no network and is the path that
+  // works when a portal is unreachable.
+  const kind = filePath ? 'file' : source.kind
+  console.log(`Fetching parcels for ${source.name} County (${source.fips}) via ${kind}…`)
+  const raw = await sourceFor(kind).fetchAll(source, filePath)
   console.log(`  ${raw.length} features from source`)
 
   // Seeded from the FIPS so a re-fetch produces the same synthesized names and

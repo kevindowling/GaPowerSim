@@ -15,6 +15,7 @@
     "build:geo": "tsx scripts/build-geo.ts",
     "build:hexgrid": "tsx scripts/build-hexgrid.ts",
     "build:parcels": "tsx scripts/build-synthetic-parcels.ts",
+    "build:icons": "tsx scripts/build-icons.ts",
     "fetch:parcels": "tsx scripts/fetch-parcels.ts",
     "verify:data": "tsx scripts/verify-data.ts",
     "data": "npm run build:geo && npm run build:hexgrid && npm run build:parcels && npm run verify:data"
@@ -26,6 +27,7 @@
     "zustand": "^4.5.5"
   },
   "devDependencies": {
+    "@iconify-json/mdi": "^1.2.3",
     "@playwright/test": "^1.62.1",
     "@types/geojson": "^7946.0.16",
     "@types/node": "^22.9.0",

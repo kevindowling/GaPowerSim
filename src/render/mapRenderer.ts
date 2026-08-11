@@ -17,6 +17,7 @@ import {
 import { OUTSIDE_STATE, type MapData } from '../engine/geo/mapTypes.ts'
 import type { Parcel } from '../engine/parcels/types.ts'
 import type { MultiPoly } from '../engine/geo/polygon.ts'
+import { ICONS, type IconKey } from './icons.ts'
 import { project } from '../engine/geo/projection.ts'
 import { CITIES } from '../data/cities.ts'
 
@@ -61,6 +62,37 @@ export interface Marker {
   label: string
   /** 0–1, drawn as a progress ring on plants under construction. */
   progress?: number
+  /** Which glyph goes inside the marker. */
+  icon?: IconKey
+}
+
+/**
+ * Path2D objects are expensive to build from a string, and these are drawn every
+ * frame, so each icon is compiled once and reused.
+ */
+const pathCache = new Map<string, Path2D[]>()
+
+function iconPaths(key: IconKey): Path2D[] {
+  const cached = pathCache.get(key)
+  if (cached) return cached
+  const compiled = ICONS[key].paths.map((d) => new Path2D(d))
+  pathCache.set(key, compiled)
+  return compiled
+}
+
+/** Draw a vector icon centred on a point, scaled to a pixel size. */
+function drawIcon(
+  ctx: CanvasRenderingContext2D, key: IconKey,
+  cx: number, cy: number, sizePx: number, color: string,
+): void {
+  const icon = ICONS[key]
+  const scale = sizePx / Math.max(icon.width, icon.height)
+  ctx.save()
+  ctx.translate(cx - (icon.width * scale) / 2, cy - (icon.height * scale) / 2)
+  ctx.scale(scale, scale)
+  ctx.fillStyle = color
+  for (const path of iconPaths(key)) ctx.fill(path)
+  ctx.restore()
 }
 
 /** The ghost of a plant the player is about to place. */
@@ -272,27 +304,19 @@ export class MapRenderer {
 
       if (m.kind === 'datacenter') {
         // A squared-off block: server halls, not a power plant.
-        const s = 9
+        const s = 11
         ctx.beginPath()
-        ctx.roundRect(px - s, py - s, s * 2, s * 2, 3)
+        ctx.roundRect(px - s, py - s, s * 2, s * 2, 4)
         ctx.fillStyle = PALETTE.dataCenter
         ctx.fill()
         ctx.lineWidth = 2
         ctx.strokeStyle = PALETTE.paper
         ctx.stroke()
-        // Rack lines, so it reads as a building rather than a dot.
-        ctx.beginPath()
-        ctx.strokeStyle = 'rgba(242,239,230,0.75)'
-        ctx.lineWidth = 1.4
-        for (let i = -1; i <= 1; i++) {
-          ctx.moveTo(px - s + 3, py + i * 4)
-          ctx.lineTo(px + s - 3, py + i * 4)
-        }
-        ctx.stroke()
+        drawIcon(ctx, m.icon ?? 'dataCenter', px, py, s * 1.5, 'rgba(242,239,230,0.95)')
       } else {
         const online = m.kind === 'plant-online'
         const building = m.kind === 'plant-construction'
-        const r = 7.5
+        const r = 11
 
         ctx.beginPath()
         ctx.arc(px, py, r, 0, Math.PI * 2)
@@ -300,9 +324,19 @@ export class MapRenderer {
         ctx.fill()
         ctx.lineWidth = 2.2
         ctx.strokeStyle = online ? PALETTE.plant : building ? PALETTE.warn : PALETTE.inkFaint
+        // A dashed ring reads as "not real yet" — this plant is still on paper.
         if (!online && !building) ctx.setLineDash([3, 3])
         ctx.stroke()
         ctx.setLineDash([])
+
+        if (m.icon) {
+          // Inside an energised plant the glyph sits on amber, so it goes dark;
+          // otherwise it carries the status colour itself.
+          drawIcon(
+            ctx, m.icon, px, py, r * 1.35,
+            online ? PALETTE.ink : building ? PALETTE.warn : PALETTE.inkFaint,
+          )
+        }
 
         // Progress ring: how far along construction is, at a glance.
         if (building && m.progress !== undefined && m.progress > 0) {
