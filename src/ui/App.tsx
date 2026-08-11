@@ -51,6 +51,19 @@ const OVERLAYS: Array<{ id: Overlay; label: string }> = [
   { id: 'landValue', label: 'Land value' },
 ]
 
+/**
+ * What each layer is actually for. These are decision aids, not decoration:
+ * People is where opposition comes from, Land value is what right-of-way costs,
+ * and the router weighs both — so the player should be able to see what the
+ * router sees before it proposes a line straight through somebody's front yard.
+ */
+const OVERLAY_HELP: Record<Overlay, string> = {
+  none: 'Physical terrain. Switch layers to see what drives cost and opposition.',
+  population: 'Where people live. Siting and routing near them costs county approval.',
+  landValue: 'Appraised land value. This is what right-of-way and plant sites cost you.',
+  terrain: 'Physical terrain.',
+}
+
 /** Footprint radius in km for a plant's acreage, for the siting preview. */
 function footprintRadiusKm(acresValue: number): number {
   const km2 = acresValue / 247.105
@@ -65,11 +78,17 @@ export function App({ embedded = false }: { embedded?: boolean }) {
     dismissHeadlines, currentAssessment, setLineClass, clearPlan, commitPlan,
     selectCorridor, offerAll, setOffer, condemnParcel, abandon, parcelById,
     alerts, setSpeed, setPolicy, setVegetationSpend, setMaintenanceDeferred, dismissAlerts,
-    chooseHearing, dismissTutorial, finishDebrief,
+    chooseHearing, dismissTutorial, restoreTutorial, finishDebrief, cancelPlant,
+    imagery, roads, stateRoads, stateWater, water, ensureBasemap,
   } = useGame()
 
   const [overlay, setOverlay] = useState<Overlay>('none')
   const [showHexes, setShowHexes] = useState(true)
+  // Aerial defaults on when it exists — it is the layer that makes the place
+  // legible, and a player should not have to discover it to benefit from it.
+  const [showImagery, setShowImagery] = useState(true)
+  const [showRoads, setShowRoads] = useState(true)
+  const [showWater, setShowWater] = useState(true)
   const [hoverName, setHoverName] = useState<string | null>(null)
   const [hoverCell, setHoverCellLocal] = useState<CellReadout | null>(null)
   const [scale, setScale] = useState(1)
@@ -82,6 +101,10 @@ export function App({ embedded = false }: { embedded?: boolean }) {
   const [sheetOpen, setSheetOpen] = useState(false)
 
   useEffect(() => { void load() }, [load])
+
+  // Basemap layers are optional and load in the background; the map is fully
+  // usable before they arrive, and equally usable if they never do.
+  useEffect(() => { if (game) void ensureBasemap() }, [game, ensureBasemap])
 
   useEffect(() => {
     if (mapData && !game) startScenario('americus-400')
@@ -168,6 +191,31 @@ export function App({ embedded = false }: { embedded?: boolean }) {
     return tints
   }, [plan, game?.corridors, selectedCorridor])
 
+  // Statewide highways always; the county's full network layered on when it has
+  // loaded. Drawn as one list because the renderer already fades classes by
+  // zoom, so the tiers self-sort without extra bookkeeping.
+  const allRoads = useMemo(
+    () => [...(stateRoads?.roads ?? []), ...(roads?.roads ?? [])],
+    [stateRoads, roads],
+  )
+
+  const waterways = useMemo(
+    () => [...(stateWater?.waterways ?? []), ...(water?.waterways ?? [])],
+    [stateWater, water],
+  )
+  const waterBodies = useMemo(
+    () => [...(stateWater?.bodies ?? []), ...(water?.bodies ?? [])],
+    [stateWater, water],
+  )
+  const hasWater = waterways.length > 0 || waterBodies.length > 0
+
+  const imageryDraw = useMemo(
+    () => (imagery
+      ? { images: imagery.images, tiles: imagery.manifest.tiles }
+      : null),
+    [imagery],
+  )
+
   const activeCorridor = game?.corridors.find((c) => c.id === selectedCorridor) ?? null
 
   const assessment = currentAssessment()
@@ -215,7 +263,9 @@ export function App({ embedded = false }: { embedded?: boolean }) {
       onMaintenance={setMaintenanceDeferred}
     />
   )
-  const buildPanel = <BuildPanel game={game} tool={tool} onSelect={setTool} />
+  const buildPanel = (
+    <BuildPanel game={game} tool={tool} onSelect={setTool} onCancelPlant={cancelPlant} />
+  )
   const corridorPanel = (
     <CorridorPanel
       game={game}
@@ -298,6 +348,13 @@ export function App({ embedded = false }: { embedded?: boolean }) {
             corridors={corridorDraws}
             hoverParcel={hoverParcel}
             storms={game.realtime?.storms}
+            imagery={imageryDraw}
+            roads={allRoads}
+            waterways={waterways}
+            waterBodies={waterBodies}
+            showWater={showWater}
+            showImagery={showImagery}
+            showRoads={showRoads}
             focus={focus}
             onHoverCounty={handleHover}
             onClickCell={placeAt}
@@ -305,13 +362,16 @@ export function App({ embedded = false }: { embedded?: boolean }) {
           />
 
           <div className="map-controls">
-            <div className="seg" role="group" aria-label="Map overlay">
+            <span className="controls-label" id="layer-label">Map layer</span>
+            <div className="controls-row">
+            <div className="seg" role="group" aria-labelledby="layer-label">
               {OVERLAYS.map((o) => (
                 <button
                   key={o.id}
                   className={overlay === o.id ? 'seg-btn on' : 'seg-btn'}
                   onClick={() => setOverlay(o.id)}
                   aria-pressed={overlay === o.id}
+                  title={OVERLAY_HELP[o.id]}
                 >
                   {o.label}
                 </button>
@@ -321,6 +381,49 @@ export function App({ embedded = false }: { embedded?: boolean }) {
               <input type="checkbox" checked={showHexes} onChange={(e) => setShowHexes(e.target.checked)} />
               Grid
             </label>
+            {/* Only offered when the data was actually vendored — a dead toggle
+                is worse than a missing one. */}
+            {imagery && (
+              <label className="check">
+                <input
+                  type="checkbox"
+                  checked={showImagery}
+                  onChange={(e) => setShowImagery(e.target.checked)}
+                />
+                Aerial
+              </label>
+            )}
+            {(stateRoads || roads) && (
+              <label className="check">
+                <input
+                  type="checkbox"
+                  checked={showRoads}
+                  onChange={(e) => setShowRoads(e.target.checked)}
+                />
+                Roads
+              </label>
+            )}
+            {hasWater && (
+              <label className="check">
+                <input
+                  type="checkbox"
+                  checked={showWater}
+                  onChange={(e) => setShowWater(e.target.checked)}
+                />
+                Water
+              </label>
+            )}
+            </div>
+            {/* A layer nobody understands is a layer nobody switches to, so the
+                active one says what it is for and which way the colour runs. */}
+            <p className="controls-help">
+              {OVERLAY_HELP[overlay]}
+              {overlay !== 'none' && (
+                <span className="ramp" aria-hidden="true">
+                  <em>low</em><i className={`ramp-bar ramp-${overlay}`} /><em>high</em>
+                </span>
+              )}
+            </p>
           </div>
 
           <div
@@ -348,6 +451,25 @@ export function App({ embedded = false }: { embedded?: boolean }) {
           </div>
 
           <div className="scalebar"><ScaleBar pxPerKm={scale} /></div>
+
+          {/* Attribution is a licence obligation for the road data, not a
+              courtesy, so it renders whenever the layer is on rather than
+              living in a README. */}
+          {((showImagery && imagery)
+            || (showRoads && (stateRoads || roads))
+            || (showWater && hasWater)) && (
+            <p className="map-attribution">
+              {/* One credit covers roads and water — both are OpenStreetMap —
+                  so the same string is not printed twice. */}
+              {[...new Set([
+                showImagery && imagery ? imagery.manifest.attribution : null,
+                showRoads ? (stateRoads?.attribution ?? roads?.attribution ?? null) : null,
+                showWater && hasWater
+                  ? (stateWater?.attribution ?? water?.attribution ?? null)
+                  : null,
+              ].filter(Boolean))].join(' · ')}
+            </p>
+          )}
 
         {isMobile && (
           <MobileSheet
@@ -377,6 +499,14 @@ export function App({ embedded = false }: { embedded?: boolean }) {
 
       {!showBriefing && !game.outcome && (
         <TutorialCoach game={game} onDismiss={dismissTutorial} />
+      )}
+
+      {/* Dismissing the coach used to be final, with nothing anywhere to undo
+          it. One stray click and the tutorial was gone for the rest of the run. */}
+      {!showBriefing && !game.outcome && game.tutorial?.dismissed && (
+        <button className="coach-restore" onClick={restoreTutorial}>
+          Show hints
+        </button>
       )}
 
       {showBriefing && <BriefingCard scenario={scenario} onAccept={accept} />}

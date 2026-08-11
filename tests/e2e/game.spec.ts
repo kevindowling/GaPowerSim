@@ -62,7 +62,7 @@ test('siting a plant costs approval and starts the clock', async ({ page }) => {
   await zoomToCampus(page)
 
   await page.getByRole('button', { name: /Gas combustion turbine/ }).click()
-  await expect(page.locator('.panel-hint')).toContainText('Click the map')
+  await expect(page.locator('.panel-hint')).toContainText('click the map')
 
   const canvas = page.locator('canvas.map-canvas')
   const box = (await canvas.boundingBox())!
@@ -124,4 +124,58 @@ test('warns that solar cannot serve a round-the-clock load', async ({ page }) =>
   // The card states firm capacity next to nameplate, which is the whole lesson.
   await expect(solar).toContainText('16 MW firm')
   await expect(solar).toContainText('200 MW nameplate')
+})
+
+
+test('a plant put in the wrong place can be moved', async ({ page }) => {
+  await page.goto('/')
+  await signContract(page)
+
+  const box = (await page.locator('canvas').boundingBox())!
+  await page.locator('.plant-card').first().click()
+  await page.mouse.click(box.x + box.width * 0.45, box.y + box.height * 0.5)
+
+  const sited = page.locator('.sited').first()
+  await expect(sited).toContainText('Permitting')
+
+  const before = await page.evaluate(() => {
+    const g = (window as unknown as { __game: any }).__game.getState().game
+    return { cash: g.cash, cell: g.plants[0].cell, land: g.plants[0].landCost }
+  })
+
+  // Siting used to be a one-way door: no undo, no move, nothing in the UI even
+  // hinting the placement was final.
+  await sited.getByRole('button', { name: 'Move' }).click()
+  await expect(page.locator('.sited')).toHaveCount(0)
+
+  const refunded = await page.evaluate(() => {
+    const g = (window as unknown as { __game: any }).__game.getState().game
+    return g.cash
+  })
+  // Most of the land comes back, but not all of it — this is not a free undo.
+  expect(refunded).toBeGreaterThan(before.cash)
+  expect(refunded).toBeLessThan(before.cash + before.land)
+
+  await page.locator('.plant-card').first().click()
+  await page.mouse.click(box.x + box.width * 0.58, box.y + box.height * 0.4)
+  const moved = await page.evaluate(() => {
+    const g = (window as unknown as { __game: any }).__game.getState().game
+    return { n: g.plants.length, cell: g.plants[0].cell }
+  })
+  expect(moved.n).toBe(1)
+  expect(moved.cell).not.toBe(before.cell)
+})
+
+test('the map layers say what they are for', async ({ page }) => {
+  await page.goto('/')
+  await signContract(page)
+
+  const controls = page.locator('.map-controls')
+  await expect(controls).toContainText('Map layer')
+
+  // An unlabelled row of three words gave no reason to press any of them.
+  await expect(page.locator('.controls-help')).toContainText('Switch layers')
+  await page.getByRole('button', { name: 'Land value' }).click()
+  await expect(page.locator('.controls-help')).toContainText('right-of-way')
+  await expect(page.locator('.ramp-landValue')).toBeVisible()
 })

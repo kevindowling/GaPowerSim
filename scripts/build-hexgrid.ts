@@ -21,14 +21,16 @@
  * Run: npm run build:hexgrid
  */
 
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { project } from '../src/engine/geo/projection.ts'
 import {
   HEX_WIDTH_KM, HEX_ROW_KM, HEX_AREA_KM2, HEX_SIZE_KM,
-  cellCenter, type GridSpec,
+  cellCenter, pointToCell, type GridSpec,
 } from '../src/engine/geo/hex.ts'
+import { PROTECT } from '../src/engine/geo/mapTypes.ts'
+import type { HydrologyFile } from '../src/engine/geo/basemapTypes.ts'
 import { CITIES } from '../src/data/cities.ts'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -132,6 +134,103 @@ function makeFallLine(): (x: number) => number {
     const t = (x - x0) / (x1 - x0)
     return y0 + t * (y1 - y0)
   }
+}
+
+/**
+ * Burn vendored hydrology into the protection layer.
+ *
+ * Water bodies are filled by point-in-polygon at each cell centre; rivers are
+ * walked along their centrelines and stamped cell by cell, because a river is
+ * narrower than a kilometre cell and a polygon test would miss it entirely.
+ * That asymmetry matters: a river the router cannot see is a river the router
+ * will happily run a line straight down.
+ *
+ * Missing data is not an error. The game ships playable without it and the
+ * manifest records the gap.
+ */
+function rasterizeHydrology(
+  spec: GridSpec,
+  county: Uint8Array,
+  protection: Uint8Array,
+): { waterCells: number; wetlandCells: number; gaps: string[]; note: string } {
+  const dir = resolve(ROOT, 'public/data/hydrology')
+  const files = existsSync(dir)
+    ? readdirSync(dir).filter((f) => f.endsWith('.json'))
+    : []
+
+  if (files.length === 0) {
+    return {
+      waterCells: 0,
+      wetlandCells: 0,
+      note: 'none vendored',
+      gaps: [
+        'protection layer is all zero — no hydrology vendored ' +
+        '(run the "Fetch map data" workflow, or `npm run fetch:hydrology -- --state`)',
+      ],
+    }
+  }
+
+  const stamp = (x: number, y: number, flag: number): void => {
+    const [col, row] = pointToCell(spec as GridSpec, x, y)
+    if (col < 0 || col >= spec.cols || row < 0 || row >= spec.rows) return
+    const cell = row * spec.cols + col
+    if (cell < 0 || cell >= protection.length) return
+    if (county[cell] === 255) return
+    protection[cell] |= flag
+  }
+
+  for (const f of files) {
+    const file = JSON.parse(readFileSync(resolve(dir, f), 'utf8')) as HydrologyFile
+
+    for (const way of file.waterways) {
+      // Walk the centreline in steps well under a cell so nothing is skipped.
+      for (let i = 1; i < way.p.length; i++) {
+        const [ax, ay] = project(way.p[i - 1][0], way.p[i - 1][1])
+        const [bx, by] = project(way.p[i][0], way.p[i][1])
+        const steps = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) / (HEX_SIZE_KM / 2)))
+        for (let s = 0; s <= steps; s++) {
+          const t = s / steps
+          stamp(ax + (bx - ax) * t, ay + (by - ay) * t, PROTECT.WATER)
+        }
+      }
+    }
+
+    for (const body of file.bodies) {
+      const flag = body.k === 'wetland' ? PROTECT.WETLAND : PROTECT.WATER
+      const ring = body.p.map(([lon, lat]) => project(lon, lat))
+      const flat = ring.flat()
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+      for (const [x, y] of ring) {
+        if (x < minX) minX = x
+        if (x > maxX) maxX = x
+        if (y < minY) minY = y
+        if (y > maxY) maxY = y
+      }
+      // Small bodies can fall between cell centres; stamping the ring itself as
+      // well as the interior keeps a pond from vanishing.
+      for (const [x, y] of ring) stamp(x, y, flag)
+      for (let y = minY; y <= maxY; y += HEX_ROW_KM / 2) {
+        for (let x = minX; x <= maxX; x += HEX_WIDTH_KM / 2) {
+          if (pointInRing(x, y, flat)) stamp(x, y, flag)
+        }
+      }
+    }
+  }
+
+  let waterCells = 0
+  let wetlandCells = 0
+  for (let i = 0; i < protection.length; i++) {
+    if ((protection[i] & PROTECT.WATER) !== 0) waterCells++
+    if ((protection[i] & PROTECT.WETLAND) !== 0) wetlandCells++
+  }
+
+  const gaps: string[] = []
+  if (!files.includes('state.json')) {
+    gaps.push('hydrology: statewide rivers and lakes not vendored')
+  }
+  gaps.push('protection layer carries water and wetland only — parks and historic sites pending')
+
+  return { waterCells, wetlandCells, gaps, note: files.join(', ') }
 }
 
 function main(): void {
@@ -289,6 +388,12 @@ function main(): void {
     landValue[i] = Math.min(65_535, Math.round(base * (TERRAIN_LAND_FACTOR[terrain[i]] ?? 1)))
   }
 
+  // --- hydrology ---------------------------------------------------------
+  // Optional. When water has been vendored it is burned into the protection
+  // layer so the router can price crossings; when it has not, the layer stays
+  // zero and the manifest says so rather than pretending.
+  const hydro = rasterizeHydrology(spec, county, protection)
+
   // --- pack --------------------------------------------------------------
   const layers = [
     { name: 'county', type: 'Uint8', array: county as unknown as ArrayBufferView },
@@ -327,10 +432,12 @@ function main(): void {
       layers: meta,
       counties: counties.map((c) => ({ fips: c.fips, name: c.name })),
       terrainEnum: TERRAIN,
-      dataGaps: ['protection layer is all zero — parks/wetlands/historic sites pending M6'],
+      dataGaps: hydro.gaps,
     }),
   )
 
+  console.log(`water:    ${hydro.waterCells.toLocaleString()} cells, ` +
+    `${hydro.wetlandCells.toLocaleString()} wetland (${hydro.note})`)
   console.log(`grid:     ${spec.cols} x ${spec.rows} = ${total.toLocaleString()} cells`)
   console.log(`in-state: ${inState.toLocaleString()} cells (~${Math.round(inState * HEX_AREA_KM2).toLocaleString()} km²)`)
   console.log(`binary:   ${(blob.byteLength / 1024).toFixed(0)} KiB across ${layers.length} layers`)

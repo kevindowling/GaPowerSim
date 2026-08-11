@@ -1,0 +1,140 @@
+name: Fetch map data
+
+# Why this exists.
+#
+# The data pipelines need outbound network access to OpenStreetMap and the USDA
+# imagery service. The environments this repo is usually edited from do not have
+# it — every request comes back 403 from an egress proxy — and the maintainer
+# may not have a machine to hand at all.
+#
+# A GitHub runner does have open network access. So the fetch runs here, on
+# demand, and commits what it pulls. That makes vendoring map data a button in
+# the GitHub UI, which works from a phone, rather than a laptop task.
+#
+# Nothing here runs on push. It is manual, because it rewrites vendored data and
+# hits third-party services that deserve to be asked politely and rarely.
+
+on:
+  workflow_dispatch:
+    inputs:
+      what:
+        description: What to fetch
+        required: true
+        default: state-roads
+        type: choice
+        options:
+          - state-roads
+          - county-roads
+          - state-water
+          - county-water
+          - imagery
+          - everything
+      county:
+        description: County FIPS for county-roads (Sumter is 13261)
+        required: false
+        default: '13261'
+        type: string
+      county_name:
+        description: County name, for the data file's label
+        required: false
+        default: Sumter
+        type: string
+      scenario:
+        description: Scenario id for imagery
+        required: false
+        default: americus-400
+        type: string
+      branch:
+        description: Branch to commit the data to
+        required: false
+        default: main
+        type: string
+
+# Only one fetch at a time: two concurrent runs would race on the same commit.
+concurrency:
+  group: fetch-data
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    name: Fetch and vendor
+    runs-on: ubuntu-latest
+    # Overpass is slow for a statewide query and rate-limits aggressively.
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Statewide roads
+        if: inputs.what == 'state-roads' || inputs.what == 'everything'
+        run: npm run fetch:roads -- --state
+
+      - name: County roads
+        if: inputs.what == 'county-roads' || inputs.what == 'everything'
+        run: npm run fetch:roads -- --county "${{ inputs.county }}" --name "${{ inputs.county_name }}"
+
+      - name: Statewide rivers and lakes
+        if: inputs.what == 'state-water' || inputs.what == 'everything'
+        run: npm run fetch:hydrology -- --state
+
+      - name: County creeks, ponds and wetlands
+        if: inputs.what == 'county-water' || inputs.what == 'everything'
+        run: npm run fetch:hydrology -- --county "${{ inputs.county }}" --name "${{ inputs.county_name }}"
+
+      # Water feeds the routing cost surface, not just the picture, so the hex
+      # grid has to be rebuilt for a corridor to know the river is there.
+      - name: Rebuild the cost surface
+        if: contains(inputs.what, 'water') || inputs.what == 'everything'
+        run: npx tsx scripts/build-hexgrid.ts
+
+      - name: Aerial imagery
+        if: inputs.what == 'imagery' || inputs.what == 'everything'
+        run: npm run fetch:imagery -- --scenario "${{ inputs.scenario }}"
+
+      # The same checks the deploy workflow runs, so a bad pull cannot be
+      # committed: a manifest promising images we did not vendor, or OSM data
+      # missing the attribution ODbL requires, fails here rather than shipping.
+      - name: Verify what we just pulled
+        run: npm run verify:data
+
+      - name: Check it still builds and renders
+        run: |
+          npm run typecheck
+          npm test
+          npm run build
+
+      - name: Report what changed
+        id: diff
+        run: |
+          if git diff --quiet -- public/data; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No change to vendored data."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git diff --stat -- public/data
+            du -sh public/data/roads public/data/basemap 2>/dev/null || true
+          fi
+
+      - name: Commit
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data
+          git commit -m "Vendor ${{ inputs.what }} map data
+
+          Fetched by the fetch-data workflow. OpenStreetMap road data is
+          ODbL-1.0 and carries its attribution in the data file; NAIP imagery is
+          public domain."
+          git push origin HEAD:"${{ inputs.branch }}"

@@ -113,7 +113,7 @@ export function sitePlant(
   const assessment = assessSite(state, typeId, cell, grid)
   if (!assessment.ok) return prev
 
-  const plant = createPlant(typeId, cell, assessment.countyFips)
+  const plant = createPlant(typeId, cell, assessment.countyFips, assessment.landCost)
   state.plants.push(plant)
   state.cash -= assessment.landCost
 
@@ -135,5 +135,44 @@ export function sitePlant(
       `${assessment.countyName} County approval falls ${Math.round(assessment.approvalCost)} points.`,
     )
   }
+  return state
+}
+
+/**
+ * Walk away from a plant that has not broken ground.
+ *
+ * A site in permitting is a land purchase and an application, not a
+ * construction project, so backing out of it is a real option — and the game
+ * needs it to be one, because siting is the first irreversible-looking click a
+ * player makes and getting it wrong should not silently cost them the run.
+ *
+ * The land comes back at a discount: you bought at appraised value, you are
+ * selling in a hurry, and the county now knows what you wanted it for. What the
+ * county does not do is forgive you. Approval stays spent, because the meeting
+ * happened and the neighbours already read about it.
+ *
+ * Once construction starts this is refused outright — steel is in the ground.
+ */
+export const CANCEL_LAND_RECOVERY = 0.7
+
+export function cancelPlant(prev: GameState, plantId: string): GameState {
+  const plant = prev.plants.find((p) => p.id === plantId)
+  if (!plant || plant.status !== 'permitting') return prev
+
+  const state: GameState = structuredClone(prev)
+  const idx = state.plants.findIndex((p) => p.id === plantId)
+  if (idx < 0) return prev
+  const [removed] = state.plants.splice(idx, 1)
+
+  const landBack = removed.landCost * CANCEL_LAND_RECOVERY
+  state.cash += landBack + removed.capexSpent
+
+  pushLog(
+    state, 'build',
+    `${removed.name} withdrawn before construction. ` +
+    `$${(landBack / 1e6).toFixed(0)}M recovered on the land; ` +
+    `${state.counties[removed.countyFips]?.name ?? 'the county'} remembers the application.`,
+    true,
+  )
   return state
 }

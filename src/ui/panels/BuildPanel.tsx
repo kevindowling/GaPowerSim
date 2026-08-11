@@ -8,6 +8,7 @@ interface Props {
   game: GameState
   tool: Tool
   onSelect: (tool: Tool) => void
+  onCancelPlant: (plantId: string) => void
 }
 
 /**
@@ -18,7 +19,7 @@ interface Props {
  * up at three in the morning, and the panel should say so before the player
  * spends a quarter of a billion dollars finding out.
  */
-export function BuildPanel({ game, tool, onSelect }: Props) {
+export function BuildPanel({ game, tool, onSelect, onCancelPlant }: Props) {
   const cap = capacitySummary(game)
   const signed = game.contract.status !== 'offered'
 
@@ -79,10 +80,49 @@ export function BuildPanel({ game, tool, onSelect }: Props) {
       </ul>
 
       {tool.kind === 'site' && (
-        <p className="panel-hint">
-          Click the map to site the {plantType(tool.typeId).name.toLowerCase()}.
+        <p className="panel-hint on">
+          Now click the map to place the {plantType(tool.typeId).name.toLowerCase()}.
           <button className="btn-link" onClick={() => onSelect({ kind: 'none' })}>Cancel</button>
         </p>
+      )}
+
+      {game.plants.length > 0 && (
+        <>
+          <h3 className="panel-subtitle">Sited</h3>
+          <ul className="sited-list">
+            {game.plants.map((p) => {
+              const permitting = p.status === 'permitting'
+              return (
+                <li key={p.id} className="sited">
+                  <div className="sited-main">
+                    <span className="sited-name">{p.name}</span>
+                    <span className={`sited-status status-${p.status}`}>
+                      {p.status === 'permitting' ? `Permitting · ${quarters(p.quartersRemaining)} left`
+                        : p.status === 'construction' ? `Building · ${quarters(p.quartersRemaining)} left`
+                        : p.status === 'online' ? 'Online'
+                        : 'Offline'}
+                    </span>
+                  </div>
+                  {permitting ? (
+                    // Somewhere to put a misplaced plant. Only while it is still
+                    // paperwork — once construction starts, the site is the site.
+                    <button
+                      className="btn-link"
+                      onClick={() => onCancelPlant(p.id)}
+                      title={`Withdraw and recover about ${money(p.landCost * 0.7)} of the land cost`}
+                    >
+                      Move
+                    </button>
+                  ) : (
+                    <span className="sited-locked" title="Construction has started; the site is fixed.">
+                      Fixed
+                    </span>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        </>
       )}
     </section>
   )

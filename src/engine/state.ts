@@ -155,7 +155,7 @@ export function resetPlantCounter(): void {
 }
 
 export function createPlant(
-  typeId: Plant['typeId'], cell: number, countyFips: string,
+  typeId: Plant['typeId'], cell: number, countyFips: string, landCost = 0,
 ): Plant {
   const t = plantType(typeId)
   plantCounter += 1
@@ -170,6 +170,7 @@ export function createPlant(
     nameplateMw: t.nameplateMw,
     capexTotal: unitCapex(t),
     capexSpent: 0,
+    landCost,
     commissionedQuarter: null,
     acceleratedQuarters: 0,
   }

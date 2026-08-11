@@ -16,11 +16,16 @@ import { createGame, resetPlantCounter } from '../engine/state.ts'
 import { endQuarter as resolveQuarter, acceptContract, resolveHearing } from '../engine/turn/resolve.ts'
 import { advanceTutorial, type HearingOption } from '../engine/tutorial.ts'
 import { scoreScenario } from '../engine/scoring.ts'
-import { sitePlant, assessSite, type SiteAssessment } from '../engine/turn/siting.ts'
+import { sitePlant, assessSite, cancelPlant, type SiteAssessment } from '../engine/turn/siting.ts'
 import { scenario, type Scenario } from '../data/scenarios.ts'
 import { project } from '../engine/geo/projection.ts'
 import { pointToCell } from '../engine/geo/hex.ts'
 import type { LineClassId } from '../data/transmission.ts'
+import {
+  loadImagery, loadStateRoads, loadCountyRoads,
+  loadStateHydrology, loadCountyHydrology,
+  type Imagery, type CountyRoads, type Hydrology,
+} from '../data/loadBasemap.ts'
 import { loadCountyParcels, clearParcelCache, type CountyParcels } from '../data/loadParcels.ts'
 import {
   planCorridor, commitCorridor, offerAll as engineOfferAll, setOffer as engineSetOffer,
@@ -53,6 +58,16 @@ interface Store {
   /** Parcels for the scenario county, loaded on demand. */
   parcels: CountyParcels | null
   parcelsLoading: boolean
+  /** Aerial photography for the study area; null when it has not been vendored. */
+  imagery: Imagery | null
+  /** Interstates and highways for all of Georgia; null when not vendored. */
+  stateRoads: CountyRoads | null
+  /** Full local road network for the contract's county; null when not vendored. */
+  roads: CountyRoads | null
+  /** Rivers and lakes statewide; null when not vendored. */
+  stateWater: Hydrology | null
+  /** Creeks, ponds and wetlands for the contract's county; null when not vendored. */
+  water: Hydrology | null
   parcelError: string | null
 
   /** The route currently being previewed, before it is committed. */
@@ -75,6 +90,11 @@ interface Store {
   dismissHeadlines: () => void
 
   ensureParcels: () => Promise<void>
+  /**
+   * Load the optional aerial and road layers. Safe to call repeatedly and safe
+   * to fail — absent basemap data simply means those layers are not offered.
+   */
+  ensureBasemap: () => Promise<void>
   setLineClass: (classId: LineClassId) => void
   clearPlan: () => void
   commitPlan: () => void
@@ -84,8 +104,13 @@ interface Store {
   condemnParcel: (parcelId: string) => void
   abandon: (corridorId: string) => void
 
+  /** Withdraw a plant that is still in permitting, recovering most of the land. */
+  cancelPlant: (plantId: string) => void
+
   chooseHearing: (option: HearingOption) => void
   dismissTutorial: () => void
+  /** Bring the coach back after it has been dismissed. */
+  restoreTutorial: () => void
   finishDebrief: () => void
   setSpeed: (speed: Speed) => void
   setPolicy: (policy: SheddingPolicy) => void
@@ -134,6 +159,11 @@ export const useGame = create<Store>((set, get) => ({
   showBriefing: true,
   parcels: null,
   parcelsLoading: false,
+  imagery: null,
+  stateRoads: null,
+  roads: null,
+  stateWater: null,
+  water: null,
   parcelError: null,
   plan: null,
   selectedCorridor: null,
@@ -160,6 +190,7 @@ export const useGame = create<Store>((set, get) => ({
     set({
       game, scenario: sc, showBriefing: true, headlines: [], tool: { kind: 'none' },
       parcels: null, plan: null, selectedCorridor: null, parcelError: null,
+      imagery: null, stateRoads: null, roads: null, stateWater: null, water: null,
       alerts: [],
     })
   },
@@ -224,6 +255,22 @@ export const useGame = create<Store>((set, get) => ({
   },
 
   dismissHeadlines: () => set({ headlines: [] }),
+
+  ensureBasemap: async () => {
+    const { game, imagery, stateRoads, roads, stateWater, water } = get()
+    if (!game || (imagery && stateRoads && roads && stateWater && water)) return
+    // Statewide roads and the county detail load together; they are separate
+    // files so that a player who never leaves the statewide view never pays for
+    // a county's farm tracks.
+    const [img, sr, rd, sw, cw] = await Promise.all([
+      imagery ? Promise.resolve(imagery) : loadImagery(),
+      stateRoads ? Promise.resolve(stateRoads) : loadStateRoads(),
+      roads ? Promise.resolve(roads) : loadCountyRoads(game.contract.countyFips),
+      stateWater ? Promise.resolve(stateWater) : loadStateHydrology(),
+      water ? Promise.resolve(water) : loadCountyHydrology(game.contract.countyFips),
+    ])
+    set({ imagery: img, stateRoads: sr, roads: rd, stateWater: sw, water: cw })
+  },
 
   ensureParcels: async () => {
     const { parcels, parcelsLoading, game } = get()
@@ -302,10 +349,27 @@ export const useGame = create<Store>((set, get) => ({
     set({ game: resolveHearing(game, option) })
   },
 
+  cancelPlant: (plantId) => {
+    const { game } = get()
+    if (!game) return
+    const next = cancelPlant(game, plantId)
+    if (next === game) return
+    // Clear a siting tool so the player is not left mid-placement after undoing
+    // the last placement they made.
+    set({ game: next, tool: { kind: 'none' } })
+  },
+
   dismissTutorial: () => {
     const { game } = get()
     if (!game?.tutorial) return
     game.tutorial.dismissed = true
+    set({ game: { ...game } })
+  },
+
+  restoreTutorial: () => {
+    const { game } = get()
+    if (!game?.tutorial) return
+    game.tutorial.dismissed = false
     set({ game: { ...game } })
   },
 

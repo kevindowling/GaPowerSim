@@ -13,7 +13,7 @@
  * Run: npm run verify:data
  */
 
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { CITIES } from '../src/data/cities.ts'
@@ -181,6 +181,87 @@ for (const s of SCENARIOS) {
 
 console.log(`scenarios      ${SCENARIOS.length} defined, ` +
   `${SCENARIOS.filter((s) => s.basedOn === 'announced').length} sourced to real projects`)
+
+// --- optional basemap layers ---------------------------------------------
+
+// Absent is a legitimate state, not a failure: the imagery and road pipelines
+// need network access some environments do not have, and the game is fully
+// playable without them. What is NOT acceptable is a manifest that promises
+// images we did not vendor, because the layer would appear and draw nothing.
+const imageryPath = resolve(DATA, 'basemap/imagery.json')
+if (existsSync(imageryPath)) {
+  const manifest = JSON.parse(readFileSync(imageryPath, 'utf8')) as {
+    tiles?: { file: string; bounds: number[] }[]
+    license?: string
+    attribution?: string
+  }
+  const tiles = manifest.tiles ?? []
+  check(tiles.length > 0, 'basemap: imagery.json lists no tiles')
+  check(!!manifest.attribution, 'basemap: imagery.json carries no attribution string')
+  for (const tile of tiles) {
+    check(existsSync(resolve(DATA, 'basemap', tile.file)),
+      `basemap: imagery.json references ${tile.file}, which is not vendored`)
+    check(Array.isArray(tile.bounds) && tile.bounds.length === 4
+      && tile.bounds[2] > tile.bounds[0] && tile.bounds[3] > tile.bounds[1],
+      `basemap: ${tile.file} has degenerate bounds`)
+  }
+  console.log(`imagery        ${tiles.length} tile(s), ${manifest.license ?? 'unknown'} licence`)
+} else {
+  warnings.push('basemap: no aerial imagery vendored (run `npm run fetch:imagery`)')
+}
+
+// Hydrology is checked the same way as roads: optional, but if it is here it
+// must carry its ODbL attribution, because the game renders it.
+const hydroDir = resolve(DATA, 'hydrology')
+if (existsSync(hydroDir)) {
+  const files = readdirSync(hydroDir).filter((f) => f.endsWith('.json'))
+  let ways = 0
+  let bodies = 0
+  for (const f of files) {
+    const file = JSON.parse(readFileSync(resolve(hydroDir, f), 'utf8')) as {
+      waterways?: unknown[]; bodies?: unknown[]; attribution?: string
+    }
+    ways += file.waterways?.length ?? 0
+    bodies += file.bodies?.length ?? 0
+    check(!!file.attribution,
+      `hydrology/${f}: no attribution — ODbL requires crediting OpenStreetMap contributors`)
+  }
+  console.log(`hydrology      ${files.length} file(s), ${ways.toLocaleString()} watercourses, ` +
+    `${bodies.toLocaleString()} water bodies`)
+} else {
+  warnings.push(
+    'hydrology: none vendored — rivers and wetlands are missing from the map AND ' +
+    'from the routing cost surface (run `npm run fetch:hydrology -- --state`)',
+  )
+}
+
+const roadsDir = resolve(DATA, 'roads')
+if (existsSync(roadsDir)) {
+  const files = readdirSync(roadsDir).filter((f) => f.endsWith('.json'))
+  // The statewide tier is what makes the map legible outside the tutorial
+  // county, so its absence is called out separately rather than hidden in a
+  // count of "some road files exist".
+  if (!files.includes('state.json')) {
+    warnings.push('roads: no statewide highways (run `npm run fetch:roads -- --state`)')
+  }
+  let totalRoads = 0
+  for (const f of files) {
+    const file = JSON.parse(readFileSync(resolve(roadsDir, f), 'utf8')) as {
+      roads?: unknown[]; attribution?: string; license?: string
+    }
+    totalRoads += file.roads?.length ?? 0
+    // OpenStreetMap is ODbL: shipping it without attribution is a licence
+    // breach, not a cosmetic omission, so this is a hard failure.
+    check(!!file.attribution,
+      `roads/${f}: no attribution — ODbL requires crediting OpenStreetMap contributors`)
+  }
+  console.log(`roads          ${files.length} county file(s), ${totalRoads.toLocaleString()} ways`)
+} else {
+  warnings.push(
+    'roads: none vendored — run `npm run fetch:roads -- --state` for statewide ' +
+    'highways, then `-- --county 13261 --name Sumter` for the tutorial county',
+  )
+}
 
 // --- report --------------------------------------------------------------
 

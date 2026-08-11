@@ -3,7 +3,7 @@ import { fixtures, cellAtLonLat } from './helpers/loadFixtures.ts'
 import { AMERICUS } from '../src/data/scenarios.ts'
 import { createGame, capacitySummary, resetPlantCounter, quartersToDeadline, canFinishInTime } from '../src/engine/state.ts'
 import { endQuarter, acceptContract, deliverableMw } from '../src/engine/turn/resolve.ts'
-import { sitePlant, assessSite } from '../src/engine/turn/siting.ts'
+import { sitePlant, assessSite, cancelPlant, CANCEL_LAND_RECOVERY } from '../src/engine/turn/siting.ts'
 import { plantType } from '../src/data/plants.ts'
 import type { GameState } from '../src/engine/types.ts'
 import { quarterOf } from '../src/engine/time.ts'
@@ -280,5 +280,50 @@ describe('rng', () => {
       expect(v).toBeGreaterThanOrEqual(3)
       expect(v).toBeLessThanOrEqual(6)
     }
+  })
+})
+
+
+describe('changing your mind about a site', () => {
+  it('withdraws a plant that has not broken ground, and gives most of the land back', () => {
+    const before = acceptContract(newGame())
+    const { grid } = fixtures()
+    const sited = sitePlant(before, 'gas-ct', RURAL_SUMTER(), grid)
+    const plant = sited.plants[0]
+
+    expect(plant.status).toBe('permitting')
+    expect(plant.landCost).toBeGreaterThan(0)
+    expect(sited.cash).toBeLessThan(before.cash)
+
+    const after = cancelPlant(sited, plant.id)
+    expect(after.plants).toHaveLength(0)
+    expect(after.cash - sited.cash).toBeCloseTo(plant.landCost * CANCEL_LAND_RECOVERY, 6)
+    // Selling in a hurry costs something; this is not a free undo.
+    expect(after.cash).toBeLessThan(before.cash)
+  })
+
+  it('refuses once construction has started', () => {
+    const { grid } = fixtures()
+    let game = sitePlant(acceptContract(newGame()), 'gas-ct', RURAL_SUMTER(), grid)
+    const id = game.plants[0].id
+
+    game = run(game, plantType('gas-ct').permitQuarters)
+    expect(game.plants[0].status).not.toBe('permitting')
+
+    const after = cancelPlant(game, id)
+    expect(after).toBe(game)
+    expect(after.plants).toHaveLength(1)
+  })
+
+  it('leaves the county its grievance — the meeting still happened', () => {
+    const { grid } = fixtures()
+    const before = acceptContract(newGame())
+    const fips = AMERICUS.contract.countyFips
+    const sited = sitePlant(before, 'gas-ct', RURAL_SUMTER(), grid)
+    const approvalAfterSiting = sited.counties[fips].approval
+
+    const after = cancelPlant(sited, sited.plants[0].id)
+    expect(after.counties[fips].approval).toBe(approvalAfterSiting)
+    expect(after.counties[fips].approval).toBeLessThan(before.counties[fips].approval)
   })
 })

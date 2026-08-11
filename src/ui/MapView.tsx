@@ -2,8 +2,9 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { Camera } from '../render/camera.ts'
 import {
   MapRenderer, type Overlay, type Marker, type SitingPreview,
-  type CorridorDraw, type ParcelTint, type StormDraw,
+  type CorridorDraw, type ParcelTint, type StormDraw, type ImageryDraw,
 } from '../render/mapRenderer.ts'
+import type { Road, Waterway, WaterBody } from '../engine/geo/basemapTypes.ts'
 import type { MapData } from '../engine/geo/mapTypes.ts'
 import type { Parcel } from '../engine/parcels/types.ts'
 
@@ -20,6 +21,13 @@ interface Props {
   corridors?: readonly CorridorDraw[]
   hoverParcel?: string | null
   storms?: readonly StormDraw[]
+  imagery?: ImageryDraw | null
+  roads?: readonly Road[]
+  showImagery?: boolean
+  showRoads?: boolean
+  waterways?: readonly Waterway[]
+  waterBodies?: readonly WaterBody[]
+  showWater?: boolean
   /**
    * Where the camera should be looking. Changing this eases the view there;
    * the player can pan away freely afterwards.
@@ -44,6 +52,7 @@ export interface CellReadout {
 export function MapView({
   data, overlay, showHexes, markers, siting, placing,
   parcels, parcelTints, corridors, hoverParcel, storms, focus,
+  imagery, roads, showImagery, showRoads, waterways, waterBodies, showWater,
   onHoverCounty, onClickCell, onScaleChange,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -128,15 +137,24 @@ export function MapView({
         corridors,
         hoverParcel,
         storms,
+        imagery,
+        roads,
+        showImagery,
+        showRoads,
+        waterways,
+        waterBodies,
+        showWater,
       })
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [overlay, showHexes, markers, siting, parcels, parcelTints, corridors, hoverParcel, storms])
+  }, [overlay, showHexes, markers, siting, parcels, parcelTints, corridors, hoverParcel, storms,
+      imagery, roads, showImagery, showRoads, waterways, waterBodies, showWater])
 
   // Repaint when anything the renderer reads changes.
   useEffect(markDirty, [
     overlay, showHexes, markers, siting, parcels, parcelTints, corridors, hoverParcel, storms,
+    imagery, roads, showImagery, showRoads, waterways, waterBodies, showWater,
     markDirty,
   ])
 

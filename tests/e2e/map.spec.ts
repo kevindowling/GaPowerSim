@@ -103,3 +103,171 @@ test('embed variant drops the host-page chrome', async ({ page }) => {
   // The event log belongs to the standalone page, not the embed.
   await expect(page.locator('.logstrip')).toHaveCount(0)
 })
+
+
+test('degrades gracefully when the basemap has not been vendored', async ({ page }) => {
+  const failed: string[] = []
+  page.on('requestfailed', (r) => failed.push(r.url()))
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Sign the contract' }).click()
+  await page.waitForTimeout(900)
+
+  // Aerial and roads are optional. Until the data is fetched they must not be
+  // offered — a toggle that draws nothing is worse than a missing one — and
+  // their absence must not break the map or throw.
+  await expect(page.locator('.map-controls')).toBeVisible()
+  await expect(page.getByLabel('Aerial')).toHaveCount(0)
+  await expect(page.getByLabel('Roads')).toHaveCount(0)
+  await expect(page.getByLabel('Water')).toHaveCount(0)
+  await expect(page.locator('.map-attribution')).toHaveCount(0)
+
+  expect(errors).toEqual([])
+  // A 404 on the optional basemap is expected and handled; nothing else is.
+  const unexpected = failed.filter((u) => !/\/data\/(basemap|roads|hydrology)\//.test(u))
+  expect(unexpected).toEqual([])
+
+  // And the game is still playable.
+  await expect(page.locator('.plant-card').first()).toBeVisible()
+})
+
+
+/** A 2x2 red PNG, enough to prove the imagery path decodes and draws. */
+const TINY_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGP8z4AATAxQxhArEQgAAP//' +
+  'DkgBc1AeuBAAAAAASUVORK5CYII=',
+  'base64',
+)
+
+test('draws the aerial and road layers when they have been vendored', async ({ page }) => {
+  // Served from the network layer rather than committed, so the repo does not
+  // ship invented roads that would look like real OSM data.
+  // Statewide highways: present from startup, because the game is statewide and
+  // Sumter is only the tutorial.
+  await page.route('**/data/roads/state.json', (route) =>
+    route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        version: 1,
+        countyFips: 'state',
+        countyName: 'Georgia',
+        source: 'test fixture',
+        attribution: '© OpenStreetMap contributors',
+        license: 'ODbL-1.0',
+        roads: [
+          { c: 0, p: [[-84.4, 33.7], [-83.0, 32.0]] },
+          { c: 1, p: [[-85.0, 31.5], [-81.5, 31.2]] },
+        ],
+      }),
+    }))
+
+  await page.route('**/data/roads/13261.json', (route) =>
+    route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        version: 1,
+        countyFips: '13261',
+        countyName: 'Sumter',
+        source: 'test fixture',
+        attribution: '© OpenStreetMap contributors',
+        license: 'ODbL-1.0',
+        roads: [
+          { c: 0, p: [[-84.3, 32.0], [-84.1, 32.2]] },
+          { c: 2, p: [[-84.25, 32.05], [-84.15, 32.05], [-84.15, 32.18]] },
+          { c: 3, p: [[-84.2, 32.1], [-84.18, 32.12]] },
+        ],
+      }),
+    }))
+
+  await page.route('**/data/basemap/imagery.json', (route) =>
+    route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        version: 1,
+        source: 'test fixture',
+        attribution: 'Aerial imagery: USDA NAIP (public domain)',
+        license: 'public-domain',
+        capturedYear: 2023,
+        tiles: [{
+          file: 'test.png',
+          bounds: [-60, -60, -20, -20],
+          widthPx: 2,
+          heightPx: 2,
+          metresPerPixel: 20000,
+        }],
+      }),
+    }))
+  await page.route('**/data/basemap/test.png', (route) =>
+    route.fulfill({ contentType: 'image/png', body: TINY_PNG }))
+
+  await page.route('**/data/hydrology/state.json', (route) =>
+    route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        version: 1,
+        scope: 'state',
+        scopeName: 'Georgia',
+        source: 'test fixture',
+        attribution: '© OpenStreetMap contributors',
+        license: 'ODbL-1.0',
+        waterways: [{ k: 'river', n: 'Flint River', p: [[-84.2, 32.4], [-84.1, 31.9]] }],
+        bodies: [
+          { k: 'lake', n: 'Lake Blackshear', p: [[-83.95, 31.9], [-83.85, 31.9], [-83.85, 32.0], [-83.95, 32.0]] },
+          { k: 'wetland', p: [[-84.3, 32.0], [-84.2, 32.0], [-84.2, 32.1], [-84.3, 32.1]] },
+        ],
+      }),
+    }))
+
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Sign the contract' }).click()
+
+  // Water is its own layer, and rivers are a statewide fact.
+  await expect(page.getByLabel('Water')).toBeVisible()
+
+  // Both toggles appear only because the data resolved.
+  await expect(page.getByLabel('Aerial')).toBeVisible()
+  await expect(page.getByLabel('Roads')).toBeVisible()
+
+  // ODbL requires the attribution to be shown, so it is on the map itself.
+  const attribution = page.locator('.map-attribution')
+  await expect(attribution).toContainText('OpenStreetMap contributors')
+  await expect(attribution).toContainText('NAIP')
+
+  // Both tiers reached the renderer, not just one of them.
+  const roadCount = await page.evaluate(() => {
+    const s = (window as unknown as { __game: any }).__game.getState()
+    return {
+      state: s.stateRoads?.roads.length ?? 0,
+      county: s.roads?.roads.length ?? 0,
+    }
+  })
+  expect(roadCount.state).toBe(2)
+  expect(roadCount.county).toBe(3)
+
+  const waterCount = await page.evaluate(() => {
+    const s = (window as unknown as { __game: any }).__game.getState()
+    return { ways: s.stateWater?.waterways.length ?? 0, bodies: s.stateWater?.bodies.length ?? 0 }
+  })
+  expect(waterCount.ways).toBe(1)
+  expect(waterCount.bodies).toBe(2)
+
+  // Turning a layer off removes its attribution with it — but roads and water
+  // share a credit, so it survives until both are off.
+  await page.getByLabel('Roads').uncheck()
+  await expect(attribution).toContainText('OpenStreetMap')
+  await expect(attribution).toContainText('NAIP')
+  await page.getByLabel('Aerial').uncheck()
+  // Water is also OpenStreetMap, so the credit stays until it is off too — and
+  // is printed once, not twice, while both layers are on.
+  await expect(attribution).toContainText('OpenStreetMap')
+  await page.getByLabel('Water').uncheck()
+  await expect(attribution).toHaveCount(0)
+
+  expect(errors).toEqual([])
+  await page.screenshot({ path: 'tests/.artifacts/basemap-layers.png' })
+})
