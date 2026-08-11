@@ -37,8 +37,10 @@ the vendored data, runs both test suites, builds, and publishes to GitHub Pages
 on every push to the default branch. It can also be run by hand from the Actions
 tab.
 
-**One-time setup:** Settings → Pages → Build and deployment → Source →
-**GitHub Actions**. Nothing else to configure — no branch, no `/docs` folder.
+The workflow enables Pages for the repository itself on first run
+(`configure-pages` with `enablement: true`), so there is normally nothing to set
+up by hand. If your organisation restricts that permission, turn it on manually:
+Settings → Pages → Build and deployment → Source → **GitHub Actions**.
 
 The site lands at `https://<user>.github.io/<repo>/`, which is a subdirectory
 rather than a domain root. A build with absolute asset paths loads perfectly on
