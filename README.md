@@ -10,10 +10,10 @@ travel down a corridor of poles that crosses somebody's land. When a landowner
 says no, your only tools are more money, a longer route, or eminent domain. Then
 the power has to actually stay on.
 
-**Status: M2 — the eminent-domain mechanic works.** You can sign the Americus
-deal, site generation, route a transmission corridor across real property lines,
-watch what it takes from whom, and decide what to do about the people who say no.
-See [Milestones](#milestones).
+**Status: M4 — the grid runs, and it breaks.** You can sign the Americus deal,
+site generation, route a corridor across real property lines, fight the people
+who say no, energize — and then operate it in real time while storms take your
+line down. See [Milestones](#milestones).
 
 ## Quick start
 
@@ -113,6 +113,31 @@ holdout hears about the comparable. Condemn, and you spend quarters in court,
 legal fees, county approval — and every remaining owner on that corridor gets
 harder to deal with. Reroute, and the line gets longer across worse ground.
 
+### Then it has to stay on
+
+Energizing switches the game from quarters to fifteen-minute intervals. Two very
+different customers share one wire: a data centre that draws the same power at
+4am in February as at 5pm in August, and a county whose demand doubles on a
+summer evening — which is exactly when thermal plants are derated and the margin
+is thinnest.
+
+Plants trip. Storms cross the map and put structures on the ground. Crews are
+limited, so a downed line gets them before a tripped turbine. And the choice made
+back at routing time finally settles up:
+
+| | rating | one circuit lost | campus |
+|---|---|---|---|
+| 230 kV single circuit | 400 MW | 0 MW | **dark** |
+| 230 kV double circuit | 800 MW | 400 MW | still up |
+
+Redundancy costs half again as much, looks like waste for years, and is invisible
+right up until the night it isn't.
+
+When there genuinely isn't enough, someone gets curtailed, and the game makes you
+say in advance who. Protecting the contract keeps the campus whole and turns the
+lights off in Sumter County. Protecting homes means eating the penalties. There
+is no option that costs nothing.
+
 Two independent checks confirm the geometry pipeline: the rasterised state comes
 out at 152,666 km² against Georgia's actual 153,910 km² land area (0.8%), and the
 projection reproduces true spherical area to within 0.1%, which is what makes
@@ -166,8 +191,8 @@ owners stay real where they carry meaning.
 - [x] **M0** Scaffold, geo pipeline, statewide map with pan/zoom and hex LOD
 - [x] **M1** Turn loop, Americus 400 MW contract, plant siting, budget
 - [x] **M2** Parcel pipeline, corridor takings, severance damage, eminent domain
-- [ ] **M3** Energization, real-time dispatch, power flow, unserved energy
-- [ ] **M4** Reliability: forced outages, storms, line breaks, cascades
+- [x] **M3** Energization, real-time dispatch, power flow, unserved energy
+- [x] **M4** Reliability: forced outages, storms, line breaks, cascades
 - [ ] **M5** Tutorial script, scoring, embed polish
 - [ ] **M6** Real-world data accuracy pass
 - [ ] **M7** Campaign: adjacency unlock, cumulative grid, scenario 2+

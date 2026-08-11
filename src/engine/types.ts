@@ -11,6 +11,7 @@ import type { PlantKind } from '../data/plants.ts'
 import type { LineClassId } from '../data/transmission.ts'
 import type { ParcelDeal } from './parcels/negotiation.ts'
 import type { Taking } from './parcels/takings.ts'
+import type { RealtimeState } from './realtime/types.ts'
 
 // --- the deal ------------------------------------------------------------
 
@@ -154,6 +155,12 @@ export interface GameState {
 
   /** Set once the contract's load can be served, which ends the build phase. */
   energizedQuarter: QuarterIndex | null
+
+  /**
+   * Present only once the load is energized. Null through the build phase,
+   * because there is nothing to operate yet.
+   */
+  realtime: RealtimeState | null
 }
 
 /** Firm capacity currently online, MW. */

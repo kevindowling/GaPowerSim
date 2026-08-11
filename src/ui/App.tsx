@@ -8,6 +8,7 @@ import { ContractPanel } from './panels/ContractPanel.tsx'
 import { CorridorPanel } from './panels/CorridorPanel.tsx'
 import { AcquisitionPanel } from './panels/AcquisitionPanel.tsx'
 import { LogPanel } from './panels/LogPanel.tsx'
+import { DispatchPanel } from './panels/DispatchPanel.tsx'
 import type {
   Marker, Overlay, SitingPreview, CorridorDraw, ParcelTint,
 } from '../render/mapRenderer.ts'
@@ -56,6 +57,7 @@ export function App({ embedded = false }: { embedded?: boolean }) {
     load, startScenario, accept, setTool, setHoverCell, setHoverParcel, placeAt, endQuarter,
     dismissHeadlines, currentAssessment, setLineClass, clearPlan, commitPlan,
     selectCorridor, offerAll, setOffer, condemnParcel, abandon, parcelById,
+    alerts, setSpeed, setPolicy, setVegetationSpend, setMaintenanceDeferred, dismissAlerts,
   } = useGame()
 
   const [overlay, setOverlay] = useState<Overlay>('none')
@@ -191,6 +193,7 @@ export function App({ embedded = false }: { embedded?: boolean }) {
             parcelTints={parcelTints}
             corridors={corridorDraws}
             hoverParcel={hoverParcel}
+            storms={game.realtime?.storms}
             onHoverCounty={handleHover}
             onClickCell={placeAt}
             onScaleChange={setScale}
@@ -240,6 +243,17 @@ export function App({ embedded = false }: { embedded?: boolean }) {
         </main>
 
         <aside className="sidebar">
+          {game.realtime && (
+            <DispatchPanel
+              game={game}
+              rt={game.realtime}
+              onSpeed={setSpeed}
+              onPolicy={setPolicy}
+              onVegetation={setVegetationSpend}
+              onMaintenance={setMaintenanceDeferred}
+            />
+          )}
+
           <BuildPanel game={game} tool={tool} onSelect={setTool} />
 
           <CorridorPanel
@@ -277,6 +291,16 @@ export function App({ embedded = false }: { embedded?: boolean }) {
       {!embedded && <LogPanel log={game.log} />}
 
       {showBriefing && <BriefingCard scenario={scenario} onAccept={accept} />}
+
+      {alerts.length > 0 && (
+        <div className="alert-stack" role="status" aria-live="assertive">
+          <div className="alert-head">
+            <strong>Grid alerts</strong>
+            <button className="btn-link" onClick={dismissAlerts}>Dismiss</button>
+          </div>
+          <ul>{alerts.slice(0, 6).map((a, i) => <li key={i}>{a}</li>)}</ul>
+        </div>
+      )}
 
       {headlines.length > 0 && (
         <div className="overlay soft" onClick={dismissHeadlines}>

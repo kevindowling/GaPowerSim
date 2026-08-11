@@ -62,6 +62,7 @@ export function createGame(sc: Scenario, siteCell: number, counties: CountiesFil
     counties: countyStates,
     log: [],
     energizedQuarter: null,
+    realtime: null,
   }
 }
 

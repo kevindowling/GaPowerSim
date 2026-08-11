@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { Camera } from '../render/camera.ts'
 import {
   MapRenderer, type Overlay, type Marker, type SitingPreview,
-  type CorridorDraw, type ParcelTint,
+  type CorridorDraw, type ParcelTint, type StormDraw,
 } from '../render/mapRenderer.ts'
 import type { MapData } from '../engine/geo/mapTypes.ts'
 import type { Parcel } from '../engine/parcels/types.ts'
@@ -19,6 +19,7 @@ interface Props {
   parcelTints?: Record<string, ParcelTint>
   corridors?: readonly CorridorDraw[]
   hoverParcel?: string | null
+  storms?: readonly StormDraw[]
   onHoverCounty: (name: string | null, cell: CellReadout | null, cellIndex: number) => void
   onClickCell?: (cell: number) => void
   onScaleChange: (scale: number) => void
@@ -37,7 +38,7 @@ export interface CellReadout {
  */
 export function MapView({
   data, overlay, showHexes, markers, siting, placing,
-  parcels, parcelTints, corridors, hoverParcel,
+  parcels, parcelTints, corridors, hoverParcel, storms,
   onHoverCounty, onClickCell, onScaleChange,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -121,15 +122,17 @@ export function MapView({
         parcelTints,
         corridors,
         hoverParcel,
+        storms,
       })
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [overlay, showHexes, markers, siting, parcels, parcelTints, corridors, hoverParcel])
+  }, [overlay, showHexes, markers, siting, parcels, parcelTints, corridors, hoverParcel, storms])
 
   // Repaint when anything the renderer reads changes.
   useEffect(markDirty, [
-    overlay, showHexes, markers, siting, parcels, parcelTints, corridors, hoverParcel, markDirty,
+    overlay, showHexes, markers, siting, parcels, parcelTints, corridors, hoverParcel, storms,
+    markDirty,
   ])
 
   // --- interaction -------------------------------------------------------

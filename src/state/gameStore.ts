@@ -26,6 +26,8 @@ import {
   type CorridorPlan,
 } from '../engine/turn/corridor.ts'
 import type { Parcel } from '../engine/parcels/types.ts'
+import { stepRealtime } from '../engine/realtime/operate.ts'
+import type { Speed, SheddingPolicy } from '../engine/realtime/types.ts'
 
 export type Tool =
   | { kind: 'none' }
@@ -56,6 +58,9 @@ interface Store {
   /** Which corridor the acquisition panel is showing. */
   selectedCorridor: string | null
 
+  /** Most recent operate-phase alerts, newest first. */
+  alerts: string[]
+
   load: () => Promise<void>
   startScenario: (id: string) => void
   accept: () => void
@@ -77,9 +82,32 @@ interface Store {
   condemnParcel: (parcelId: string) => void
   abandon: (corridorId: string) => void
 
+  setSpeed: (speed: Speed) => void
+  setPolicy: (policy: SheddingPolicy) => void
+  setVegetationSpend: (value: number) => void
+  setMaintenanceDeferred: (value: boolean) => void
+  dismissAlerts: () => void
+
   /** Assessment of the hovered cell for the active siting tool, if any. */
   currentAssessment: () => SiteAssessment | null
   parcelById: (id: string) => Parcel | undefined
+}
+
+/**
+ * The operate-phase clock.
+ *
+ * One tick is fifteen simulated minutes; at 1x the game runs an hour of grid
+ * time per second. The timer lives outside the store because it is a side
+ * effect, not state — the store only holds the speed it is running at.
+ */
+let tickTimer: ReturnType<typeof setInterval> | null = null
+const TICK_INTERVAL_MS = 250
+
+function stopClock(): void {
+  if (tickTimer !== null) {
+    clearInterval(tickTimer)
+    tickTimer = null
+  }
 }
 
 /** Resolve a scenario's lon/lat site to a grid cell index. */
@@ -104,6 +132,7 @@ export const useGame = create<Store>((set, get) => ({
   parcelError: null,
   plan: null,
   selectedCorridor: null,
+  alerts: [],
 
   load: async () => {
     try {
@@ -118,6 +147,7 @@ export const useGame = create<Store>((set, get) => ({
     const { mapData } = get()
     if (!mapData) return
     const sc = scenario(id)
+    stopClock()
     resetPlantCounter()
     resetCorridorCounter()
     clearParcelCache()
@@ -125,6 +155,7 @@ export const useGame = create<Store>((set, get) => ({
     set({
       game, scenario: sc, showBriefing: true, headlines: [], tool: { kind: 'none' },
       parcels: null, plan: null, selectedCorridor: null, parcelError: null,
+      alerts: [],
     })
   },
 
@@ -255,6 +286,72 @@ export const useGame = create<Store>((set, get) => ({
     set({ game: engineAbandon(game, corridorId), selectedCorridor: null })
   },
 
+  setSpeed: (speed) => {
+    const { game, mapData } = get()
+    if (!game?.realtime || !mapData) return
+    game.realtime.speed = speed
+    stopClock()
+
+    if (speed === 0) {
+      set({ game: { ...game } })
+      return
+    }
+
+    const [minX, minY, maxX, maxY] = mapData.counties.bbox
+    const bounds = { minX, minY, maxX, maxY }
+
+    tickTimer = setInterval(() => {
+      const current = get().game
+      if (!current?.realtime) return stopClock()
+
+      const collected: string[] = []
+      // stepRealtime mutates for speed; the spread below is what tells React.
+      for (let i = 0; i < current.realtime.speed; i++) {
+        const { events, severe } = stepRealtime(current, bounds)
+        collected.push(...events)
+        // Something serious deserves the player's attention, so stop the clock
+        // rather than letting it scroll past at 4x.
+        if (severe) {
+          current.realtime.speed = 0
+          stopClock()
+          break
+        }
+      }
+
+      set((s) => ({
+        game: { ...current },
+        alerts: collected.length > 0
+          ? [...collected.reverse(), ...s.alerts].slice(0, 40)
+          : s.alerts,
+      }))
+    }, TICK_INTERVAL_MS)
+
+    set({ game: { ...game } })
+  },
+
+  setPolicy: (policy) => {
+    const { game } = get()
+    if (!game?.realtime) return
+    game.realtime.policy = policy
+    set({ game: { ...game } })
+  },
+
+  setVegetationSpend: (value) => {
+    const { game } = get()
+    if (!game?.realtime) return
+    game.realtime.vegetationSpend = Math.min(1, Math.max(0, value))
+    set({ game: { ...game } })
+  },
+
+  setMaintenanceDeferred: (value) => {
+    const { game } = get()
+    if (!game?.realtime) return
+    game.realtime.maintenanceDeferred = value
+    set({ game: { ...game } })
+  },
+
+  dismissAlerts: () => set({ alerts: [] }),
+
   parcelById: (id) => get().parcels?.parcels.find((p) => p.id === id),
 
   currentAssessment: () => {
@@ -263,3 +360,15 @@ export const useGame = create<Store>((set, get) => ({
     return assessSite(game, tool.typeId, hoverCell, mapData.grid)
   },
 }))
+
+/**
+ * Debug handle on the store.
+ *
+ * Exposed deliberately: the browser tests use it to drop the game straight into
+ * a state that would otherwise take eleven quarters of clicking to reach, and it
+ * makes the game inspectable from the console. There is nothing sensitive in
+ * here — it is a single-player game with no backend and no credentials.
+ */
+if (typeof window !== 'undefined') {
+  ;(window as unknown as { __game: typeof useGame }).__game = useGame
+}

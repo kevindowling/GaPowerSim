@@ -20,6 +20,7 @@ import type { Parcel } from '../parcels/types.ts'
 import { resolveOffer, condemnationAward } from '../parcels/negotiation.ts'
 import { acquisitionComplete } from './corridor.ts'
 import { lineClass } from '../../data/transmission.ts'
+import { createRealtimeState } from '../realtime/types.ts'
 
 /** Annualised cost of carrying a negative cash balance. */
 const FINANCING_RATE_PER_QUARTER = 0.0155
@@ -235,6 +236,9 @@ function checkEnergized(state: GameState): void {
 
   state.energizedQuarter = state.quarter
   state.contract.status = 'served'
+  // From here the game is no longer about deadlines.
+  state.realtime = createRealtimeState()
+  state.phase = 'operate'
   const late = state.quarter - state.contract.inServiceQuarter
   pushLog(
     state, 'grid',

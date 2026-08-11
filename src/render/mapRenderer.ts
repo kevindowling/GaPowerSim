@@ -126,6 +126,16 @@ export interface RenderOptions {
   corridors?: readonly CorridorDraw[]
   /** Parcel id under the pointer. */
   hoverParcel?: string | null
+  /** Live weather during the operate phase. */
+  storms?: readonly StormDraw[]
+}
+
+export interface StormDraw {
+  x: number
+  y: number
+  radiusKm: number
+  /** 0-1. Drives how angry the cell looks. */
+  severity: number
 }
 
 interface CityScreen {
@@ -283,6 +293,7 @@ export class MapRenderer {
     this.drawCities(ctx, cam, vp)
     if (opts.siting) this.drawSitingPreview(ctx, cam, vp, opts.siting)
     if (opts.markers?.length) this.drawMarkers(ctx, cam, vp, opts.markers)
+    if (opts.storms?.length) this.drawStorms(ctx, cam, vp, opts.storms)
   }
 
   /**
@@ -488,6 +499,42 @@ export class MapRenderer {
       if (inside) return parcel
     }
     return null
+  }
+
+  /**
+   * Storm cells, drawn over everything because that is how they feel.
+   * A soft radial wash rather than a hard disc: weather does not have edges,
+   * and the player needs to see roughly where it is heading, not a hitbox.
+   */
+  private drawStorms(
+    ctx: CanvasRenderingContext2D, cam: Camera, vp: Viewport, storms: readonly StormDraw[],
+  ): void {
+    ctx.save()
+    for (const storm of storms) {
+      const [px, py] = cam.toScreen(storm.x, storm.y, vp)
+      const r = Math.max(6, storm.radiusKm * cam.scale)
+      const gradient = ctx.createRadialGradient(px, py, 0, px, py, r)
+      const alpha = 0.16 + 0.30 * storm.severity
+      gradient.addColorStop(0, `rgba(74,109,138,${alpha})`)
+      gradient.addColorStop(0.65, `rgba(74,109,138,${alpha * 0.5})`)
+      gradient.addColorStop(1, 'rgba(74,109,138,0)')
+      ctx.beginPath()
+      ctx.arc(px, py, r, 0, Math.PI * 2)
+      ctx.fillStyle = gradient
+      ctx.fill()
+
+      // A severe cell gets an outline so it cannot be mistaken for haze.
+      if (storm.severity > 0.6) {
+        ctx.beginPath()
+        ctx.arc(px, py, r * 0.55, 0, Math.PI * 2)
+        ctx.strokeStyle = `rgba(74,109,138,${0.4 * storm.severity})`
+        ctx.lineWidth = 1.5
+        ctx.setLineDash([4, 4])
+        ctx.stroke()
+        ctx.setLineDash([])
+      }
+    }
+    ctx.restore()
   }
 
   private drawSitingPreview(
