@@ -1,0 +1,41 @@
+{
+  "name": "gapowersim",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A simulation game about building power generation and transmission for Georgia's data center boom.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit",
+    "build:geo": "tsx scripts/build-geo.ts",
+    "build:hexgrid": "tsx scripts/build-hexgrid.ts",
+    "fetch:parcels": "tsx scripts/fetch-parcels.ts",
+    "verify:data": "tsx scripts/verify-data.ts",
+    "data": "npm run build:geo && npm run build:hexgrid && npm run verify:data"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^4.5.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@types/geojson": "^7946.0.16",
+    "@types/node": "^22.9.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/topojson-client": "^3.1.5",
+    "@vitejs/plugin-react": "^4.3.3",
+    "topojson-client": "^3.1.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "us-atlas": "^3.0.1",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.5"
+  }
+}
