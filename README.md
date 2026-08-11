@@ -10,9 +10,10 @@ travel down a corridor of poles that crosses somebody's land. When a landowner
 says no, your only tools are more money, a longer route, or eminent domain. Then
 the power has to actually stay on.
 
-**Status: M0 — map foundation.** The real map of Georgia renders and is
-explorable. The game systems on top of it are in progress; see
-[Milestones](#milestones).
+**Status: M2 — the eminent-domain mechanic works.** You can sign the Americus
+deal, site generation, route a transmission corridor across real property lines,
+watch what it takes from whom, and decide what to do about the people who say no.
+See [Milestones](#milestones).
 
 ## Quick start
 
@@ -88,6 +89,26 @@ no generated imagery; the favicon is hand-written SVG.
 | Protected land, hydrology | — | **Missing** |
 | Land parcels | — | **Not yet fetched** (see below) |
 
+### Why route shape matters
+
+A corridor does not buy whole properties. It buys a strip across them, and what
+is owed is the value of that strip plus the damage done to what is left. That
+second part is computed from the actual geometry of the remainder, which makes
+the *shape* of a route matter and not just its length:
+
+| | acres taken | severed | appraised |
+|---|---|---|---|
+| Quarles Planting Co. | 5 of 158 | no | $30K |
+| Nesmith Pecan Co. | 13 of 213 | **cut in two** | **$206K** |
+
+Roughly 2.6× the acreage and 7× the compensation, entirely because of where the
+line fell. Hugging a property line is a real strategy the real map rewards.
+
+Saying no has three answers and all of them cost. Pay more, and every remaining
+holdout hears about the comparable. Condemn, and you spend quarters in court,
+legal fees, county approval — and every remaining owner on that corridor gets
+harder to deal with. Reroute, and the line gets longer across worse ground.
+
 Two independent checks confirm the geometry pipeline: the rasterised state comes
 out at 152,666 km² against Georgia's actual 153,910 km² land area (0.8%), and the
 projection reproduces true spherical area to within 0.1%, which is what makes
@@ -126,8 +147,8 @@ owners stay real where they carry meaning.
 ## Milestones
 
 - [x] **M0** Scaffold, geo pipeline, statewide map with pan/zoom and hex LOD
-- [ ] **M1** Turn loop, Americus 400 MW contract, plant siting, budget
-- [ ] **M2** Parcel pipeline, corridor takings, severance damage, eminent domain
+- [x] **M1** Turn loop, Americus 400 MW contract, plant siting, budget
+- [x] **M2** Parcel pipeline, corridor takings, severance damage, eminent domain
 - [ ] **M3** Energization, real-time dispatch, power flow, unserved energy
 - [ ] **M4** Reliability: forced outages, storms, line breaks, cascades
 - [ ] **M5** Tutorial script, scoring, embed polish

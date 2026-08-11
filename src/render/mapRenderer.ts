@@ -15,6 +15,8 @@ import {
   HEX_WIDTH_KM, HEX_ROW_KM, HEX_SIZE_KM, cellCenter, cellCorners,
 } from '../engine/geo/hex.ts'
 import { OUTSIDE_STATE, type MapData } from '../engine/geo/mapTypes.ts'
+import type { Parcel } from '../engine/parcels/types.ts'
+import type { MultiPoly } from '../engine/geo/polygon.ts'
 import { project } from '../engine/geo/projection.ts'
 import { CITIES } from '../data/cities.ts'
 
@@ -22,6 +24,28 @@ import { CITIES } from '../data/cities.ts'
 const HEX_FADE_IN = 6
 /** Cell size in px/km at which hexes are fully opaque. */
 const HEX_FADE_FULL = 14
+
+/** Parcels only appear once one is big enough on screen to be a shape. */
+const PARCEL_FADE_IN = 14
+const PARCEL_FADE_FULL = 30
+
+const PARCEL_FILL: Record<ParcelTint, string> = {
+  taken: 'rgba(232,163,61,0.30)',
+  severed: 'rgba(181,69,94,0.28)',
+  accepted: 'rgba(94,140,106,0.34)',
+  holdout: 'rgba(198,72,60,0.34)',
+  condemned: 'rgba(142,47,63,0.44)',
+  blocked: 'rgba(51,50,44,0.42)',
+}
+
+const PARCEL_STROKE: Record<ParcelTint, string> = {
+  taken: '#c98f3b',
+  severed: '#b5455e',
+  accepted: '#5e8c6a',
+  holdout: '#c6483c',
+  condemned: '#8e2f3f',
+  blocked: '#33322c',
+}
 
 export type Overlay = 'none' | 'population' | 'landValue' | 'terrain'
 
@@ -47,6 +71,15 @@ export interface SitingPreview {
   radiusKm: number
 }
 
+/** How a parcel should read: untouched, in the right-of-way, or contested. */
+export type ParcelTint = 'taken' | 'severed' | 'accepted' | 'holdout' | 'condemned' | 'blocked'
+
+export interface CorridorDraw {
+  centerline: Array<[number, number]>
+  buffer: MultiPoly
+  status: 'planned' | 'acquiring' | 'building' | 'energized'
+}
+
 export interface RenderOptions {
   overlay: Overlay
   /** County index under the pointer, or -1. */
@@ -54,6 +87,13 @@ export interface RenderOptions {
   showHexes: boolean
   markers?: readonly Marker[]
   siting?: SitingPreview | null
+  /** Parcels for the county being worked, drawn only when zoomed in. */
+  parcels?: readonly Parcel[]
+  /** Per-parcel tint, keyed by parcel id. */
+  parcelTints?: Record<string, ParcelTint>
+  corridors?: readonly CorridorDraw[]
+  /** Parcel id under the pointer. */
+  hoverParcel?: string | null
 }
 
 interface CityScreen {
@@ -197,6 +237,16 @@ export class MapRenderer {
     const hexAlpha = opts.showHexes ? smoothstep(HEX_FADE_IN, HEX_FADE_FULL, cam.scale) : 0
     if (hexAlpha > 0.01) this.drawHexes(ctx, cam, vp, hexAlpha)
 
+    // Parcels sit under the corridor so the right-of-way reads as laid across
+    // them, which is what it is.
+    if (opts.parcels?.length) {
+      const alpha = smoothstep(PARCEL_FADE_IN, PARCEL_FADE_FULL, cam.scale)
+      if (alpha > 0.01) {
+        this.drawParcels(ctx, cam, vp, opts.parcels, opts.parcelTints ?? {}, opts.hoverParcel ?? null, alpha)
+      }
+    }
+    if (opts.corridors?.length) this.drawCorridors(ctx, cam, vp, opts.corridors)
+
     this.drawCounties(ctx, cam, vp, opts.hoverCounty)
     this.drawCities(ctx, cam, vp)
     if (opts.siting) this.drawSitingPreview(ctx, cam, vp, opts.siting)
@@ -277,6 +327,133 @@ export class MapRenderer {
       }
     }
     ctx.restore()
+  }
+
+  /**
+   * Property lines, and who is in the way.
+   *
+   * Only drawn once zoomed in far enough for a parcel to be a readable shape —
+   * at statewide zoom a rural county's cadastre is a grey smear, and the
+   * eighteen thousand polygons cost real frame time to say nothing.
+   */
+  private drawParcels(
+    ctx: CanvasRenderingContext2D, cam: Camera, vp: Viewport,
+    parcels: readonly Parcel[], tints: Record<string, ParcelTint>,
+    hoverParcel: string | null, alpha: number,
+  ): void {
+    const vis = cam.visibleBounds(vp)
+    ctx.save()
+    ctx.globalAlpha = alpha
+    ctx.lineWidth = Math.min(1.2, 0.03 * cam.scale)
+
+    for (const parcel of parcels) {
+      const ring = parcel.poly[0]
+      if (!ring || ring.length < 3) continue
+
+      // Cheap viewport reject before touching the path API.
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+      for (const [x, y] of ring) {
+        if (x < minX) minX = x
+        if (x > maxX) maxX = x
+        if (y < minY) minY = y
+        if (y > maxY) maxY = y
+      }
+      if (maxX < vis.minX || minX > vis.maxX || maxY < vis.minY || minY > vis.maxY) continue
+
+      ctx.beginPath()
+      for (let i = 0; i < ring.length; i++) {
+        const [px, py] = cam.toScreen(ring[i][0], ring[i][1], vp)
+        if (i === 0) ctx.moveTo(px, py)
+        else ctx.lineTo(px, py)
+      }
+      ctx.closePath()
+
+      const tint = tints[parcel.id]
+      if (tint) {
+        ctx.fillStyle = PARCEL_FILL[tint]
+        ctx.fill()
+      } else if (parcel.id === hoverParcel) {
+        ctx.fillStyle = 'rgba(47,111,122,0.16)'
+        ctx.fill()
+      }
+
+      ctx.strokeStyle = tint ? PARCEL_STROKE[tint] : PALETTE.countyLine
+      ctx.stroke()
+    }
+    ctx.restore()
+  }
+
+  /** The right-of-way and the line down the middle of it. */
+  private drawCorridors(
+    ctx: CanvasRenderingContext2D, cam: Camera, vp: Viewport, corridors: readonly CorridorDraw[],
+  ): void {
+    ctx.save()
+    for (const corridor of corridors) {
+      const planned = corridor.status === 'planned'
+      const live = corridor.status === 'energized'
+
+      // The swept right-of-way: the land actually being taken.
+      if (corridor.buffer.length > 0 && cam.scale > 4) {
+        ctx.beginPath()
+        for (const poly of corridor.buffer) {
+          for (const ring of poly) {
+            for (let i = 0; i < ring.length; i++) {
+              const [px, py] = cam.toScreen(ring[i][0], ring[i][1], vp)
+              if (i === 0) ctx.moveTo(px, py)
+              else ctx.lineTo(px, py)
+            }
+            ctx.closePath()
+          }
+        }
+        ctx.fillStyle = planned ? 'rgba(232,163,61,0.20)' : 'rgba(232,163,61,0.32)'
+        ctx.fill()
+      }
+
+      // The centerline.
+      const pts = corridor.centerline
+      if (pts.length < 2) continue
+      ctx.beginPath()
+      for (let i = 0; i < pts.length; i++) {
+        const [px, py] = cam.toScreen(pts[i][0], pts[i][1], vp)
+        if (i === 0) ctx.moveTo(px, py)
+        else ctx.lineTo(px, py)
+      }
+      ctx.lineJoin = 'round'
+      ctx.lineCap = 'round'
+      if (planned) ctx.setLineDash([7, 5])
+      ctx.lineWidth = live ? 3.2 : 2.4
+      ctx.strokeStyle = live ? PALETTE.energized : planned ? PALETTE.corridorDim : PALETTE.corridor
+      ctx.stroke()
+      ctx.setLineDash([])
+
+      // Structures at every angle point, once they'd be visible.
+      if (cam.scale > 8) {
+        ctx.fillStyle = PALETTE.ink
+        for (const [wx, wy] of pts) {
+          const [px, py] = cam.toScreen(wx, wy, vp)
+          ctx.fillRect(px - 1.6, py - 1.6, 3.2, 3.2)
+        }
+      }
+    }
+    ctx.restore()
+  }
+
+  /** Parcel at a world point, or null. Tests only the parcels handed in. */
+  parcelAt(parcels: readonly Parcel[], wx: number, wy: number): Parcel | null {
+    for (const parcel of parcels) {
+      const ring = parcel.poly[0]
+      if (!ring) continue
+      let inside = false
+      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const [xi, yi] = ring[i]
+        const [xj, yj] = ring[j]
+        if ((yi > wy) !== (yj > wy) && wx < ((xj - xi) * (wy - yi)) / (yj - yi) + xi) {
+          inside = !inside
+        }
+      }
+      if (inside) return parcel
+    }
+    return null
   }
 
   private drawSitingPreview(

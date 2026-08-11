@@ -5,8 +5,14 @@ import { HUD } from './HUD.tsx'
 import { BriefingCard } from './BriefingCard.tsx'
 import { BuildPanel } from './panels/BuildPanel.tsx'
 import { ContractPanel } from './panels/ContractPanel.tsx'
+import { CorridorPanel } from './panels/CorridorPanel.tsx'
+import { AcquisitionPanel } from './panels/AcquisitionPanel.tsx'
 import { LogPanel } from './panels/LogPanel.tsx'
-import type { Marker, Overlay, SitingPreview } from '../render/mapRenderer.ts'
+import type {
+  Marker, Overlay, SitingPreview, CorridorDraw, ParcelTint,
+} from '../render/mapRenderer.ts'
+import { corridorBuffer } from '../engine/geo/polygon.ts'
+import { lineClass } from '../data/transmission.ts'
 import { plantType, type PlantKind } from '../data/plants.ts'
 import type { SiteAssessment } from '../engine/turn/siting.ts'
 import { money, acres } from './format.ts'
@@ -36,8 +42,10 @@ function footprintRadiusKm(acresValue: number): number {
 export function App({ embedded = false }: { embedded?: boolean }) {
   const {
     mapData, loadError, game, scenario, tool, headlines, showBriefing, hoverCell: hoverCellIndex,
-    load, startScenario, accept, setTool, setHoverCell, placeAt, endQuarter,
-    dismissHeadlines, currentAssessment,
+    parcels, parcelsLoading, parcelError, plan, selectedCorridor, hoverParcel,
+    load, startScenario, accept, setTool, setHoverCell, setHoverParcel, placeAt, endQuarter,
+    dismissHeadlines, currentAssessment, setLineClass, clearPlan, commitPlan,
+    selectCorridor, offerAll, setOffer, condemnParcel, abandon, parcelById,
   } = useGame()
 
   const [overlay, setOverlay] = useState<Overlay>('none')
@@ -84,6 +92,43 @@ export function App({ embedded = false }: { embedded?: boolean }) {
     return out
   }, [game])
 
+  // Committed corridors plus the one being previewed.
+  const corridorDraws = useMemo<CorridorDraw[]>(() => {
+    const out: CorridorDraw[] = []
+    for (const c of game?.corridors ?? []) {
+      out.push({
+        centerline: c.centerline,
+        buffer: corridorBuffer(c.centerline, lineClass(c.classId).rowHalfWidthKm),
+        status: c.status,
+      })
+    }
+    if (plan) {
+      out.push({ centerline: plan.centerline, buffer: plan.takings.buffer, status: 'planned' })
+    }
+    return out
+  }, [game?.corridors, plan])
+
+  // Colour every parcel the current corridor touches by where its deal stands.
+  const parcelTints = useMemo<Record<string, ParcelTint>>(() => {
+    const tints: Record<string, ParcelTint> = {}
+    if (plan) {
+      for (const t of plan.takings.takings) tints[t.parcelId] = t.severed ? 'severed' : 'taken'
+    }
+    const corridor = game?.corridors.find((c) => c.id === selectedCorridor)
+    if (corridor) {
+      for (const [id, deal] of Object.entries(corridor.deals)) {
+        tints[id] = deal.status === 'accepted' ? 'accepted'
+          : deal.status === 'condemned' || deal.status === 'condemning' ? 'condemned'
+          : deal.status === 'blocked' ? 'blocked'
+          : deal.status === 'holdout' ? 'holdout'
+          : corridor.takings[id]?.severed ? 'severed' : 'taken'
+      }
+    }
+    return tints
+  }, [plan, game?.corridors, selectedCorridor])
+
+  const activeCorridor = game?.corridors.find((c) => c.id === selectedCorridor) ?? null
+
   const assessment = currentAssessment()
   const siting = useMemo<SitingPreview | null>(() => {
     if (tool.kind !== 'site' || !assessment) return null
@@ -129,7 +174,11 @@ export function App({ embedded = false }: { embedded?: boolean }) {
             showHexes={showHexes}
             markers={markers}
             siting={siting}
-            placing={tool.kind === 'site'}
+            placing={tool.kind === 'site' || tool.kind === 'route'}
+            parcels={parcels?.parcels}
+            parcelTints={parcelTints}
+            corridors={corridorDraws}
+            hoverParcel={hoverParcel}
             onHoverCounty={handleHover}
             onClickCell={placeAt}
             onScaleChange={setScale}
@@ -180,6 +229,35 @@ export function App({ embedded = false }: { embedded?: boolean }) {
 
         <aside className="sidebar">
           <BuildPanel game={game} tool={tool} onSelect={setTool} />
+
+          <CorridorPanel
+            game={game}
+            tool={tool}
+            plan={plan}
+            parcelsLoading={parcelsLoading}
+            parcelError={parcelError}
+            syntheticParcels={parcels?.synthetic ?? false}
+            selectedCorridor={selectedCorridor}
+            onStartRoute={() => setTool({ kind: 'route', from: null, classId: '230' })}
+            onSetClass={setLineClass}
+            onCommit={commitPlan}
+            onCancel={clearPlan}
+            onSelectCorridor={selectCorridor}
+          />
+
+          {activeCorridor && activeCorridor.status !== 'energized' && (
+            <AcquisitionPanel
+              game={game}
+              corridor={activeCorridor}
+              parcelById={parcelById}
+              onOfferAll={offerAll}
+              onSetOffer={setOffer}
+              onCondemn={condemnParcel}
+              onAbandon={abandon}
+              onHoverParcel={setHoverParcel}
+            />
+          )}
+
           <ContractPanel game={game} />
         </aside>
       </div>

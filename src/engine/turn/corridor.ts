@@ -25,6 +25,15 @@ export function resetCorridorCounter(): void {
   corridorCounter = 0
 }
 
+/**
+ * End a sentence with a name that may already end in a full stop.
+ * Half the owners here are "… Co." or "… Farms LLC", and "Nesmith Pecan Co.."
+ * looks like a typo in the news ticker.
+ */
+function endSentence(name: string): string {
+  return name.endsWith('.') ? name : `${name}.`
+}
+
 /** World-space centre of a grid cell. */
 function cellToWorld(grid: HexGrid, cell: number): [number, number] {
   const row = Math.floor(cell / grid.spec.cols)
@@ -124,9 +133,10 @@ export function commitCorridor(
     true,
   )
   if (plan.takings.parcelsSevered > 0) {
+    const n = plan.takings.parcelsSevered
     pushLog(
       state, 'grid',
-      `${plan.takings.parcelsSevered} of those parcels are cut in two. Severance damages will be owed on top of the land.`,
+      `${n} of those ${n === 1 ? 'is' : 'are'} cut in two. Severance damages will be owed on top of the land taken.`,
     )
   }
   if (blocked > 0) {
@@ -236,7 +246,7 @@ export function condemn(prev: GameState, corridorId: string, parcelId: string, p
 
   pushLog(
     state, 'politics',
-    `Condemnation filed against ${parcel.owner}. ` +
+    `Condemnation filed against ${endSentence(parcel.owner)} ` +
     `${deal.condemnationQuarters} quarters in court, $${(legal / 1e6).toFixed(1)}M in fees, ` +
     `and ${county?.name ?? 'the county'} County drops ${approvalHit} points.`,
     true,

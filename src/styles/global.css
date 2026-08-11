@@ -658,3 +658,173 @@ kbd {
   .brand .sub { display: none; }
   .readout { min-width: 0; max-width: 45vw; }
 }
+
+/* --- transmission and acquisition ------------------------------------- */
+
+.btn-secondary {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+}
+.btn-secondary:hover:not(:disabled) { border-color: var(--ink-faint); background: #fff; }
+.btn-secondary:disabled { opacity: 0.45; cursor: default; }
+
+.btn-tiny {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 11px;
+  padding: 3px 7px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.btn-tiny:hover { border-color: var(--ink-faint); }
+.btn-tiny.danger { color: var(--fault); border-color: #e6c8c3; }
+.btn-tiny.danger:hover { background: #faeeec; }
+.btn-link.danger { color: var(--fault); }
+
+.corridor-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+
+.corridor-card {
+  appearance: none;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 9px;
+  cursor: pointer;
+}
+.corridor-card.on { border-color: var(--select); box-shadow: 0 0 0 1px var(--select); background: #fff; }
+
+.corridor-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.corridor-name { font-size: 12px; font-weight: 600; }
+.corridor-status { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); }
+.status-energized { color: #b0701f; font-weight: 600; }
+.status-acquiring { color: #8e2f3f; }
+.corridor-facts { display: flex; gap: 10px; font-size: 11px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+
+.class-picker { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
+.class-btn {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  font: inherit;
+  border-radius: 7px;
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.class-btn.on { border-color: var(--select); box-shadow: 0 0 0 1px var(--select); background: #fff; }
+.class-name { font-size: 12px; font-weight: 600; }
+.class-rating { font-size: 10.5px; color: var(--ink-soft); }
+
+.plan-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.plan-people { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.plan-stat {
+  background: var(--paper-deep);
+  border-radius: 7px;
+  padding: 7px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+.plan-stat strong { font-size: 19px; font-variant-numeric: tabular-nums; line-height: 1; }
+.plan-stat span { font-size: 10.5px; color: var(--ink-soft); text-align: center; }
+.plan-stat.warn { background: #f7ece7; }
+.plan-stat.warn strong { color: var(--fault); }
+
+.plan-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-top: 1px solid var(--line);
+  padding-top: 7px;
+  font-size: 12px;
+}
+.plan-total strong { font-size: 14px; font-variant-numeric: tabular-nums; }
+.plan-actions { display: flex; align-items: center; gap: 8px; }
+.plan-actions .btn-primary { flex: 1 1 auto; }
+
+.synthetic-warning {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  background: #f3f0e4;
+  border-left: 3px solid var(--warn, #d98a2b);
+  padding: 7px 9px;
+  border-radius: 0 6px 6px 0;
+  margin: 0;
+}
+
+.acq-progress { display: flex; align-items: center; gap: 8px; }
+.acq-bar { flex: 1 1 auto; height: 6px; background: var(--paper-deep); border-radius: 3px; overflow: hidden; }
+.acq-bar span { display: block; height: 100%; background: #5e8c6a; }
+.acq-count { font-size: 11px; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.bulk-offer {
+  background: var(--paper-deep);
+  border-radius: 8px;
+  padding: 8px 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.bulk-offer label { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--ink-soft); }
+.bulk-offer input[type="range"] { flex: 1 1 auto; min-width: 0; }
+.bulk-offer strong { font-variant-numeric: tabular-nums; color: var(--ink); }
+
+.parcel-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 420px; overflow-y: auto; }
+
+.parcel-row {
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  border-radius: 7px;
+  padding: 7px 9px;
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.parcel-row.status-accepted { border-left-color: #5e8c6a; opacity: 0.72; }
+.parcel-row.status-holdout { border-left-color: var(--fault); }
+.parcel-row.status-condemning { border-left-color: #8e2f3f; }
+.parcel-row.status-condemned { border-left-color: #8e2f3f; opacity: 0.72; }
+.parcel-row.status-blocked { border-left-color: var(--ink); background: #efece2; }
+.parcel-row.status-offered { border-left-color: var(--accent); }
+
+.parcel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.parcel-owner { font-size: 12px; font-weight: 600; }
+.parcel-status { font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-faint); white-space: nowrap; }
+.parcel-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-soft); }
+.parcel-severed { font-size: 11px; color: #b5455e; font-weight: 500; }
+.parcel-money { display: flex; justify-content: space-between; font-size: 11px; font-variant-numeric: tabular-nums; }
+.parcel-actions { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
+
+.chance { font-size: 10.5px; font-weight: 600; margin-right: auto; font-variant-numeric: tabular-nums; }
+.chance-high { color: #4b7d59; }
+.chance-mid { color: #b0701f; }
+.chance-low { color: var(--fault); }

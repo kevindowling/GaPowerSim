@@ -78,7 +78,7 @@ test('quarters advance and the deadline closes in', async ({ page }) => {
   await expect(page.locator('.hud')).toContainText('2026 Q2')
 })
 
-test('plays through to energization', async ({ page }) => {
+test('generation alone does not serve the load — it needs a wire', async ({ page }) => {
   test.setTimeout(120_000)
   await page.goto('/')
   await signContract(page)
@@ -87,7 +87,8 @@ test('plays through to energization', async ({ page }) => {
   const canvas = page.locator('canvas.map-canvas')
   const box = (await canvas.boundingBox())!
 
-  // Three 200 MW turbines at 95% firm comfortably covers 400 MW.
+  // Three 200 MW turbines at 95% firm is 570 MW — comfortably over the 400 MW
+  // contracted, and still worth nothing without a corridor to the campus.
   for (let i = 0; i < 3; i++) {
     await page.getByRole('button', { name: /Gas combustion turbine/ }).click()
     await page.mouse.click(
@@ -104,9 +105,10 @@ test('plays through to energization', async ({ page }) => {
     await clearHeadlines(page)
   }
 
-  await expect(page.locator('.hud')).toContainText('Energized')
-  await expect(page.locator('.logstrip')).toContainText('energized')
-  await page.screenshot({ path: 'tests/.artifacts/energized.png' })
+  await expect(page.locator('.logstrip')).toContainText('is online')
+  // Plants are running, and the contract is still not served.
+  await expect(page.locator('.hud')).not.toContainText('Energized')
+  await page.screenshot({ path: 'tests/.artifacts/generation-only.png' })
 })
 
 test('warns that solar cannot serve a round-the-clock load', async ({ page }) => {

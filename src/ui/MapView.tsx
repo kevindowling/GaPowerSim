@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { Camera } from '../render/camera.ts'
-import { MapRenderer, type Overlay, type Marker, type SitingPreview } from '../render/mapRenderer.ts'
+import {
+  MapRenderer, type Overlay, type Marker, type SitingPreview,
+  type CorridorDraw, type ParcelTint,
+} from '../render/mapRenderer.ts'
 import type { MapData } from '../engine/geo/mapTypes.ts'
+import type { Parcel } from '../engine/parcels/types.ts'
 
 interface Props {
   data: MapData
@@ -11,6 +15,10 @@ interface Props {
   siting?: SitingPreview | null
   /** True while a placement tool is armed, which changes the cursor. */
   placing?: boolean
+  parcels?: readonly Parcel[]
+  parcelTints?: Record<string, ParcelTint>
+  corridors?: readonly CorridorDraw[]
+  hoverParcel?: string | null
   onHoverCounty: (name: string | null, cell: CellReadout | null, cellIndex: number) => void
   onClickCell?: (cell: number) => void
   onScaleChange: (scale: number) => void
@@ -29,6 +37,7 @@ export interface CellReadout {
  */
 export function MapView({
   data, overlay, showHexes, markers, siting, placing,
+  parcels, parcelTints, corridors, hoverParcel,
   onHoverCounty, onClickCell, onScaleChange,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -108,14 +117,20 @@ export function MapView({
         showHexes,
         markers,
         siting,
+        parcels,
+        parcelTints,
+        corridors,
+        hoverParcel,
       })
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [overlay, showHexes, markers, siting])
+  }, [overlay, showHexes, markers, siting, parcels, parcelTints, corridors, hoverParcel])
 
   // Repaint when anything the renderer reads changes.
-  useEffect(markDirty, [overlay, showHexes, markers, siting, markDirty])
+  useEffect(markDirty, [
+    overlay, showHexes, markers, siting, parcels, parcelTints, corridors, hoverParcel, markDirty,
+  ])
 
   // --- interaction -------------------------------------------------------
   useEffect(() => {

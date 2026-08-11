@@ -18,10 +18,20 @@ import { sitePlant, assessSite, type SiteAssessment } from '../engine/turn/sitin
 import { scenario, type Scenario } from '../data/scenarios.ts'
 import { project } from '../engine/geo/projection.ts'
 import { pointToCell } from '../engine/geo/hex.ts'
+import type { LineClassId } from '../data/transmission.ts'
+import { loadCountyParcels, clearParcelCache, type CountyParcels } from '../data/loadParcels.ts'
+import {
+  planCorridor, commitCorridor, offerAll as engineOfferAll, setOffer as engineSetOffer,
+  condemn as engineCondemn, abandonCorridor as engineAbandon, resetCorridorCounter,
+  type CorridorPlan,
+} from '../engine/turn/corridor.ts'
+import type { Parcel } from '../engine/parcels/types.ts'
 
 export type Tool =
   | { kind: 'none' }
   | { kind: 'site'; typeId: PlantKind }
+  /** Picking the two ends of a new transmission corridor. */
+  | { kind: 'route'; from: number | null; classId: LineClassId }
 
 interface Store {
   mapData: MapData | null
@@ -31,9 +41,20 @@ interface Store {
 
   tool: Tool
   hoverCell: number
+  hoverParcel: string | null
   /** Headlines from the most recent quarter, shown as a summary card. */
   headlines: string[]
   showBriefing: boolean
+
+  /** Parcels for the scenario county, loaded on demand. */
+  parcels: CountyParcels | null
+  parcelsLoading: boolean
+  parcelError: string | null
+
+  /** The route currently being previewed, before it is committed. */
+  plan: CorridorPlan | null
+  /** Which corridor the acquisition panel is showing. */
+  selectedCorridor: string | null
 
   load: () => Promise<void>
   startScenario: (id: string) => void
@@ -41,12 +62,24 @@ interface Store {
   dismissBriefing: () => void
   setTool: (tool: Tool) => void
   setHoverCell: (cell: number) => void
+  setHoverParcel: (id: string | null) => void
   placeAt: (cell: number) => void
   endQuarter: () => void
   dismissHeadlines: () => void
 
+  ensureParcels: () => Promise<void>
+  setLineClass: (classId: LineClassId) => void
+  clearPlan: () => void
+  commitPlan: () => void
+  selectCorridor: (id: string | null) => void
+  offerAll: (multiple: number) => void
+  setOffer: (parcelId: string, multiple: number) => void
+  condemnParcel: (parcelId: string) => void
+  abandon: (corridorId: string) => void
+
   /** Assessment of the hovered cell for the active siting tool, if any. */
   currentAssessment: () => SiteAssessment | null
+  parcelById: (id: string) => Parcel | undefined
 }
 
 /** Resolve a scenario's lon/lat site to a grid cell index. */
@@ -63,8 +96,14 @@ export const useGame = create<Store>((set, get) => ({
   scenario: null,
   tool: { kind: 'none' },
   hoverCell: -1,
+  hoverParcel: null,
   headlines: [],
   showBriefing: true,
+  parcels: null,
+  parcelsLoading: false,
+  parcelError: null,
+  plan: null,
+  selectedCorridor: null,
 
   load: async () => {
     try {
@@ -80,8 +119,13 @@ export const useGame = create<Store>((set, get) => ({
     if (!mapData) return
     const sc = scenario(id)
     resetPlantCounter()
+    resetCorridorCounter()
+    clearParcelCache()
     const game = createGame(sc, siteCellOf(sc, mapData), mapData.counties)
-    set({ game, scenario: sc, showBriefing: true, headlines: [], tool: { kind: 'none' } })
+    set({
+      game, scenario: sc, showBriefing: true, headlines: [], tool: { kind: 'none' },
+      parcels: null, plan: null, selectedCorridor: null, parcelError: null,
+    })
   },
 
   accept: () => {
@@ -92,28 +136,126 @@ export const useGame = create<Store>((set, get) => ({
 
   dismissBriefing: () => set({ showBriefing: false }),
 
-  setTool: (tool) => set({ tool }),
+  setTool: (tool) => {
+    set({ tool, plan: null })
+    // Routing needs the cadastre; start fetching as soon as the tool is picked
+    // rather than making the player wait after their first click.
+    if (tool.kind === 'route') void get().ensureParcels()
+  },
 
   setHoverCell: (cell) => {
     if (get().hoverCell !== cell) set({ hoverCell: cell })
   },
 
+  setHoverParcel: (id) => {
+    if (get().hoverParcel !== id) set({ hoverParcel: id })
+  },
+
   placeAt: (cell) => {
-    const { game, mapData, tool } = get()
-    if (!game || !mapData || tool.kind !== 'site') return
-    const assessment = assessSite(game, tool.typeId, cell, mapData.grid)
-    if (!assessment.ok) return
-    set({ game: sitePlant(game, tool.typeId, cell, mapData.grid), tool: { kind: 'none' } })
+    const { game, mapData, tool, parcels } = get()
+    if (!game || !mapData) return
+
+    if (tool.kind === 'site') {
+      const assessment = assessSite(game, tool.typeId, cell, mapData.grid)
+      if (!assessment.ok) return
+      set({ game: sitePlant(game, tool.typeId, cell, mapData.grid), tool: { kind: 'none' } })
+      return
+    }
+
+    if (tool.kind === 'route') {
+      if (tool.from === null) {
+        set({ tool: { ...tool, from: cell }, plan: null })
+        return
+      }
+      // Second click closes the route and prices it.
+      const plan = planCorridor(
+        mapData.grid, tool.from, cell, tool.classId, parcels?.parcels ?? [],
+      )
+      set({ plan })
+    }
   },
 
   endQuarter: () => {
-    const { game } = get()
+    const { game, parcels } = get()
     if (!game) return
-    const { state, headlines } = resolveQuarter(game)
+    const lookup = new Map((parcels?.parcels ?? []).map((p) => [p.id, p]))
+    const { state, headlines } = resolveQuarter(game, { parcels: lookup })
     set({ game: state, headlines })
   },
 
   dismissHeadlines: () => set({ headlines: [] }),
+
+  ensureParcels: async () => {
+    const { parcels, parcelsLoading, game } = get()
+    if (parcels || parcelsLoading || !game) return
+    set({ parcelsLoading: true, parcelError: null })
+    try {
+      const loaded = await loadCountyParcels(game.contract.countyFips)
+      set({ parcels: loaded, parcelsLoading: false })
+    } catch (e) {
+      set({
+        parcelsLoading: false,
+        parcelError: e instanceof Error ? e.message : String(e),
+      })
+    }
+  },
+
+  setLineClass: (classId) => {
+    const { tool, mapData, parcels } = get()
+    if (tool.kind !== 'route') return
+    set({ tool: { ...tool, classId } })
+    // Re-price the existing route at the new voltage rather than making the
+    // player redraw it — the right-of-way width, and so the taking, changes.
+    const { plan } = get()
+    if (plan && mapData && tool.from !== null) {
+      const last = plan.cells[plan.cells.length - 1]
+      set({ plan: planCorridor(mapData.grid, tool.from, last, classId, parcels?.parcels ?? []) })
+    }
+  },
+
+  clearPlan: () => set({ plan: null, tool: { kind: 'none' } }),
+
+  commitPlan: () => {
+    const { game, plan, parcels } = get()
+    if (!game || !plan) return
+    const next = commitCorridor(game, plan, parcels?.parcels ?? [])
+    set({
+      game: next,
+      plan: null,
+      tool: { kind: 'none' },
+      selectedCorridor: next.corridors[next.corridors.length - 1]?.id ?? null,
+    })
+  },
+
+  selectCorridor: (id) => set({ selectedCorridor: id }),
+
+  offerAll: (multiple) => {
+    const { game, selectedCorridor } = get()
+    if (!game || !selectedCorridor) return
+    set({ game: engineOfferAll(game, selectedCorridor, multiple) })
+  },
+
+  setOffer: (parcelId, multiple) => {
+    const { game, selectedCorridor } = get()
+    if (!game || !selectedCorridor) return
+    set({ game: engineSetOffer(game, selectedCorridor, parcelId, multiple) })
+  },
+
+  condemnParcel: (parcelId) => {
+    const { game, selectedCorridor } = get()
+    if (!game || !selectedCorridor) return
+    const parcel = get().parcelById(parcelId)
+    if (!parcel) return
+    set({ game: engineCondemn(game, selectedCorridor, parcelId, parcel) })
+  },
+
+  abandon: (corridorId) => {
+    const { game } = get()
+    if (!game) return
+    set({ game: engineAbandon(game, corridorId), selectedCorridor: null })
+  },
+
+  parcelById: (id) => get().parcels?.parcels.find((p) => p.id === id),
 
   currentAssessment: () => {
     const { game, mapData, tool, hoverCell } = get()
