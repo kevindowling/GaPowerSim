@@ -13,7 +13,7 @@
  * Run: npm run verify:data
  */
 
-import { readFileSync, existsSync, readdirSync } from 'node:fs'
+import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { CITIES } from '../src/data/cities.ts'
@@ -36,6 +36,46 @@ const warnings: string[] = []
 
 function check(condition: boolean, message: string): void {
   if (!condition) problems.push(message)
+}
+
+/**
+ * Anything named state.json is fetched once and loaded on the very first paint,
+ * so its size is a budget, not a curiosity. This is an embed: a statewide layer
+ * that balloons to tens of megabytes would push the initial load past the point
+ * where anyone waits for it, and the failure would be invisible in development
+ * on a fast connection.
+ *
+ * 6 MB is generous for simplified vector geometry and still small enough to
+ * arrive quickly gzipped. County files are loaded on demand and get a looser
+ * bound, since nobody pays for them unless they work that county.
+ */
+const STATE_TIER_BUDGET_MB = 6
+const COUNTY_TIER_BUDGET_MB = 25
+
+function reportTier(
+  kind: string, file: string, count: number, unit: string, bytes: number,
+): void {
+  const mb = bytes / 1024 / 1024
+  const statewide = file === 'state.json'
+  const budget = statewide ? STATE_TIER_BUDGET_MB : COUNTY_TIER_BUDGET_MB
+  const label = statewide ? 'statewide' : `county ${file.replace('.json', '')}`
+  console.log(`  ${kind}/${label}: ${count.toLocaleString()} ${unit}, ${mb.toFixed(1)} MB`)
+
+  if (mb > budget) {
+    const msg = `${kind}/${file} is ${mb.toFixed(1)} MB, over the ${budget} MB budget` +
+      (statewide ? ' for a file loaded on first paint' : '')
+    if (statewide) problems.push(msg)
+    else warnings.push(msg)
+  }
+}
+
+/** "statewide + 1 county" reads better than "2 file(s)". */
+function describeTiers(files: string[]): string {
+  const counties = files.filter((f) => f !== 'state.json').length
+  const parts: string[] = []
+  if (files.includes('state.json')) parts.push('statewide')
+  if (counties > 0) parts.push(`${counties} county file${counties === 1 ? '' : 's'}`)
+  return parts.join(' + ') || 'none'
 }
 
 function requireFile(name: string): string {
@@ -215,18 +255,24 @@ if (existsSync(imageryPath)) {
 const hydroDir = resolve(DATA, 'hydrology')
 if (existsSync(hydroDir)) {
   const files = readdirSync(hydroDir).filter((f) => f.endsWith('.json'))
+  if (!files.includes('state.json')) {
+    warnings.push('hydrology: no statewide rivers (run `npm run fetch:hydrology -- --state`)')
+  }
   let ways = 0
   let bodies = 0
   for (const f of files) {
+    const bytes = statSync(resolve(hydroDir, f)).size
     const file = JSON.parse(readFileSync(resolve(hydroDir, f), 'utf8')) as {
       waterways?: unknown[]; bodies?: unknown[]; attribution?: string
     }
+    const count = (file.waterways?.length ?? 0) + (file.bodies?.length ?? 0)
     ways += file.waterways?.length ?? 0
     bodies += file.bodies?.length ?? 0
     check(!!file.attribution,
       `hydrology/${f}: no attribution — ODbL requires crediting OpenStreetMap contributors`)
+    reportTier('hydrology', f, count, 'features', bytes)
   }
-  console.log(`hydrology      ${files.length} file(s), ${ways.toLocaleString()} watercourses, ` +
+  console.log(`hydrology      ${describeTiers(files)}, ${ways.toLocaleString()} watercourses, ` +
     `${bodies.toLocaleString()} water bodies`)
 } else {
   warnings.push(
@@ -244,18 +290,22 @@ if (existsSync(roadsDir)) {
   if (!files.includes('state.json')) {
     warnings.push('roads: no statewide highways (run `npm run fetch:roads -- --state`)')
   }
+
   let totalRoads = 0
   for (const f of files) {
+    const bytes = statSync(resolve(roadsDir, f)).size
     const file = JSON.parse(readFileSync(resolve(roadsDir, f), 'utf8')) as {
       roads?: unknown[]; attribution?: string; license?: string
     }
-    totalRoads += file.roads?.length ?? 0
+    const count = file.roads?.length ?? 0
+    totalRoads += count
     // OpenStreetMap is ODbL: shipping it without attribution is a licence
     // breach, not a cosmetic omission, so this is a hard failure.
     check(!!file.attribution,
       `roads/${f}: no attribution — ODbL requires crediting OpenStreetMap contributors`)
+    reportTier('roads', f, count, 'ways', bytes)
   }
-  console.log(`roads          ${files.length} county file(s), ${totalRoads.toLocaleString()} ways`)
+  console.log(`roads          ${describeTiers(files)}, ${totalRoads.toLocaleString()} ways total`)
 } else {
   warnings.push(
     'roads: none vendored — run `npm run fetch:roads -- --state` for statewide ' +

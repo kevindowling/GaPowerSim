@@ -117,13 +117,20 @@ jobs:
       - name: Report what changed
         id: diff
         run: |
-          if git diff --quiet -- public/data; then
+          # Stage first. `git diff` only reports tracked files, and the whole
+          # point of this workflow is to produce files that do not exist yet —
+          # so the unstaged check reported "no change" after a successful fetch
+          # and the data was thrown away with the runner. Staging makes new
+          # files visible to the comparison.
+          git add -A public/data
+          if git diff --cached --quiet -- public/data; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "No change to vendored data."
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
-            git diff --stat -- public/data
-            du -sh public/data/roads public/data/basemap 2>/dev/null || true
+            git diff --cached --stat -- public/data
+            echo "--- sizes ---"
+            du -sh public/data/* 2>/dev/null || true
           fi
 
       - name: Commit
@@ -131,10 +138,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/data
+          # Already staged by the step above.
           git commit -m "Vendor ${{ inputs.what }} map data
 
-          Fetched by the fetch-data workflow. OpenStreetMap road data is
-          ODbL-1.0 and carries its attribution in the data file; NAIP imagery is
-          public domain."
+          Fetched by the fetch-data workflow. OpenStreetMap road and water data
+          is ODbL-1.0 and carries its attribution in the data file; NAIP imagery
+          is public domain."
           git push origin HEAD:"${{ inputs.branch }}"
