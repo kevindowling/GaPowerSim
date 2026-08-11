@@ -37,10 +37,14 @@ the vendored data, runs both test suites, builds, and publishes to GitHub Pages
 on every push to the default branch. It can also be run by hand from the Actions
 tab.
 
-The workflow enables Pages for the repository itself on first run
-(`configure-pages` with `enablement: true`), so there is normally nothing to set
-up by hand. If your organisation restricts that permission, turn it on manually:
-Settings → Pages → Build and deployment → Source → **GitHub Actions**.
+**One-time setup, and it cannot be automated:** Settings → Pages → Build and
+deployment → Source → **GitHub Actions**. Nothing else to configure — no branch,
+no `/docs` folder.
+
+Until that is set, the workflow builds and tests green and then fails on the last
+step with `Get Pages site failed … Not Found`. Having the workflow enable Pages
+itself was tried; the default `GITHUB_TOKEN` is not permitted to create a Pages
+site, so this stays a manual step.
 
 The site lands at `https://<user>.github.io/<repo>/`, which is a subdirectory
 rather than a domain root. A build with absolute asset paths loads perfectly on

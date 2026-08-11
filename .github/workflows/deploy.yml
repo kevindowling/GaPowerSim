@@ -95,14 +95,15 @@ jobs:
       - name: Disable Jekyll processing
         run: touch dist/.nojekyll
 
+      # Requires Pages to be enabled on the repository first:
+      #   Settings → Pages → Build and deployment → Source → GitHub Actions
+      #
+      # `enablement: true` would ask this action to switch that on by itself,
+      # and it was tried — the default GITHUB_TOKEN is not permitted to create a
+      # Pages site ("Resource not accessible by integration"), and it replaces
+      # this step's clear "Pages is not enabled" message with an opaque one. So
+      # it stays off, and the one-time setting is done by hand.
       - uses: actions/configure-pages@v5
-        # Turns Pages on for the repository if it is not already, rather than
-        # failing with "Get Pages site failed / Not Found" and waiting for
-        # somebody to find the setting. Needs the `pages: write` permission
-        # granted above. If your org restricts that, enable it by hand instead:
-        # Settings → Pages → Source → GitHub Actions.
-        with:
-          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
