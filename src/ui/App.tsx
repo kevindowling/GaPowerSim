@@ -51,6 +51,19 @@ const OVERLAYS: Array<{ id: Overlay; label: string }> = [
   { id: 'landValue', label: 'Land value' },
 ]
 
+/**
+ * What each layer is actually for. These are decision aids, not decoration:
+ * People is where opposition comes from, Land value is what right-of-way costs,
+ * and the router weighs both — so the player should be able to see what the
+ * router sees before it proposes a line straight through somebody's front yard.
+ */
+const OVERLAY_HELP: Record<Overlay, string> = {
+  none: 'Physical terrain. Switch layers to see what drives cost and opposition.',
+  population: 'Where people live. Siting and routing near them costs county approval.',
+  landValue: 'Appraised land value. This is what right-of-way and plant sites cost you.',
+  terrain: 'Physical terrain.',
+}
+
 /** Footprint radius in km for a plant's acreage, for the siting preview. */
 function footprintRadiusKm(acresValue: number): number {
   const km2 = acresValue / 247.105
@@ -65,7 +78,7 @@ export function App({ embedded = false }: { embedded?: boolean }) {
     dismissHeadlines, currentAssessment, setLineClass, clearPlan, commitPlan,
     selectCorridor, offerAll, setOffer, condemnParcel, abandon, parcelById,
     alerts, setSpeed, setPolicy, setVegetationSpend, setMaintenanceDeferred, dismissAlerts,
-    chooseHearing, dismissTutorial, finishDebrief,
+    chooseHearing, dismissTutorial, restoreTutorial, finishDebrief, cancelPlant,
   } = useGame()
 
   const [overlay, setOverlay] = useState<Overlay>('none')
@@ -215,7 +228,9 @@ export function App({ embedded = false }: { embedded?: boolean }) {
       onMaintenance={setMaintenanceDeferred}
     />
   )
-  const buildPanel = <BuildPanel game={game} tool={tool} onSelect={setTool} />
+  const buildPanel = (
+    <BuildPanel game={game} tool={tool} onSelect={setTool} onCancelPlant={cancelPlant} />
+  )
   const corridorPanel = (
     <CorridorPanel
       game={game}
@@ -305,13 +320,16 @@ export function App({ embedded = false }: { embedded?: boolean }) {
           />
 
           <div className="map-controls">
-            <div className="seg" role="group" aria-label="Map overlay">
+            <span className="controls-label" id="layer-label">Map layer</span>
+            <div className="controls-row">
+            <div className="seg" role="group" aria-labelledby="layer-label">
               {OVERLAYS.map((o) => (
                 <button
                   key={o.id}
                   className={overlay === o.id ? 'seg-btn on' : 'seg-btn'}
                   onClick={() => setOverlay(o.id)}
                   aria-pressed={overlay === o.id}
+                  title={OVERLAY_HELP[o.id]}
                 >
                   {o.label}
                 </button>
@@ -321,6 +339,17 @@ export function App({ embedded = false }: { embedded?: boolean }) {
               <input type="checkbox" checked={showHexes} onChange={(e) => setShowHexes(e.target.checked)} />
               Grid
             </label>
+            </div>
+            {/* A layer nobody understands is a layer nobody switches to, so the
+                active one says what it is for and which way the colour runs. */}
+            <p className="controls-help">
+              {OVERLAY_HELP[overlay]}
+              {overlay !== 'none' && (
+                <span className="ramp" aria-hidden="true">
+                  <em>low</em><i className={`ramp-bar ramp-${overlay}`} /><em>high</em>
+                </span>
+              )}
+            </p>
           </div>
 
           <div
@@ -377,6 +406,14 @@ export function App({ embedded = false }: { embedded?: boolean }) {
 
       {!showBriefing && !game.outcome && (
         <TutorialCoach game={game} onDismiss={dismissTutorial} />
+      )}
+
+      {/* Dismissing the coach used to be final, with nothing anywhere to undo
+          it. One stray click and the tutorial was gone for the rest of the run. */}
+      {!showBriefing && !game.outcome && game.tutorial?.dismissed && (
+        <button className="coach-restore" onClick={restoreTutorial}>
+          Show hints
+        </button>
       )}
 
       {showBriefing && <BriefingCard scenario={scenario} onAccept={accept} />}

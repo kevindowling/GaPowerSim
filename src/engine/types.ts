@@ -64,6 +64,8 @@ export interface Plant {
   nameplateMw: number
   capexTotal: number
   capexSpent: number
+  /** What the site itself cost, kept so withdrawing before construction can refund it. */
+  landCost: number
   commissionedQuarter: QuarterIndex | null
   /** Set when the player accelerated the schedule, for the cost report. */
   acceleratedQuarters: number

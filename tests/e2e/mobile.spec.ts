@@ -91,17 +91,28 @@ test('switches between panels by tab', async ({ page }) => {
   await expect(page.locator('.logstrip')).toBeVisible()
 })
 
-test('hides the coach behind the sheet rather than under it', async ({ page }) => {
+test('keeps the coach on screen when the sheet opens', async ({ page }) => {
   await page.goto('/')
   await sign(page)
-  await expect(page.locator('.coach')).toBeVisible()
+  const coach = page.locator('.coach')
+  await expect(coach).toBeVisible()
+  const full = (await coach.boundingBox())!
 
   await page.getByRole('tab', { name: /Build/ }).click()
-  // It used to render underneath the sheet, which is worse than not rendering.
-  await expect(page.locator('.coach')).toBeHidden()
+
+  // It used to be hidden outright, which read as "the tutorial disappeared when
+  // I tapped something". It stays, shrunk to its title, above the sheet.
+  await expect(coach).toBeVisible()
+  await expect(page.locator('.coach-title')).toBeVisible()
+  const shrunk = (await coach.boundingBox())!
+  expect(shrunk.height).toBeLessThan(full.height)
+
+  // And it must not sit on top of the sheet it made room for.
+  const sheet = (await page.locator('.sheet').boundingBox())!
+  expect(shrunk.y + shrunk.height).toBeLessThanOrEqual(sheet.y + 1)
 
   await page.getByRole('tab', { name: /Build/ }).click()
-  await expect(page.locator('.coach')).toBeVisible()
+  await expect(coach).toBeVisible()
 })
 
 test('lets the coach collapse so it stops covering the map', async ({ page }) => {

@@ -65,7 +65,7 @@ test('glides the camera down to Sumter County', async ({ page }) => {
   await page.screenshot({ path: 'tests/.artifacts/tutorial-open.png' })
 })
 
-test('the coach can be dismissed and does not come back', async ({ page }) => {
+test('the coach can be dismissed and does not come back on its own', async ({ page }) => {
   await page.goto('/')
   await sign(page)
   await page.getByRole('button', { name: 'Dismiss the tutorial' }).click()
@@ -75,6 +75,21 @@ test('the coach can be dismissed and does not come back', async ({ page }) => {
   const cont = page.getByRole('button', { name: 'Continue' })
   if (await cont.count()) await cont.click()
   await expect(page.locator('.coach')).toHaveCount(0)
+})
+
+test('but dismissing it is recoverable', async ({ page }) => {
+  await page.goto('/')
+  await sign(page)
+  await page.getByRole('button', { name: 'Dismiss the tutorial' }).click()
+
+  // Dismissal used to be permanent with nothing anywhere to undo it, so one
+  // stray click cost the player the tutorial for the rest of the run.
+  const restore = page.getByRole('button', { name: 'Show hints' })
+  await expect(restore).toBeVisible()
+  await restore.click()
+
+  await expect(page.locator('.coach')).toBeVisible()
+  await expect(restore).toHaveCount(0)
 })
 
 test('the hearing is a real choice with no free answer', async ({ page }) => {

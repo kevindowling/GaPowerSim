@@ -16,7 +16,7 @@ import { createGame, resetPlantCounter } from '../engine/state.ts'
 import { endQuarter as resolveQuarter, acceptContract, resolveHearing } from '../engine/turn/resolve.ts'
 import { advanceTutorial, type HearingOption } from '../engine/tutorial.ts'
 import { scoreScenario } from '../engine/scoring.ts'
-import { sitePlant, assessSite, type SiteAssessment } from '../engine/turn/siting.ts'
+import { sitePlant, assessSite, cancelPlant, type SiteAssessment } from '../engine/turn/siting.ts'
 import { scenario, type Scenario } from '../data/scenarios.ts'
 import { project } from '../engine/geo/projection.ts'
 import { pointToCell } from '../engine/geo/hex.ts'
@@ -84,8 +84,13 @@ interface Store {
   condemnParcel: (parcelId: string) => void
   abandon: (corridorId: string) => void
 
+  /** Withdraw a plant that is still in permitting, recovering most of the land. */
+  cancelPlant: (plantId: string) => void
+
   chooseHearing: (option: HearingOption) => void
   dismissTutorial: () => void
+  /** Bring the coach back after it has been dismissed. */
+  restoreTutorial: () => void
   finishDebrief: () => void
   setSpeed: (speed: Speed) => void
   setPolicy: (policy: SheddingPolicy) => void
@@ -302,10 +307,27 @@ export const useGame = create<Store>((set, get) => ({
     set({ game: resolveHearing(game, option) })
   },
 
+  cancelPlant: (plantId) => {
+    const { game } = get()
+    if (!game) return
+    const next = cancelPlant(game, plantId)
+    if (next === game) return
+    // Clear a siting tool so the player is not left mid-placement after undoing
+    // the last placement they made.
+    set({ game: next, tool: { kind: 'none' } })
+  },
+
   dismissTutorial: () => {
     const { game } = get()
     if (!game?.tutorial) return
     game.tutorial.dismissed = true
+    set({ game: { ...game } })
+  },
+
+  restoreTutorial: () => {
+    const { game } = get()
+    if (!game?.tutorial) return
+    game.tutorial.dismissed = false
     set({ game: { ...game } })
   },
 
