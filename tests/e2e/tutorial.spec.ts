@@ -115,7 +115,7 @@ test('the scripted storm takes a single-circuit campus dark', async ({ page }) =
 })
 
 test('reaches the scorecard and reports every currency', async ({ page }) => {
-  test.setTimeout(150_000)
+  test.setTimeout(180_000)
   await page.goto('/')
   await sign(page)
   await seedBeat(page, 8, '230d')
@@ -128,11 +128,18 @@ test('reaches the scorecard and reports every currency', async ({ page }) => {
 
   // The clock stops itself on anything severe, so the storm pauses the game.
   // A player would hit play again; so does this.
+  //
+  // Deadline-based rather than a fixed iteration count: the game clock runs on
+  // wall time, so on a loaded CPU (the full suite in parallel, or a CI runner)
+  // a counted loop can burn all its iterations before the simulation has ticked
+  // far enough. Bounding by elapsed time instead makes the test wait for the
+  // thing it actually cares about.
   const score = page.locator('.score')
-  for (let i = 0; i < 40; i++) {
-    if (await score.count()) break
-    await page.getByRole('button', { name: '4 times speed' }).click()
-    await page.waitForTimeout(900)
+  const deadline = Date.now() + 100_000
+  while (!(await score.count()) && Date.now() < deadline) {
+    const play = page.getByRole('button', { name: '4 times speed' })
+    if (await play.count()) await play.click({ timeout: 5_000 }).catch(() => {})
+    await page.waitForTimeout(500)
   }
   await expect(score).toBeVisible({ timeout: 30_000 })
 

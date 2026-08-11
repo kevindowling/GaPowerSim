@@ -17,6 +17,7 @@ import { readFileSync, existsSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { CITIES } from '../src/data/cities.ts'
+import { SCENARIOS } from '../src/data/scenarios.ts'
 import type { CountiesFile, HexGridManifest } from '../src/engine/geo/mapTypes.ts'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -148,6 +149,38 @@ const cityFips = new Set(CITIES.map((c) => c.countyFips))
 for (const f of cityFips) {
   check(/^13\d{3}$/.test(f), `cities.ts: ${f} is not a Georgia FIPS code`)
 }
+
+// A scenario claiming to describe a real project has to be able to prove it.
+// This is a hard failure regardless of STRICT: naming a real company as the
+// developer of a campus we cannot cite is the one data error in this project
+// that would put a false claim about somebody else into a public game.
+for (const s of SCENARIOS) {
+  check(/^13\d{3}$/.test(s.contract.countyFips),
+    `scenarios.ts: ${s.id} county ${s.contract.countyFips} is not a Georgia FIPS code`)
+
+  if (s.basedOn === 'announced') {
+    check(s.sources.length > 0,
+      `scenarios.ts: ${s.id} is marked 'announced' but cites no sources`)
+    check(s.sourceUrl !== null,
+      `scenarios.ts: ${s.id} is marked 'announced' but has no primary sourceUrl`)
+    for (const src of s.sources) {
+      check(/^https:\/\/\S+$/.test(src.url),
+        `scenarios.ts: ${s.id} source "${src.label}" is not an https URL`)
+    }
+  } else {
+    warnings.push(`scenarios.ts: ${s.id} is a projection, not a filed project`)
+  }
+
+  if (s.phasing) {
+    const total = s.phasing.count * s.phasing.mwEach
+    check(total === s.contract.contractedMw,
+      `scenarios.ts: ${s.id} phasing totals ${total} MW but the contract is ` +
+      `${s.contract.contractedMw} MW`)
+  }
+}
+
+console.log(`scenarios      ${SCENARIOS.length} defined, ` +
+  `${SCENARIOS.filter((s) => s.basedOn === 'announced').length} sourced to real projects`)
 
 // --- report --------------------------------------------------------------
 

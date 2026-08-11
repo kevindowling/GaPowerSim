@@ -590,6 +590,37 @@ kbd {
   margin: 0 0 16px;
 }
 
+/* Citations for a real project. Deliberately quiet — they should be checkable,
+   not shouted, and they must not push the Sign button off a phone screen. */
+.briefing-sources > .briefing-disclaimer {
+  margin-bottom: 8px;
+}
+
+.briefing-sources ul {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  max-height: 116px;
+  overflow-y: auto;
+}
+
+.briefing-sources li {
+  font-size: 11px;
+  line-height: 1.45;
+  padding: 3px 0;
+}
+
+.briefing-sources a {
+  color: var(--ink-soft);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.briefing-sources a:hover,
+.briefing-sources a:focus-visible {
+  color: var(--ink);
+}
+
 .headlines {
   background: var(--panel);
   border-radius: 12px;

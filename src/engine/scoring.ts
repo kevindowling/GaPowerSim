@@ -97,7 +97,7 @@ function headlineFor(state: GameState, parts: ScoreParts, score: number): string
   const shedCustomers = (state.realtime?.unservedCustomerMwh ?? 0) > 20
 
   if (state.energizedQuarter === null) {
-    return 'The campus never energized. Ridgeline is still billing you for every quarter it waits.'
+    return 'The campus never energized. Liberty is still billing you for every quarter it waits.'
   }
   if (shedCustomers && parts.onTime >= 16) {
     return 'You met every date, and the people of Sumter County sat in the dark to make it happen.'

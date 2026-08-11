@@ -59,7 +59,7 @@ export const BEATS: readonly TutorialBeat[] = [
     title: 'The deal',
     focus: 'contract',
     body: [
-      'Ridgeline Compute wants 400 megawatts outside Americus, drawing around the clock from the day it opens.',
+      'Liberty Data Centers wants 400 megawatts outside Americus — four phases, about 100 each — drawing around the clock from the day it opens.',
       'They front the capital. You owe them power by the end of 2029, and a penalty every quarter you are late.',
       'Sign it.',
     ],
@@ -217,7 +217,7 @@ export const HEARING_OPTIONS: readonly HearingOption[] = [
     id: 'hyperscaler-pays',
     label: 'The data centre pays for all of it',
     detail:
-      'You absorb the negotiation and Ridgeline covers the network upgrades. It costs you now, and nobody in Sumter County pays a cent for a line they did not ask for.',
+      'You absorb the negotiation and Liberty covers the network upgrades. It costs you now, and nobody in Sumter County pays a cent for a line they did not ask for.',
     cost: 62_000_000,
     approvalDelta: 14,
     grievance: null,
