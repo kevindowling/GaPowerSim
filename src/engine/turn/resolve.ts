@@ -21,6 +21,7 @@ import { resolveOffer, condemnationAward } from '../parcels/negotiation.ts'
 import { acquisitionComplete } from './corridor.ts'
 import { lineClass } from '../../data/transmission.ts'
 import { createRealtimeState } from '../realtime/types.ts'
+import { advanceTutorial, type HearingOption } from '../tutorial.ts'
 
 /** Annualised cost of carrying a negative cash balance. */
 const FINANCING_RATE_PER_QUARTER = 0.0155
@@ -304,8 +305,43 @@ export function endQuarter(prev: GameState, ctx: TurnContext = {}): QuarterResul
   state.quarter += 1
   state.rngState = rng.state
 
+  // 8. Has the player just finished a tutorial beat?
+  advanceTutorial(state)
+
   const headlines = state.log.slice(logStart).filter((e) => e.important).map((e) => e.text)
   return { state, headlines }
+}
+
+/**
+ * Answer the county commission on who pays for the network upgrades.
+ *
+ * The cheap option is cheap on the budget and expensive everywhere else, and
+ * the county writes it down either way.
+ */
+export function resolveHearing(prev: GameState, option: HearingOption): GameState {
+  const state: GameState = structuredClone(prev)
+  if (state.tutorial?.hearingResolved) return prev
+
+  state.cash -= option.cost
+  const county = state.counties[state.contract.countyFips]
+  if (county) {
+    county.approval = Math.max(0, Math.min(100, county.approval + option.approvalDelta))
+    if (option.grievance) county.grievances.push(option.grievance)
+  }
+
+  pushLog(
+    state, 'politics',
+    option.ratepayerShare === 0
+      ? `Cost allocation settled: ${state.contract.developer} covers the network upgrades in full.`
+      : option.ratepayerShare === 1
+        ? 'Cost allocation settled: the upgrades go to the rate base. The hearing room did not take it well.'
+        : 'Cost allocation settled: the upgrade cost is split with the rate base.',
+    true,
+  )
+
+  if (state.tutorial) state.tutorial.hearingResolved = true
+  advanceTutorial(state)
+  return state
 }
 
 /** Accept the offered contract. Returns a new state. */

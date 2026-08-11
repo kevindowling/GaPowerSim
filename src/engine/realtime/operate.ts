@@ -13,8 +13,11 @@ import { loadAt, customerLoadForPopulation } from './load.ts'
 import { dispatch } from './dispatch.ts'
 import { stepReliability, outAssets, capacityDerates } from './reliability.ts'
 import {
-  TICK_MINUTES, HISTORY_LENGTH, type RealtimeState, type IntervalRecord,
+  TICK_MINUTES, TICKS_PER_HOUR, HISTORY_LENGTH,
+  type RealtimeState, type IntervalRecord,
 } from './types.ts'
+import { advanceTutorial } from '../tutorial.ts'
+import { lineClass } from '../../data/transmission.ts'
 
 /** Dollars per MWh of contracted load not delivered. */
 const CONTRACT_SHORTFALL_PENALTY = 420
@@ -49,6 +52,14 @@ export function stepRealtime(
   const hours = TICK_MINUTES / 60
   const events: string[] = []
   let severe = false
+
+  // 0. The tutorial's storm is scripted, because the lesson it teaches is the
+  //    whole reason the redundancy choice existed and it cannot be left to a
+  //    die roll that might never come up.
+  for (const event of stageTutorialStorm(state, rt, rng)) {
+    events.push(event)
+    severe = true
+  }
 
   // 1. What broke, what the weather is doing, what got fixed.
   for (const event of stepReliability(state, rt, rng, bounds)) {
@@ -105,8 +116,56 @@ export function stepRealtime(
 
   rt.tick += 1
   state.rngState = rng.state
+  advanceTutorial(state)
 
   return { events, severe }
+}
+
+/**
+ * Put a storm on the corridor at a fixed point in the tutorial.
+ *
+ * A single-circuit line loses everything and the campus goes dark. A double
+ * circuit loses one side and keeps carrying. Same weather, opposite night, and
+ * the difference was chosen hours ago at the voltage-class picker.
+ */
+function stageTutorialStorm(state: GameState, rt: RealtimeState, rng: Rng): string[] {
+  const t = state.tutorial
+  if (!t || t.stormFired || rt.tick < t.stormAtTick) return []
+
+  const corridor = state.corridors.find((c) => c.status === 'energized')
+  if (!corridor) return []
+
+  t.stormFired = true
+  const cls = lineClass(corridor.classId)
+  const total = cls.circuits === 1
+
+  // Park a severe cell right on the line so the player can see the cause.
+  const mid = corridor.centerline[Math.floor(corridor.centerline.length / 2)] ?? [0, 0]
+  rt.storms.push({
+    id: `storm-tutorial-${rt.tick}`,
+    x: mid[0] - 12,
+    y: mid[1],
+    vx: 2.2,
+    vy: 0,
+    radiusKm: 30,
+    severity: 0.95,
+    ticksRemaining: 26,
+    name: 'the line out of Alabama',
+  })
+
+  rt.outages.push({
+    assetId: corridor.id,
+    kind: 'corridor',
+    cause: 'structure down',
+    ticksRemaining: Math.round(rng.range(10, 20) * TICKS_PER_HOUR),
+    capacityFraction: total ? 0 : 1 / cls.circuits,
+    crews: 0,
+    startedTick: rt.tick,
+  })
+
+  return [total
+    ? `${cls.name}: structure down in the line out of Alabama. The campus is dark.`
+    : `${cls.name}: one circuit lost in the line out of Alabama. The other is carrying the campus.`]
 }
 
 /**

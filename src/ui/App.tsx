@@ -9,10 +9,15 @@ import { CorridorPanel } from './panels/CorridorPanel.tsx'
 import { AcquisitionPanel } from './panels/AcquisitionPanel.tsx'
 import { LogPanel } from './panels/LogPanel.tsx'
 import { DispatchPanel } from './panels/DispatchPanel.tsx'
+import { TutorialCoach } from './TutorialCoach.tsx'
+import { HearingDialog } from './HearingDialog.tsx'
+import { ScoreScreen } from './ScoreScreen.tsx'
+import { currentBeat } from '../engine/tutorial.ts'
 import type {
   Marker, Overlay, SitingPreview, CorridorDraw, ParcelTint,
 } from '../render/mapRenderer.ts'
 import { corridorBuffer } from '../engine/geo/polygon.ts'
+import { cellCenter } from '../engine/geo/hex.ts'
 import { lineClass } from '../data/transmission.ts'
 import type { IconKey } from '../render/icons.ts'
 import { plantType, type PlantKind } from '../data/plants.ts'
@@ -58,6 +63,7 @@ export function App({ embedded = false }: { embedded?: boolean }) {
     dismissHeadlines, currentAssessment, setLineClass, clearPlan, commitPlan,
     selectCorridor, offerAll, setOffer, condemnParcel, abandon, parcelById,
     alerts, setSpeed, setPolicy, setVegetationSpend, setMaintenanceDeferred, dismissAlerts,
+    chooseHearing, dismissTutorial, finishDebrief,
   } = useGame()
 
   const [overlay, setOverlay] = useState<Overlay>('none')
@@ -65,12 +71,26 @@ export function App({ embedded = false }: { embedded?: boolean }) {
   const [hoverName, setHoverName] = useState<string | null>(null)
   const [hoverCell, setHoverCellLocal] = useState<CellReadout | null>(null)
   const [scale, setScale] = useState(1)
+  /** Set once, when the scenario opens, to bring the player to the site. */
+  const [focus, setFocus] = useState<{ x: number; y: number; scale: number } | null>(null)
 
   useEffect(() => { void load() }, [load])
 
   useEffect(() => {
     if (mapData && !game) startScenario('americus-400')
   }, [mapData, game, startScenario])
+
+  // When the contract is signed, glide from the statewide view down to Sumter
+  // County. Starting the player at 0.9 px/km with the campus as a single dot is
+  // technically the whole state and practically useless.
+  useEffect(() => {
+    if (!game || !mapData || showBriefing || focus) return
+    const spec = mapData.grid.spec
+    const cell = game.contract.siteCell
+    const row = Math.floor(cell / spec.cols)
+    const [x, y] = cellCenter(spec, cell - row * spec.cols, row)
+    setFocus({ x, y, scale: 26 })
+  }, [game, mapData, showBriefing, focus])
 
   const handleHover = useCallback(
     (name: string | null, cell: CellReadout | null, cellIndex: number) => {
@@ -194,6 +214,7 @@ export function App({ embedded = false }: { embedded?: boolean }) {
             corridors={corridorDraws}
             hoverParcel={hoverParcel}
             storms={game.realtime?.storms}
+            focus={focus}
             onHoverCounty={handleHover}
             onClickCell={placeAt}
             onScaleChange={setScale}
@@ -290,7 +311,19 @@ export function App({ embedded = false }: { embedded?: boolean }) {
 
       {!embedded && <LogPanel log={game.log} />}
 
+      {!showBriefing && !game.outcome && (
+        <TutorialCoach game={game} onDismiss={dismissTutorial} />
+      )}
+
       {showBriefing && <BriefingCard scenario={scenario} onAccept={accept} />}
+
+      {!showBriefing && currentBeat(game)?.id === 'hearing' && (
+        <HearingDialog game={game} onChoose={chooseHearing} />
+      )}
+
+      {game.outcome && !game.tutorial?.debriefSeen && (
+        <ScoreScreen game={game} outcome={game.outcome} onContinue={finishDebrief} />
+      )}
 
       {alerts.length > 0 && (
         <div className="alert-stack" role="status" aria-live="assertive">

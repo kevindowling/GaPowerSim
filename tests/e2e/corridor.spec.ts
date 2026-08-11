@@ -15,6 +15,18 @@ async function clearHeadlines(page: Page): Promise<void> {
   if (await cont.count()) await cont.click()
 }
 
+/**
+ * Answer the county commission if it has convened. The hearing gates progress
+ * on purpose, so anything that plays past acquisition has to deal with it.
+ */
+async function clearHearing(page: Page): Promise<void> {
+  const hearing = page.locator('.hearing')
+  if (await hearing.count()) {
+    await page.getByRole('button', { name: /The data centre pays for all of it/ }).click()
+    await expect(hearing).toHaveCount(0)
+  }
+}
+
 /** Zoom into south-west Georgia so map clicks land in Sumter County. */
 async function zoomToSumter(page: Page): Promise<void> {
   const box = (await page.locator('canvas.map-canvas').boundingBox())!
@@ -170,10 +182,13 @@ test('plays the whole chain through to energization', async ({ page }) => {
     if (done >= total) break
 
     const slider = page.locator('.bulk-offer input[type="range"]')
-    await slider.fill(String(Math.min(4, 1.5 + round * 0.35)))
+    // Snap to the input's 0.05 step and stringify without a trailing zero —
+    // the element normalises "1.50" to "1.5" and then rejects the mismatch.
+    await slider.fill(String(Math.round(Math.min(4, 1.5 + round * 0.35) * 20) / 20))
     await page.getByRole('button', { name: 'Send offers' }).click()
     await page.getByRole('button', { name: 'End quarter' }).click()
     await clearHeadlines(page)
+    await clearHearing(page)
 
     if (round >= 4) {
       const holdouts = page.locator('.parcel-row.status-holdout')
@@ -188,9 +203,11 @@ test('plays the whole chain through to energization', async ({ page }) => {
   // Run out the construction schedule.
   for (let q = 0; q < 22; q++) {
     if (await page.locator('.hud').innerText().then((t) => t.includes('Energized'))) break
+    await clearHearing(page)
     await page.getByRole('button', { name: 'End quarter' }).click()
     await clearHeadlines(page)
   }
+  await clearHearing(page)
 
   await expect(page.locator('.hud')).toContainText('Energized')
   await expect(page.locator('.logstrip')).toContainText('energized')

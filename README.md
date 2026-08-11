@@ -10,10 +10,11 @@ travel down a corridor of poles that crosses somebody's land. When a landowner
 says no, your only tools are more money, a longer route, or eminent domain. Then
 the power has to actually stay on.
 
-**Status: M4 — the grid runs, and it breaks.** You can sign the Americus deal,
-site generation, route a corridor across real property lines, fight the people
-who say no, energize — and then operate it in real time while storms take your
-line down. See [Milestones](#milestones).
+**Status: M5 — the Americus tutorial is finished and playable end to end.**
+Nine beats from signing the contract to the scorecard: site generation, route a
+corridor across real property, fight the people who say no, answer to the county
+commission, energize, and then hold it together when the storm arrives. See
+[Milestones](#milestones).
 
 ## Quick start
 
@@ -193,9 +194,38 @@ owners stay real where they carry meaning.
 - [x] **M2** Parcel pipeline, corridor takings, severance damage, eminent domain
 - [x] **M3** Energization, real-time dispatch, power flow, unserved energy
 - [x] **M4** Reliability: forced outages, storms, line breaks, cascades
-- [ ] **M5** Tutorial script, scoring, embed polish
+- [x] **M5** Tutorial script, scoring, embed polish
 - [ ] **M6** Real-world data accuracy pass
 - [ ] **M7** Campaign: adjacency unlock, cumulative grid, scenario 2+
+
+## The tutorial
+
+Nine beats, each gated on the previous one, and each taught by consequence
+rather than by tooltip. The player is never told "solar will not work" — they are
+shown firm capacity next to nameplate and allowed to find out. They are never
+told "buy the second circuit" — they are offered it, and six beats later a storm
+arrives.
+
+1. **The deal** — 400 MW, a hard date, and a penalty for every quarter you miss it
+2. **Something has to make it** — firm capacity, not nameplate
+3. **Something has to carry it** — a plant with nowhere to send its output serves nobody
+4. **Somebody owns all of it** — every parcel under the line has an owner
+5. **And somebody will say no** — pay, condemn, or reroute; there is no fourth option
+6. **Sumter County has questions** — who pays for the upgrades, with no free answer
+7. **Energize** — the game stops being about deadlines
+8. **Now keep it on** — flat campus load stacked on a county that peaks in the heat
+9. **The night it matters** — the storm, and the voltage class you picked in beat 3
+
+A beat completes because the player did the thing, never because they clicked
+past a dialog — the beat system only reads game state. The coach can be
+dismissed permanently at any point.
+
+The debrief scores five separate currencies rather than one number, because the
+argument the game is making is that they trade against each other. Land taken by
+force is scored apart from county approval on purpose: a county can forgive you,
+and the record still exists. The headline says the uncomfortable part out loud —
+"You met every date, and the people of Sumter County sat in the dark to make it
+happen" is a more honest summary of some runs than 83/100.
 
 ## Controls
 

@@ -9,6 +9,7 @@ import type { GameState, Contract, CountyState, Plant, CapacitySummary, LogEntry
 import { plantType, unitCapex, type PlantType } from '../data/plants.ts'
 import { DEFAULT_COUNTY_APPROVAL, type Scenario } from '../data/scenarios.ts'
 import type { CountiesFile } from './geo/mapTypes.ts'
+import { createTutorialState } from './tutorial.ts'
 
 export const STATE_VERSION = 1
 
@@ -63,6 +64,8 @@ export function createGame(sc: Scenario, siteCell: number, counties: CountiesFil
     log: [],
     energizedQuarter: null,
     realtime: null,
+    tutorial: createTutorialState(),
+    outcome: null,
   }
 }
 

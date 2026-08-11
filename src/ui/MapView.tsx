@@ -20,6 +20,11 @@ interface Props {
   corridors?: readonly CorridorDraw[]
   hoverParcel?: string | null
   storms?: readonly StormDraw[]
+  /**
+   * Where the camera should be looking. Changing this eases the view there;
+   * the player can pan away freely afterwards.
+   */
+  focus?: { x: number; y: number; scale: number } | null
   onHoverCounty: (name: string | null, cell: CellReadout | null, cellIndex: number) => void
   onClickCell?: (cell: number) => void
   onScaleChange: (scale: number) => void
@@ -38,7 +43,7 @@ export interface CellReadout {
  */
 export function MapView({
   data, overlay, showHexes, markers, siting, placing,
-  parcels, parcelTints, corridors, hoverParcel, storms,
+  parcels, parcelTints, corridors, hoverParcel, storms, focus,
   onHoverCounty, onClickCell, onScaleChange,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -134,6 +139,34 @@ export function MapView({
     overlay, showHexes, markers, siting, parcels, parcelTints, corridors, hoverParcel, storms,
     markDirty,
   ])
+
+  // --- camera focus ------------------------------------------------------
+  // Ease rather than jump: a cut leaves the player with no idea where they
+  // just went, whereas a short glide keeps the state visible on the way in.
+  useEffect(() => {
+    if (!focus || !ready) return
+    const cam = camRef.current
+    const from = { x: cam.centerX, y: cam.centerY, scale: cam.scale }
+    const start = performance.now()
+    const DURATION = 900
+    let raf = 0
+
+    const ease = (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2)
+
+    const step = () => {
+      const t = Math.min(1, (performance.now() - start) / DURATION)
+      const k = ease(t)
+      cam.centerX = from.x + (focus.x - from.x) * k
+      cam.centerY = from.y + (focus.y - from.y) * k
+      // Interpolate zoom geometrically, so it feels linear.
+      cam.scale = from.scale * (focus.scale / from.scale) ** k
+      onScaleChange(cam.scale)
+      markDirty()
+      if (t < 1) raf = requestAnimationFrame(step)
+    }
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
+  }, [focus, ready, markDirty, onScaleChange])
 
   // --- interaction -------------------------------------------------------
   useEffect(() => {

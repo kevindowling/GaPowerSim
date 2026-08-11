@@ -12,6 +12,7 @@ import type { LineClassId } from '../data/transmission.ts'
 import type { ParcelDeal } from './parcels/negotiation.ts'
 import type { Taking } from './parcels/takings.ts'
 import type { RealtimeState } from './realtime/types.ts'
+import type { TutorialState } from './tutorial.ts'
 
 // --- the deal ------------------------------------------------------------
 
@@ -161,6 +162,23 @@ export interface GameState {
    * because there is nothing to operate yet.
    */
   realtime: RealtimeState | null
+
+  /** Present while the Americus tutorial is running; null in free play. */
+  tutorial: TutorialState | null
+
+  /** Set once the scenario has been scored, which ends it. */
+  outcome: Outcome | null
+}
+
+/** How the scenario finished, and what it cost to get there. */
+export interface Outcome {
+  /** Quarter the scorecard was produced. */
+  quarter: QuarterIndex
+  /** 0-100. */
+  score: number
+  grade: string
+  headline: string
+  lines: Array<{ label: string; value: string; tone: 'good' | 'bad' | 'plain' }>
 }
 
 /** Firm capacity currently online, MW. */

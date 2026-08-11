@@ -13,7 +13,9 @@ import type { GameState } from '../engine/types.ts'
 import type { PlantKind } from '../data/plants.ts'
 import { loadMapData } from '../data/loadMapData.ts'
 import { createGame, resetPlantCounter } from '../engine/state.ts'
-import { endQuarter as resolveQuarter, acceptContract } from '../engine/turn/resolve.ts'
+import { endQuarter as resolveQuarter, acceptContract, resolveHearing } from '../engine/turn/resolve.ts'
+import { advanceTutorial, type HearingOption } from '../engine/tutorial.ts'
+import { scoreScenario } from '../engine/scoring.ts'
 import { sitePlant, assessSite, type SiteAssessment } from '../engine/turn/siting.ts'
 import { scenario, type Scenario } from '../data/scenarios.ts'
 import { project } from '../engine/geo/projection.ts'
@@ -82,6 +84,9 @@ interface Store {
   condemnParcel: (parcelId: string) => void
   abandon: (corridorId: string) => void
 
+  chooseHearing: (option: HearingOption) => void
+  dismissTutorial: () => void
+  finishDebrief: () => void
   setSpeed: (speed: Speed) => void
   setPolicy: (policy: SheddingPolicy) => void
   setVegetationSpend: (value: number) => void
@@ -162,7 +167,9 @@ export const useGame = create<Store>((set, get) => ({
   accept: () => {
     const { game } = get()
     if (!game) return
-    set({ game: acceptContract(game), showBriefing: false })
+    const next = acceptContract(game)
+    advanceTutorial(next)
+    set({ game: next, showBriefing: false })
   },
 
   dismissBriefing: () => set({ showBriefing: false }),
@@ -189,7 +196,9 @@ export const useGame = create<Store>((set, get) => ({
     if (tool.kind === 'site') {
       const assessment = assessSite(game, tool.typeId, cell, mapData.grid)
       if (!assessment.ok) return
-      set({ game: sitePlant(game, tool.typeId, cell, mapData.grid), tool: { kind: 'none' } })
+      const next = sitePlant(game, tool.typeId, cell, mapData.grid)
+      advanceTutorial(next)
+      set({ game: next, tool: { kind: 'none' } })
       return
     }
 
@@ -250,6 +259,7 @@ export const useGame = create<Store>((set, get) => ({
     const { game, plan, parcels } = get()
     if (!game || !plan) return
     const next = commitCorridor(game, plan, parcels?.parcels ?? [])
+    advanceTutorial(next)
     set({
       game: next,
       plan: null,
@@ -286,6 +296,26 @@ export const useGame = create<Store>((set, get) => ({
     set({ game: engineAbandon(game, corridorId), selectedCorridor: null })
   },
 
+  chooseHearing: (option) => {
+    const { game } = get()
+    if (!game) return
+    set({ game: resolveHearing(game, option) })
+  },
+
+  dismissTutorial: () => {
+    const { game } = get()
+    if (!game?.tutorial) return
+    game.tutorial.dismissed = true
+    set({ game: { ...game } })
+  },
+
+  finishDebrief: () => {
+    const { game } = get()
+    if (!game?.tutorial) return
+    game.tutorial.debriefSeen = true
+    set({ game: { ...game } })
+  },
+
   setSpeed: (speed) => {
     const { game, mapData } = get()
     if (!game?.realtime || !mapData) return
@@ -316,6 +346,13 @@ export const useGame = create<Store>((set, get) => ({
           stopClock()
           break
         }
+      }
+
+      // The tutorial ends when the storm has been ridden out; score it once.
+      if (!current.outcome && (current.tutorial?.beat ?? 0) >= 9) {
+        current.outcome = scoreScenario(current)
+        current.realtime.speed = 0
+        stopClock()
       }
 
       set((s) => ({
