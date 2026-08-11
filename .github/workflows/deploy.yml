@@ -68,9 +68,19 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
 
+      - name: Build
+        run: npm run build
+
+      - name: Confirm the build works from a subdirectory
+        # Pages serves at /<repo>/, not the domain root. A build with absolute
+        # asset paths loads fine locally and 404s once deployed, silently — so
+        # this is checked rather than assumed. Runs before the browser tests so
+        # the cheap check fails fast.
+        run: npm run check:build
+
       - name: Browser tests
-        # This also produces the production build, since the Playwright config
-        # serves dist/ rather than a dev server.
+        # Rebuilds via the Playwright config's webServer, which serves dist/
+        # rather than a dev server, so the tests exercise the shipped output.
         run: npm run test:e2e
 
       - name: Upload failure artifacts
@@ -80,15 +90,7 @@ jobs:
           name: playwright-artifacts
           path: tests/.artifacts/
           retention-days: 7
-
-      - name: Build
-        run: npm run build
-
-      - name: Confirm the build works from a subdirectory
-        # Pages serves at /<repo>/, not the domain root. A build with absolute
-        # asset paths loads fine locally and 404s once deployed, silently — so
-        # this is checked rather than assumed.
-        run: npm run check:build
+          if-no-files-found: ignore
 
       - name: Disable Jekyll processing
         run: touch dist/.nojekyll

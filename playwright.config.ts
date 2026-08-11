@@ -35,9 +35,18 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run build && npx vite preview --port 4173 --strictPort',
+    // `--host 127.0.0.1` is load-bearing. Left to its default, vite preview binds
+    // to "localhost", which on a GitHub runner resolves to ::1 first while
+    // Playwright polls 127.0.0.1 — the server comes up healthy and the wait times
+    // out anyway. Binding explicitly to the address being polled removes the
+    // ambiguity.
+    command: 'npm run build && npx vite preview --port 4173 --strictPort --host 127.0.0.1',
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
+    // Surface the build and server output. Without this a failure to start is
+    // reported only as a timeout, with no indication of why.
+    stdout: 'pipe',
+    stderr: 'pipe',
   },
 })
