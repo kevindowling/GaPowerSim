@@ -11,6 +11,13 @@ const PREINSTALLED_CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'
 const executablePath = existsSync(PREINSTALLED_CHROME) ? PREINSTALLED_CHROME : undefined
 
 /**
+ * `--no-sandbox` because these containers run as root, and Chromium refuses to
+ * start its zygote sandbox as root. The pages under test are our own static
+ * build, so there is no untrusted content to sandbox away from.
+ */
+const launchOptions = { executablePath, args: ['--no-sandbox'] }
+
+/**
  * Chromium is preinstalled in this environment at PLAYWRIGHT_BROWSERS_PATH, so
  * there is never a reason to run `playwright install` here.
  *
@@ -31,7 +38,17 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'], launchOptions: { executablePath } },
+      use: { ...devices['Desktop Chrome'], launchOptions },
+      // The mobile layout is a different arrangement, not a narrower one, so it
+      // gets its own project rather than doubling every desktop test.
+      testIgnore: '**/mobile.spec.ts',
+    },
+    {
+      name: 'mobile',
+      testMatch: '**/mobile.spec.ts',
+      // iPhone 13's device profile defaults to WebKit, which isn't installed
+      // here. We want its viewport, DPR and touch flags, not its engine.
+      use: { ...devices['iPhone 13'], browserName: 'chromium', launchOptions },
     },
   ],
   webServer: {

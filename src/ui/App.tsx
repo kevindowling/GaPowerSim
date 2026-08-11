@@ -13,6 +13,8 @@ import { TutorialCoach } from './TutorialCoach.tsx'
 import { HearingDialog } from './HearingDialog.tsx'
 import { ScoreScreen } from './ScoreScreen.tsx'
 import { currentBeat } from '../engine/tutorial.ts'
+import { useMediaQuery, MOBILE_QUERY } from './useMediaQuery.ts'
+import { MobileSheet, type SheetTab, type SheetTabDef } from './MobileSheet.tsx'
 import type {
   Marker, Overlay, SitingPreview, CorridorDraw, ParcelTint,
 } from '../render/mapRenderer.ts'
@@ -74,6 +76,11 @@ export function App({ embedded = false }: { embedded?: boolean }) {
   /** Set once, when the scenario opens, to bring the player to the site. */
   const [focus, setFocus] = useState<{ x: number; y: number; scale: number } | null>(null)
 
+  const isMobile = useMediaQuery(MOBILE_QUERY)
+  const [sheetTab, setSheetTab] = useState<SheetTab>('build')
+  // Starts collapsed so the first thing a player sees is the map, not a panel.
+  const [sheetOpen, setSheetOpen] = useState(false)
+
   useEffect(() => { void load() }, [load])
 
   useEffect(() => {
@@ -89,8 +96,8 @@ export function App({ embedded = false }: { embedded?: boolean }) {
     const cell = game.contract.siteCell
     const row = Math.floor(cell / spec.cols)
     const [x, y] = cellCenter(spec, cell - row * spec.cols, row)
-    setFocus({ x, y, scale: 26 })
-  }, [game, mapData, showBriefing, focus])
+    setFocus({ x, y, scale: isMobile ? 16 : 26 })
+  }, [game, mapData, showBriefing, focus, isMobile])
 
   const handleHover = useCallback(
     (name: string | null, cell: CellReadout | null, cellIndex: number) => {
@@ -196,9 +203,86 @@ export function App({ embedded = false }: { embedded?: boolean }) {
     )
   }
 
+  // The panels, built once and placed either in the desktop sidebar or the
+  // mobile sheet. Same components, two arrangements.
+  const dispatchPanel = game.realtime && (
+    <DispatchPanel
+      game={game}
+      rt={game.realtime}
+      onSpeed={setSpeed}
+      onPolicy={setPolicy}
+      onVegetation={setVegetationSpend}
+      onMaintenance={setMaintenanceDeferred}
+    />
+  )
+  const buildPanel = <BuildPanel game={game} tool={tool} onSelect={setTool} />
+  const corridorPanel = (
+    <CorridorPanel
+      game={game}
+      tool={tool}
+      plan={plan}
+      parcelsLoading={parcelsLoading}
+      parcelError={parcelError}
+      syntheticParcels={parcels?.synthetic ?? false}
+      selectedCorridor={selectedCorridor}
+      onStartRoute={() => setTool({ kind: 'route', from: null, classId: '230' })}
+      onSetClass={setLineClass}
+      onCommit={commitPlan}
+      onCancel={clearPlan}
+      onSelectCorridor={selectCorridor}
+    />
+  )
+  const acquisitionPanel = activeCorridor && activeCorridor.status !== 'energized' && (
+    <AcquisitionPanel
+      game={game}
+      corridor={activeCorridor}
+      parcelById={parcelById}
+      onOfferAll={offerAll}
+      onSetOffer={setOffer}
+      onCondemn={condemnParcel}
+      onAbandon={abandon}
+      onHoverParcel={setHoverParcel}
+    />
+  )
+  const contractPanel = <ContractPanel game={game} />
+
+  // Unsettled parcels and live faults are the two things that need the player
+  // back in a panel, so they get a badge on the tab rather than staying hidden.
+  const outstanding = activeCorridor
+    ? Object.values(activeCorridor.deals).filter(
+        (d) => d.status !== 'accepted' && d.status !== 'condemned').length
+    : 0
+  const faults = game.realtime?.outages.length ?? 0
+
+  const sheetTabs: SheetTabDef[] = [
+    { id: 'build', label: 'Build' },
+    {
+      id: 'grid',
+      label: 'Grid',
+      badge: outstanding > 0 ? outstanding : undefined,
+      urgent: outstanding > 0,
+    },
+    { id: 'deal', label: 'Deal' },
+    ...(game.realtime
+      ? [{
+          id: 'ops' as const,
+          label: 'Ops',
+          badge: faults > 0 ? faults : undefined,
+          urgent: faults > 0,
+        }]
+      : []),
+    { id: 'log', label: 'Log' },
+  ]
+
+  const sheetContent = sheetTab === 'build' ? buildPanel
+    : sheetTab === 'grid' ? <>{corridorPanel}{acquisitionPanel}</>
+    : sheetTab === 'deal' ? contractPanel
+    : sheetTab === 'ops' ? dispatchPanel
+    : <LogPanel log={game.log} />
+
   return (
-    <div className="app">
-      <HUD game={game} onEndQuarter={endQuarter} busy={showBriefing} />
+    <div className={`app${isMobile ? ' mobile' : ''}${isMobile && sheetOpen ? ' sheet-open' : ''}`}>
+      <HUD game={game} onEndQuarter={endQuarter} busy={showBriefing} compact={isMobile} />
 
       <div className="body">
         <main className="stage">
@@ -239,7 +323,10 @@ export function App({ embedded = false }: { embedded?: boolean }) {
             </label>
           </div>
 
-          <div className="readout" aria-live="polite">
+          <div
+            className={tool.kind === 'site' && assessment ? 'readout siting' : 'readout'}
+            aria-live="polite"
+          >
             {tool.kind === 'site' && assessment ? (
               <SiteReadout assessment={assessment} typeId={tool.typeId} />
             ) : hoverName ? (
@@ -261,55 +348,32 @@ export function App({ embedded = false }: { embedded?: boolean }) {
           </div>
 
           <div className="scalebar"><ScaleBar pxPerKm={scale} /></div>
+
+        {isMobile && (
+          <MobileSheet
+            tabs={sheetTabs}
+            active={sheetTab}
+            open={sheetOpen}
+            onSelect={(t) => { setSheetTab(t); setSheetOpen(true) }}
+            onToggle={() => setSheetOpen((v) => !v)}
+          >
+            {sheetContent}
+          </MobileSheet>
+        )}
         </main>
 
-        <aside className="sidebar">
-          {game.realtime && (
-            <DispatchPanel
-              game={game}
-              rt={game.realtime}
-              onSpeed={setSpeed}
-              onPolicy={setPolicy}
-              onVegetation={setVegetationSpend}
-              onMaintenance={setMaintenanceDeferred}
-            />
-          )}
-
-          <BuildPanel game={game} tool={tool} onSelect={setTool} />
-
-          <CorridorPanel
-            game={game}
-            tool={tool}
-            plan={plan}
-            parcelsLoading={parcelsLoading}
-            parcelError={parcelError}
-            syntheticParcels={parcels?.synthetic ?? false}
-            selectedCorridor={selectedCorridor}
-            onStartRoute={() => setTool({ kind: 'route', from: null, classId: '230' })}
-            onSetClass={setLineClass}
-            onCommit={commitPlan}
-            onCancel={clearPlan}
-            onSelectCorridor={selectCorridor}
-          />
-
-          {activeCorridor && activeCorridor.status !== 'energized' && (
-            <AcquisitionPanel
-              game={game}
-              corridor={activeCorridor}
-              parcelById={parcelById}
-              onOfferAll={offerAll}
-              onSetOffer={setOffer}
-              onCondemn={condemnParcel}
-              onAbandon={abandon}
-              onHoverParcel={setHoverParcel}
-            />
-          )}
-
-          <ContractPanel game={game} />
-        </aside>
+        {!isMobile && (
+          <aside className="sidebar">
+            {dispatchPanel}
+            {buildPanel}
+            {corridorPanel}
+            {acquisitionPanel}
+            {contractPanel}
+          </aside>
+        )}
       </div>
 
-      {!embedded && <LogPanel log={game.log} />}
+      {!embedded && !isMobile && <LogPanel log={game.log} />}
 
       {!showBriefing && !game.outcome && (
         <TutorialCoach game={game} onDismiss={dismissTutorial} />
