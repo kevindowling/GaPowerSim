@@ -25,11 +25,35 @@ const HEX_FADE_FULL = 14
 
 export type Overlay = 'none' | 'population' | 'landValue' | 'terrain'
 
+export type MarkerKind =
+  | 'datacenter'
+  | 'plant-permitting'
+  | 'plant-construction'
+  | 'plant-online'
+
+export interface Marker {
+  cell: number
+  kind: MarkerKind
+  label: string
+  /** 0–1, drawn as a progress ring on plants under construction. */
+  progress?: number
+}
+
+/** The ghost of a plant the player is about to place. */
+export interface SitingPreview {
+  cell: number
+  ok: boolean
+  /** Footprint radius in km, so a solar farm visibly dwarfs a turbine. */
+  radiusKm: number
+}
+
 export interface RenderOptions {
   overlay: Overlay
   /** County index under the pointer, or -1. */
   hoverCounty: number
   showHexes: boolean
+  markers?: readonly Marker[]
+  siting?: SitingPreview | null
 }
 
 interface CityScreen {
@@ -175,6 +199,112 @@ export class MapRenderer {
 
     this.drawCounties(ctx, cam, vp, opts.hoverCounty)
     this.drawCities(ctx, cam, vp)
+    if (opts.siting) this.drawSitingPreview(ctx, cam, vp, opts.siting)
+    if (opts.markers?.length) this.drawMarkers(ctx, cam, vp, opts.markers)
+  }
+
+  /**
+   * Assets on the map. Plants and the campus they serve are the only saturated
+   * marks besides corridors, so they read instantly against the land tones.
+   */
+  private drawMarkers(
+    ctx: CanvasRenderingContext2D, cam: Camera, vp: Viewport, markers: readonly Marker[],
+  ): void {
+    const vis = cam.visibleBounds(vp)
+    ctx.save()
+    ctx.textBaseline = 'middle'
+    ctx.textAlign = 'left'
+
+    for (const m of markers) {
+      const [wx, wy] = this.cellCenterOf(m.cell)
+      if (wx < vis.minX || wx > vis.maxX || wy < vis.minY || wy > vis.maxY) continue
+      const [px, py] = cam.toScreen(wx, wy, vp)
+
+      if (m.kind === 'datacenter') {
+        // A squared-off block: server halls, not a power plant.
+        const s = 9
+        ctx.beginPath()
+        ctx.roundRect(px - s, py - s, s * 2, s * 2, 3)
+        ctx.fillStyle = PALETTE.dataCenter
+        ctx.fill()
+        ctx.lineWidth = 2
+        ctx.strokeStyle = PALETTE.paper
+        ctx.stroke()
+        // Rack lines, so it reads as a building rather than a dot.
+        ctx.beginPath()
+        ctx.strokeStyle = 'rgba(242,239,230,0.75)'
+        ctx.lineWidth = 1.4
+        for (let i = -1; i <= 1; i++) {
+          ctx.moveTo(px - s + 3, py + i * 4)
+          ctx.lineTo(px + s - 3, py + i * 4)
+        }
+        ctx.stroke()
+      } else {
+        const online = m.kind === 'plant-online'
+        const building = m.kind === 'plant-construction'
+        const r = 7.5
+
+        ctx.beginPath()
+        ctx.arc(px, py, r, 0, Math.PI * 2)
+        ctx.fillStyle = online ? PALETTE.energized : PALETTE.paper
+        ctx.fill()
+        ctx.lineWidth = 2.2
+        ctx.strokeStyle = online ? PALETTE.plant : building ? PALETTE.warn : PALETTE.inkFaint
+        if (!online && !building) ctx.setLineDash([3, 3])
+        ctx.stroke()
+        ctx.setLineDash([])
+
+        // Progress ring: how far along construction is, at a glance.
+        if (building && m.progress !== undefined && m.progress > 0) {
+          ctx.beginPath()
+          ctx.arc(px, py, r + 3.5, -Math.PI / 2, -Math.PI / 2 + m.progress * Math.PI * 2)
+          ctx.strokeStyle = PALETTE.warn
+          ctx.lineWidth = 2.5
+          ctx.lineCap = 'round'
+          ctx.stroke()
+          ctx.lineCap = 'butt'
+        }
+      }
+
+      // Label only when there's room to read it.
+      if (cam.scale > 2.5) {
+        ctx.font = '600 11px ui-sans-serif, system-ui, sans-serif'
+        ctx.lineWidth = 3
+        ctx.strokeStyle = 'rgba(242,239,230,0.92)'
+        ctx.strokeText(m.label, px + 13, py)
+        ctx.fillStyle = PALETTE.ink
+        ctx.fillText(m.label, px + 13, py)
+      }
+    }
+    ctx.restore()
+  }
+
+  private drawSitingPreview(
+    ctx: CanvasRenderingContext2D, cam: Camera, vp: Viewport, s: SitingPreview,
+  ): void {
+    if (s.cell < 0) return
+    const [wx, wy] = this.cellCenterOf(s.cell)
+    const [px, py] = cam.toScreen(wx, wy, vp)
+    const rPx = Math.max(7, s.radiusKm * cam.scale)
+
+    ctx.save()
+    // The footprint circle is drawn to true scale: a 1,400-acre solar farm
+    // should look alarming next to a 40-acre turbine site, because it is.
+    ctx.beginPath()
+    ctx.arc(px, py, rPx, 0, Math.PI * 2)
+    ctx.fillStyle = s.ok ? 'rgba(94,140,106,0.20)' : 'rgba(198,72,60,0.20)'
+    ctx.fill()
+    ctx.setLineDash([5, 4])
+    ctx.lineWidth = 2
+    ctx.strokeStyle = s.ok ? PALETTE.ok : PALETTE.fault
+    ctx.stroke()
+    ctx.setLineDash([])
+
+    ctx.beginPath()
+    ctx.arc(px, py, 3, 0, Math.PI * 2)
+    ctx.fillStyle = s.ok ? PALETTE.ok : PALETTE.fault
+    ctx.fill()
+    ctx.restore()
   }
 
   private drawRaster(

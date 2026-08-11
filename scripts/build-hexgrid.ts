@@ -223,16 +223,28 @@ function main(): void {
   }
 
   // --- population density ------------------------------------------------
-  // Each city contributes an exponentially decaying field; bigger places reach
-  // further, which approximates a metro's suburban falloff well enough to make
-  // routing avoid populated ground.
+  // Each place spreads its population over a radially decaying kernel. Two
+  // things matter for this to produce a usable cost surface:
+  //
+  //  1. The radius comes from the population itself, since urban area scales
+  //     with the number of people in it. A town of 16,000 occupies a couple of
+  //     kilometres, not the twenty-five a log-of-population rule would give it —
+  //     get this wrong and every rural county reads as suburban.
+  //  2. The kernel is normalised so that its integral returns the actual
+  //     population, which makes the output genuinely people per km² rather than
+  //     an arbitrary index.
+  const TYPICAL_URBAN_DENSITY = 900 // people/km² inside a place's own footprint
   const cityPts = CITIES.map((c) => {
     const [x, y] = project(c.lon, c.lat)
-    return { x, y, pop: c.population, decay: 2.5 + 5.5 * Math.log10(Math.max(c.population, 100)) }
+    const radius = Math.max(1.5, Math.sqrt(c.population / (Math.PI * TYPICAL_URBAN_DENSITY)))
+    return {
+      x, y, radius,
+      // ∫ A·e^(−d/r) dA = A·2πr², so this amplitude conserves total population.
+      amplitude: c.population / (2 * Math.PI * radius * radius),
+    }
   })
 
-  const raw = new Float32Array(total)
-  let maxRaw = 0
+  const density = new Float32Array(total) // people per km²
   for (let row = 0; row < spec.rows; row++) {
     for (let col = 0; col < spec.cols; col++) {
       const idx = row * spec.cols + col
@@ -241,18 +253,21 @@ function main(): void {
       let acc = 0
       for (const c of cityPts) {
         const d = Math.hypot(cx - c.x, cy - c.y)
-        if (d > c.decay * 4) continue
-        acc += (c.pop / (HEX_AREA_KM2 * 1000)) * Math.exp(-d / c.decay)
+        if (d > c.radius * 6) continue
+        acc += c.amplitude * Math.exp(-d / c.radius)
       }
-      raw[idx] = acc
-      if (acc > maxRaw) maxRaw = acc
+      density[idx] = acc
     }
   }
-  // Log scale: the useful signal is "is anyone here at all", not Atlanta's peak.
-  const logMax = Math.log1p(maxRaw)
+
+  // Saturating curve rather than a log one. A log scale anchored to Atlanta's
+  // peak makes 7 people/km² look like 30% density; this keeps genuinely empty
+  // country reading as empty, which is what siting and routing costs turn on.
+  const HALF_SATURATION = 120 // people/km² that maps to the middle of the range
   for (let i = 0; i < total; i++) {
     if (county[i] === 255) continue
-    population[i] = Math.min(255, Math.round((Math.log1p(raw[i]) / logMax) * 255))
+    const d = density[i]
+    population[i] = Math.round((d / (d + HALF_SATURATION)) * 255)
   }
 
   // --- land value --------------------------------------------------------

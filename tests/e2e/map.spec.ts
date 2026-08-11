@@ -22,6 +22,12 @@ async function canvasColours(page: Page): Promise<string[]> {
   })
 }
 
+/** Get past the briefing so the map is interactive. */
+export async function signContract(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Sign the contract' }).click()
+  await expect(page.locator('.briefing')).toHaveCount(0)
+}
+
 test('loads the vendored map and paints Georgia', async ({ page }) => {
   const consoleErrors: string[] = []
   page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()) })
@@ -29,17 +35,16 @@ test('loads the vendored map and paints Georgia', async ({ page }) => {
 
   await page.goto('/')
   await expect(page.locator('canvas.map-canvas')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Americus' })).toBeVisible()
 
-  // The status bar reports what actually loaded.
-  await expect(page.getByText('159 counties')).toBeVisible()
+  await signContract(page)
+  await page.waitForTimeout(700)
 
-  await page.waitForTimeout(800)
   const colours = await canvasColours(page)
   // Paper plus several terrain tones — a blank or single-colour canvas fails here.
   expect(colours.length).toBeGreaterThan(4)
 
   expect(consoleErrors).toEqual([])
-
   await page.screenshot({ path: 'tests/.artifacts/statewide.png' })
 })
 
@@ -52,7 +57,8 @@ test('makes no requests to external hosts', async ({ page }) => {
 
   await page.goto('/')
   await page.waitForSelector('canvas.map-canvas')
-  await page.waitForTimeout(1000)
+  await signContract(page)
+  await page.waitForTimeout(900)
 
   // County parcel portals, tile servers, fonts, analytics — none of it. All the
   // geodata is vendored, which is what keeps the embed self-contained.
@@ -61,9 +67,9 @@ test('makes no requests to external hosts', async ({ page }) => {
 
 test('pans and zooms', async ({ page }) => {
   await page.goto('/')
+  await signContract(page)
   const canvas = page.locator('canvas.map-canvas')
-  await expect(canvas).toBeVisible()
-  await page.waitForTimeout(600)
+  await page.waitForTimeout(500)
 
   const before = await canvasColours(page)
 
@@ -73,18 +79,15 @@ test('pans and zooms', async ({ page }) => {
   await page.waitForTimeout(400)
 
   const after = await canvasColours(page)
-  // Zooming in changes the mix of what's on screen.
   expect(after.join('|')).not.toEqual(before.join('|'))
-
-  // The scale bar should be reporting a shorter distance after zooming in.
   await expect(page.locator('.scalebar-inner span')).toBeVisible()
 })
 
 test('hovering a county reports it', async ({ page }) => {
   await page.goto('/')
+  await signContract(page)
   const canvas = page.locator('canvas.map-canvas')
-  await expect(canvas).toBeVisible()
-  await page.waitForTimeout(600)
+  await page.waitForTimeout(500)
 
   const box = (await canvas.boundingBox())!
   // The centre of the framed state is reliably inside Georgia.
@@ -94,9 +97,9 @@ test('hovering a county reports it', async ({ page }) => {
   await expect(page.locator('.readout-title')).toContainText('County')
 })
 
-test('embed variant fills the frame without host chrome', async ({ page }) => {
+test('embed variant drops the host-page chrome', async ({ page }) => {
   await page.goto('/embed.html')
   await expect(page.locator('canvas.map-canvas')).toBeVisible()
-  // The status bar belongs to the standalone page, not the embed.
-  await expect(page.locator('.statusbar')).toHaveCount(0)
+  // The event log belongs to the standalone page, not the embed.
+  await expect(page.locator('.logstrip')).toHaveCount(0)
 })

@@ -1,13 +1,18 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { Camera } from '../render/camera.ts'
-import { MapRenderer, type Overlay } from '../render/mapRenderer.ts'
+import { MapRenderer, type Overlay, type Marker, type SitingPreview } from '../render/mapRenderer.ts'
 import type { MapData } from '../engine/geo/mapTypes.ts'
 
 interface Props {
   data: MapData
   overlay: Overlay
   showHexes: boolean
-  onHoverCounty: (name: string | null, cell: CellReadout | null) => void
+  markers?: readonly Marker[]
+  siting?: SitingPreview | null
+  /** True while a placement tool is armed, which changes the cursor. */
+  placing?: boolean
+  onHoverCounty: (name: string | null, cell: CellReadout | null, cellIndex: number) => void
+  onClickCell?: (cell: number) => void
   onScaleChange: (scale: number) => void
 }
 
@@ -22,7 +27,10 @@ export interface CellReadout {
  * Rendering runs on requestAnimationFrame but only repaints when something has
  * actually changed, so an idle map costs nothing.
  */
-export function MapView({ data, overlay, showHexes, onHoverCounty, onScaleChange }: Props) {
+export function MapView({
+  data, overlay, showHexes, markers, siting, placing,
+  onHoverCounty, onClickCell, onScaleChange,
+}: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const camRef = useRef(new Camera())
@@ -40,10 +48,11 @@ export function MapView({ data, overlay, showHexes, onHoverCounty, onScaleChange
     rendererRef.current = renderer
     const cam = camRef.current
     cam.bounds = renderer.stateBounds
-    // 0.9 px/km still shows the whole state on a small embed; 400 px/km is
-    // close enough to see individual parcels later.
+    // 0.9 px/km still fits the whole state on a small embed. 150 px/km puts a
+    // 1 km hex at 150 px and a typical parcel frontage at a readable size, which
+    // is as deep as the game ever needs to go.
     cam.minScale = 0.9
-    cam.maxScale = 400
+    cam.maxScale = 150
     setReady(true)
     markDirty()
   }, [data, markDirty])
@@ -97,14 +106,16 @@ export function MapView({ data, overlay, showHexes, onHoverCounty, onScaleChange
         overlay,
         hoverCounty: hoverCountyRef.current,
         showHexes,
+        markers,
+        siting,
       })
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [overlay, showHexes])
+  }, [overlay, showHexes, markers, siting])
 
-  // Repaint when display options change.
-  useEffect(markDirty, [overlay, showHexes, markDirty])
+  // Repaint when anything the renderer reads changes.
+  useEffect(markDirty, [overlay, showHexes, markers, siting, markDirty])
 
   // --- interaction -------------------------------------------------------
   useEffect(() => {
@@ -132,17 +143,18 @@ export function MapView({ data, overlay, showHexes, onHoverCounty, onScaleChange
         hoverCountyRef.current = ci
         markDirty()
       }
+      const cell = renderer.cellAt(wx, wy)
       if (ci < 0) {
-        onHoverCounty(null, null)
+        onHoverCounty(null, null, cell)
         return
       }
-      const cell = renderer.cellAt(wx, wy)
       const g = data.grid
       onHoverCounty(
         data.counties.counties[ci]?.name ?? null,
         cell >= 0
           ? { terrain: g.terrain[cell], population: g.population[cell], landValue: g.landValue[cell] }
           : null,
+        cell,
       )
     }
 
@@ -199,10 +211,22 @@ export function MapView({ data, overlay, showHexes, onHoverCounty, onScaleChange
     }
 
     const endPointer = (e: PointerEvent) => {
+      const wasDragging = dragging
       pointers.delete(e.pointerId)
       if (pointers.size < 2) pinchDist = 0
       if (pointers.size === 0) dragging = false
       if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId)
+
+      // A click is a pointer-up that didn't travel. Anything more was a pan,
+      // and panning must never place a several-hundred-million-dollar plant.
+      if (e.type === 'pointerup' && wasDragging && moved < 5 && onClickCell) {
+        const renderer = rendererRef.current
+        if (!renderer) return
+        const [x, y] = localPoint(e)
+        const [wx, wy] = camRef.current.toWorld(x, y, vpRef.current)
+        const cell = renderer.cellAt(wx, wy)
+        if (cell >= 0) onClickCell(cell)
+      }
     }
 
     const onWheel = (e: WheelEvent) => {
@@ -223,7 +247,7 @@ export function MapView({ data, overlay, showHexes, onHoverCounty, onScaleChange
         hoverCountyRef.current = -1
         markDirty()
       }
-      onHoverCounty(null, null)
+      onHoverCounty(null, null, -1)
     }
 
     canvas.addEventListener('pointerdown', onPointerDown)
@@ -240,7 +264,7 @@ export function MapView({ data, overlay, showHexes, onHoverCounty, onScaleChange
       canvas.removeEventListener('pointerleave', onLeave)
       canvas.removeEventListener('wheel', onWheel)
     }
-  }, [data, markDirty, onHoverCounty, onScaleChange])
+  }, [data, markDirty, onHoverCounty, onClickCell, onScaleChange])
 
   // --- keyboard ----------------------------------------------------------
   const onKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -269,7 +293,7 @@ export function MapView({ data, overlay, showHexes, onHoverCounty, onScaleChange
     <div ref={wrapRef} className="map-wrap">
       <canvas
         ref={canvasRef}
-        className="map-canvas"
+        className={placing ? 'map-canvas placing' : 'map-canvas'}
         tabIndex={0}
         onKeyDown={onKeyDown}
         aria-label="Map of Georgia. Drag to pan, scroll to zoom, arrow keys to move."

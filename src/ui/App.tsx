@@ -1,8 +1,15 @@
-import { useEffect, useState, useCallback } from 'react'
-import { loadMapData } from '../data/loadMapData.ts'
-import type { MapData } from '../engine/geo/mapTypes.ts'
+import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useGame } from '../state/gameStore.ts'
 import { MapView, type CellReadout } from './MapView.tsx'
-import type { Overlay } from '../render/mapRenderer.ts'
+import { HUD } from './HUD.tsx'
+import { BriefingCard } from './BriefingCard.tsx'
+import { BuildPanel } from './panels/BuildPanel.tsx'
+import { ContractPanel } from './panels/ContractPanel.tsx'
+import { LogPanel } from './panels/LogPanel.tsx'
+import type { Marker, Overlay, SitingPreview } from '../render/mapRenderer.ts'
+import { plantType, type PlantKind } from '../data/plants.ts'
+import type { SiteAssessment } from '../engine/turn/siting.ts'
+import { money, acres } from './format.ts'
 
 const TERRAIN_NAMES: Record<number, string> = {
   0: 'Outside Georgia',
@@ -20,41 +27,86 @@ const OVERLAYS: Array<{ id: Overlay; label: string }> = [
   { id: 'landValue', label: 'Land value' },
 ]
 
+/** Footprint radius in km for a plant's acreage, for the siting preview. */
+function footprintRadiusKm(acresValue: number): number {
+  const km2 = acresValue / 247.105
+  return Math.sqrt(km2 / Math.PI)
+}
+
 export function App({ embedded = false }: { embedded?: boolean }) {
-  const [data, setData] = useState<MapData | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const {
+    mapData, loadError, game, scenario, tool, headlines, showBriefing, hoverCell: hoverCellIndex,
+    load, startScenario, accept, setTool, setHoverCell, placeAt, endQuarter,
+    dismissHeadlines, currentAssessment,
+  } = useGame()
+
   const [overlay, setOverlay] = useState<Overlay>('none')
   const [showHexes, setShowHexes] = useState(true)
   const [hoverName, setHoverName] = useState<string | null>(null)
-  const [hoverCell, setHoverCell] = useState<CellReadout | null>(null)
+  const [hoverCell, setHoverCellLocal] = useState<CellReadout | null>(null)
   const [scale, setScale] = useState(1)
 
+  useEffect(() => { void load() }, [load])
+
   useEffect(() => {
-    let cancelled = false
-    loadMapData()
-      .then((d) => { if (!cancelled) setData(d) })
-      .catch((e: unknown) => { if (!cancelled) setError(e instanceof Error ? e.message : String(e)) })
-    return () => { cancelled = true }
-  }, [])
+    if (mapData && !game) startScenario('americus-400')
+  }, [mapData, game, startScenario])
 
-  const handleHover = useCallback((name: string | null, cell: CellReadout | null) => {
-    setHoverName(name)
-    setHoverCell(cell)
-  }, [])
+  const handleHover = useCallback(
+    (name: string | null, cell: CellReadout | null, cellIndex: number) => {
+      setHoverName(name)
+      setHoverCellLocal(cell)
+      setHoverCell(cellIndex)
+    },
+    [setHoverCell],
+  )
 
-  if (error) {
+  // Plants and the campus they serve.
+  const markers = useMemo<Marker[]>(() => {
+    if (!game) return []
+    const out: Marker[] = [{
+      cell: game.contract.siteCell,
+      kind: 'datacenter',
+      label: game.contract.name,
+    }]
+    for (const p of game.plants) {
+      const t = plantType(p.typeId)
+      const total = p.status === 'permitting' ? t.permitQuarters : t.buildQuarters
+      out.push({
+        cell: p.cell,
+        kind: p.status === 'online' ? 'plant-online'
+          : p.status === 'construction' ? 'plant-construction'
+          : 'plant-permitting',
+        label: p.name,
+        progress: total > 0 ? (total - p.quartersRemaining) / total : 0,
+      })
+    }
+    return out
+  }, [game])
+
+  const assessment = currentAssessment()
+  const siting = useMemo<SitingPreview | null>(() => {
+    if (tool.kind !== 'site' || !assessment) return null
+    return {
+      cell: hoverCellIndex,
+      ok: assessment.ok,
+      radiusKm: footprintRadiusKm(plantType(tool.typeId).acres),
+    }
+  }, [tool, assessment, hoverCellIndex])
+
+  if (loadError) {
     return (
       <div className="fill center">
         <div className="notice">
           <h2>Could not load map data</h2>
-          <p className="mono">{error}</p>
+          <p className="mono">{loadError}</p>
           <p>Run <code>npm run data</code> to regenerate <code>public/data/</code>.</p>
         </div>
       </div>
     )
   }
 
-  if (!data) {
+  if (!mapData || !game || !scenario) {
     return (
       <div className="fill center">
         <div className="loading">
@@ -65,85 +117,116 @@ export function App({ embedded = false }: { embedded?: boolean }) {
     )
   }
 
-  const inState = data.grid.manifest.inStateCells
-  const areaKm2 = Math.round(inState * data.grid.manifest.hexAreaKm2)
-
   return (
     <div className="app">
-      <header className="topbar">
-        <div className="brand">
-          <strong>GaPowerSim</strong>
-          <span className="sub">Georgia Power · 2026</span>
-        </div>
+      <HUD game={game} onEndQuarter={endQuarter} busy={showBriefing} />
 
-        <div className="controls">
-          <div className="seg" role="group" aria-label="Map overlay">
-            {OVERLAYS.map((o) => (
-              <button
-                key={o.id}
-                className={overlay === o.id ? 'seg-btn on' : 'seg-btn'}
-                onClick={() => setOverlay(o.id)}
-                aria-pressed={overlay === o.id}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={showHexes}
-              onChange={(e) => setShowHexes(e.target.checked)}
-            />
-            Grid
-          </label>
-        </div>
-      </header>
+      <div className="body">
+        <main className="stage">
+          <MapView
+            data={mapData}
+            overlay={overlay}
+            showHexes={showHexes}
+            markers={markers}
+            siting={siting}
+            placing={tool.kind === 'site'}
+            onHoverCounty={handleHover}
+            onClickCell={placeAt}
+            onScaleChange={setScale}
+          />
 
-      <main className="stage">
-        <MapView
-          data={data}
-          overlay={overlay}
-          showHexes={showHexes}
-          onHoverCounty={handleHover}
-          onScaleChange={setScale}
-        />
-
-        <div className="readout" aria-live="polite">
-          {hoverName ? (
-            <>
-              <div className="readout-title">{hoverName} County</div>
-              {hoverCell && (
-                <dl className="readout-grid">
-                  <dt>Terrain</dt>
-                  <dd>{TERRAIN_NAMES[hoverCell.terrain] ?? '—'}</dd>
-                  <dt>Land</dt>
-                  <dd>${hoverCell.landValue.toLocaleString()}/acre</dd>
-                  <dt>Density</dt>
-                  <dd>{Math.round((hoverCell.population / 255) * 100)}%</dd>
-                </dl>
-              )}
-            </>
-          ) : (
-            <div className="readout-hint">
-              Drag to pan · scroll to zoom · <kbd>0</kbd> to reset
+          <div className="map-controls">
+            <div className="seg" role="group" aria-label="Map overlay">
+              {OVERLAYS.map((o) => (
+                <button
+                  key={o.id}
+                  className={overlay === o.id ? 'seg-btn on' : 'seg-btn'}
+                  onClick={() => setOverlay(o.id)}
+                  aria-pressed={overlay === o.id}
+                >
+                  {o.label}
+                </button>
+              ))}
             </div>
-          )}
-        </div>
+            <label className="check">
+              <input type="checkbox" checked={showHexes} onChange={(e) => setShowHexes(e.target.checked)} />
+              Grid
+            </label>
+          </div>
 
-        <div className="scalebar">
-          <ScaleBar pxPerKm={scale} />
-        </div>
-      </main>
+          <div className="readout" aria-live="polite">
+            {tool.kind === 'site' && assessment ? (
+              <SiteReadout assessment={assessment} typeId={tool.typeId} />
+            ) : hoverName ? (
+              <>
+                <div className="readout-title">{hoverName} County</div>
+                {hoverCell && (
+                  <dl className="readout-grid">
+                    <dt>Terrain</dt><dd>{TERRAIN_NAMES[hoverCell.terrain] ?? '—'}</dd>
+                    <dt>Land</dt><dd>${hoverCell.landValue.toLocaleString()}/acre</dd>
+                    <dt>Density</dt><dd>{Math.round((hoverCell.population / 255) * 100)}%</dd>
+                  </dl>
+                )}
+              </>
+            ) : (
+              <div className="readout-hint">
+                Drag to pan · scroll to zoom · <kbd>0</kbd> to reset
+              </div>
+            )}
+          </div>
 
-      {!embedded && (
-        <footer className="statusbar">
-          <span>{data.counties.counties.length} counties</span>
-          <span>{inState.toLocaleString()} cells · {areaKm2.toLocaleString()} km²</span>
-          <span className="muted">M0 · map foundation</span>
-        </footer>
+          <div className="scalebar"><ScaleBar pxPerKm={scale} /></div>
+        </main>
+
+        <aside className="sidebar">
+          <BuildPanel game={game} tool={tool} onSelect={setTool} />
+          <ContractPanel game={game} />
+        </aside>
+      </div>
+
+      {!embedded && <LogPanel log={game.log} />}
+
+      {showBriefing && <BriefingCard scenario={scenario} onAccept={accept} />}
+
+      {headlines.length > 0 && (
+        <div className="overlay soft" onClick={dismissHeadlines}>
+          <div className="headlines" role="dialog" aria-modal="true">
+            <h2>This quarter</h2>
+            <ul>{headlines.map((h, i) => <li key={i}>{h}</li>)}</ul>
+            <button className="btn-primary" onClick={dismissHeadlines}>Continue</button>
+          </div>
+        </div>
       )}
     </div>
+  )
+}
+
+/** What siting here would actually cost, shown before the click that commits it. */
+function SiteReadout({
+  assessment, typeId,
+}: {
+  assessment: SiteAssessment
+  typeId: PlantKind
+}) {
+  const t = plantType(typeId)
+  if (!assessment.ok) {
+    return (
+      <>
+        <div className="readout-title tone-bad">Cannot site here</div>
+        <p className="readout-blocker">{assessment.blocker}</p>
+      </>
+    )
+  }
+  return (
+    <>
+      <div className="readout-title">{assessment.countyName} County</div>
+      <dl className="readout-grid">
+        <dt>Land</dt><dd>{money(assessment.landCost)}</dd>
+        <dt>Footprint</dt><dd>{acres(t.acres)}</dd>
+        <dt>Approval</dt><dd className="tone-bad">−{Math.round(assessment.approvalCost)}</dd>
+      </dl>
+      {assessment.notes.map((n, i) => <p key={i} className="readout-note">{n}</p>)}
+    </>
   )
 }
 
@@ -153,10 +236,9 @@ function ScaleBar({ pxPerKm }: { pxPerKm: number }) {
   const rawKm = targetPx / Math.max(pxPerKm, 1e-6)
   const pow = 10 ** Math.floor(Math.log10(rawKm))
   const nice = [1, 2, 5, 10].map((m) => m * pow).find((v) => v >= rawKm) ?? 10 * pow
-  const widthPx = nice * pxPerKm
   const label = nice >= 1 ? `${nice} km` : `${Math.round(nice * 1000)} m`
   return (
-    <div className="scalebar-inner" style={{ width: `${widthPx}px` }}>
+    <div className="scalebar-inner" style={{ width: `${nice * pxPerKm}px` }}>
       <span>{label}</span>
     </div>
   )
