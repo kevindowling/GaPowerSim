@@ -30,13 +30,31 @@ export function BriefingCard({ scenario, onAccept }: Props) {
           <div><dt>Penalty per quarter late</dt><dd>{money(c.latePenaltyPerQuarter)}</dd></div>
         </dl>
 
-        {scenario.basedOn === 'projection' && (
+        {scenario.basedOn === 'projection' ? (
           <p className="briefing-disclaimer">
             This scenario is a <strong>projection</strong>, not a filed project. Georgia's data
             center pipeline and the grid it strains are real; this particular campus and its
             developer are invented so that no real company is described as having announced
             something it has not.
           </p>
+        ) : (
+          <div className="briefing-sources">
+            <p className="briefing-disclaimer">
+              This is a <strong>real project</strong>. The developer, the site, the phase structure
+              and the opposition are reported fact. The utility-side deal terms above — the capital
+              advance, the deadline, the penalties — are invented to make a game; no such contract
+              is public.
+            </p>
+            <ul>
+              {scenario.sources.map((s) => (
+                <li key={s.url}>
+                  <a href={s.url} target="_blank" rel="noreferrer noopener">
+                    {s.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
 
         <button className="btn-primary btn-large" onClick={onAccept}>

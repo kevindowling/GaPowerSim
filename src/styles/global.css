@@ -590,6 +590,37 @@ kbd {
   margin: 0 0 16px;
 }
 
+/* Citations for a real project. Deliberately quiet — they should be checkable,
+   not shouted, and they must not push the Sign button off a phone screen. */
+.briefing-sources > .briefing-disclaimer {
+  margin-bottom: 8px;
+}
+
+.briefing-sources ul {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  max-height: 116px;
+  overflow-y: auto;
+}
+
+.briefing-sources li {
+  font-size: 11px;
+  line-height: 1.45;
+  padding: 3px 0;
+}
+
+.briefing-sources a {
+  color: var(--ink-soft);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.briefing-sources a:hover,
+.briefing-sources a:focus-visible {
+  color: var(--ink);
+}
+
 .headlines {
   background: var(--panel);
   border-radius: 12px;
@@ -1073,3 +1104,253 @@ kbd {
 
 /* Only on genuinely short windows is there no room for both. */
 @media (max-height: 620px) { .coach { bottom: 12px; } .readout { display: none; } }
+
+/* ======================================================================
+   Mobile
+   ----------------------------------------------------------------------
+   On a phone the desktop layout does not degrade, it fails: a 292 px
+   sidebar next to a map leaves the canvas 73 px wide, and four HUD stats
+   in a row print on top of each other. So below 820 px the map becomes
+   the screen and the panels move into a sheet over the bottom of it.
+   ====================================================================== */
+
+@media (max-width: 820px) {
+  .app.mobile .body { flex-direction: column; }
+
+  /* The map is the interface: a corridor is drawn by touching two points
+     on it, so it gets the whole viewport. */
+  .app.mobile .stage { flex: 1 1 auto; min-height: 0; }
+
+  /* --- compact HUD --- */
+  .hud.compact {
+    gap: 12px;
+    padding: 8px 10px;
+    /* Clear of a notch or rounded corner in landscape. */
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
+  }
+  .hud.compact .hud-stats { gap: 14px; }
+  .hud.compact .stat-label { font-size: 9.5px; }
+  .hud.compact .stat-value { font-size: 13px; }
+  .hud.compact .stat-wide { flex: 1 1 auto; min-width: 0; }
+  .hud.compact .btn-primary {
+    /* 44 px is the smallest thing a thumb reliably hits. */
+    min-height: 44px;
+    padding: 8px 14px;
+  }
+
+  /* --- map furniture shrinks out of the way --- */
+  .map-controls {
+    left: 8px;
+    top: 8px;
+    padding: 3px 5px;
+    gap: 6px;
+    max-width: calc(100% - 16px);
+    overflow-x: auto;
+  }
+  .map-controls .check { display: none; }
+  .seg-btn { padding: 7px 10px; }
+
+  /* The hover readout is a mouse idea; a finger has no hover. Siting still
+     needs its cost preview, so that variant stays. */
+  .readout { display: none; }
+  .app.mobile .stage .readout.siting { display: block; left: 8px; right: 8px; max-width: none; bottom: 68px; }
+  .scalebar { right: 8px; bottom: 64px; }
+
+  /* --- the sheet --- */
+  .sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 14;
+    display: flex;
+    flex-direction: column;
+    pointer-events: none;
+  }
+
+  .sheet-tabs {
+    display: flex;
+    gap: 2px;
+    padding: 4px 6px;
+    padding-bottom: max(4px, env(safe-area-inset-bottom));
+    background: var(--panel);
+    border-top: 1px solid var(--line);
+    pointer-events: auto;
+    order: 2;
+  }
+  .sheet.open .sheet-tabs { order: 0; border-top: 0; border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+
+  .sheet-tab {
+    appearance: none;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 44px;
+    border: 0;
+    background: transparent;
+    color: var(--ink-soft);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+  .sheet-tab.on { background: var(--paper-deep); color: var(--ink); }
+  .sheet-tab.urgent .sheet-badge { background: var(--fault); color: #fff; }
+
+  .sheet-badge {
+    font-size: 10px;
+    font-weight: 700;
+    background: var(--ink-faint);
+    color: var(--panel);
+    border-radius: 9px;
+    padding: 1px 5px;
+    min-width: 16px;
+  }
+
+  .sheet-body {
+    display: none;
+    background: var(--panel);
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -6px 24px rgba(51, 50, 44, 0.14);
+    pointer-events: auto;
+    order: 1;
+    /* Tall enough to work in, short enough to keep the map in view. */
+    max-height: 52vh;
+    flex-direction: column;
+  }
+  .sheet.open .sheet-body { display: flex; }
+
+  .sheet-grip {
+    appearance: none;
+    border: 0;
+    background: none;
+    padding: 7px 0 3px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+  }
+  .sheet-grip span {
+    display: block;
+    width: 38px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--line);
+  }
+
+  .sheet-scroll {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 4px 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overscroll-behavior: contain;
+  }
+
+  /* --- the coach sits above the tab bar, never under it --- */
+  .coach {
+    left: 8px;
+    right: 8px;
+    width: auto;
+    bottom: 60px;
+    padding: 10px 12px;
+  }
+  .app.mobile .coach { bottom: 60px; }
+  /* With the sheet open there is no room for both, and the coach was rendering
+     underneath it. The sheet is what the player just asked for, so it wins. */
+  .app.sheet-open .coach { display: none; }
+  .app.sheet-open .alert-stack { display: none; }
+  .coach-title { font-size: 14px; }
+  .coach p { font-size: 12px; }
+  .coach-close { min-width: 32px; min-height: 32px; }
+
+  /* Alerts are full width above the tab bar rather than pinned to a sidebar
+     that no longer exists. */
+  .alert-stack { left: 8px; right: 8px; top: auto; bottom: 60px; width: auto; }
+
+  /* --- bigger touch targets throughout the panels --- */
+  .btn-tiny { min-height: 34px; padding: 6px 10px; font-size: 12px; }
+  .parcel-actions { flex-wrap: wrap; gap: 8px; }
+  .plant-card, .corridor-card, .hearing-option, .policy-btn { padding: 11px 12px; }
+  .class-btn { min-height: 48px; }
+  input[type="range"] { height: 28px; }
+  .check { min-height: 36px; }
+
+  /* --- modals fill the screen rather than floating in it --- */
+  .overlay { padding: 0; align-items: stretch; }
+  .briefing, .hearing, .score {
+    max-width: none;
+    border-radius: 0;
+    padding: 20px 16px;
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+    overflow-y: auto;
+  }
+  .briefing h1 { font-size: 22px; }
+  .hearing h1, .score-head h1 { font-size: 19px; }
+  .score-head { flex-direction: column-reverse; align-items: flex-start; gap: 10px; }
+  .headlines { max-width: none; border-radius: 0; align-self: center; margin: auto 0; }
+}
+
+/* Landscape phones: the sheet would eat the whole screen, so cap it harder. */
+@media (max-width: 900px) and (max-height: 480px) {
+  .sheet-body { max-height: 68vh; }
+  .coach { display: none; }
+}
+
+/* --- coach: collapsible ------------------------------------------------ */
+
+.coach-actions { display: flex; align-items: center; gap: 2px; }
+.coach-collapse {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: var(--ink-faint);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+.coach-collapse:hover { color: var(--ink); }
+
+.coach-title-btn {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+}
+
+.coach.collapsed .coach-title { margin-bottom: 8px; }
+
+@media (max-width: 820px) {
+  /* Never taller than a third of the screen; the rest is the map. */
+  .coach { max-height: 38vh; overflow-y: auto; }
+  .coach-collapse, .coach-close { min-width: 34px; min-height: 34px; }
+  .coach-actions { gap: 4px; }
+
+  /* The grid toggle stays reachable — hiding it left the player stuck with a
+     busy hex mesh they had no way to turn off. */
+  .map-controls .check { display: inline-flex; }
+  .map-controls .seg-btn { padding: 7px 8px; font-size: 11.5px; }
+}
+
+@media (max-width: 820px) {
+  /* Thumb-sized targets. Anything under ~32 px gets missed, and a mis-tap here
+     spends money or takes somebody's land. */
+  .map-controls .seg-btn { min-height: 36px; }
+  .map-controls .check input[type="checkbox"] { width: 20px; height: 20px; }
+  .sheet-grip { padding: 10px 0 6px; min-height: 32px; }
+  .coach-title-btn { min-height: 36px; display: flex; align-items: center; }
+  .btn-link { padding: 8px 6px; display: inline-block; }
+}

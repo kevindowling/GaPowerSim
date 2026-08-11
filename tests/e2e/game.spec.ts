@@ -35,8 +35,14 @@ test('shows the offer before anything is committed', async ({ page }) => {
   await expect(briefing).toBeVisible()
   await expect(briefing).toContainText('400 MW')
   await expect(briefing).toContainText('2029 Q4')
-  // The scenario is a projection, and says so rather than implying a real filing.
-  await expect(briefing).toContainText('projection')
+  // Americus is a real, sourced project — and the card separates what is
+  // reported from what we invented to make a game, rather than blurring them.
+  await expect(briefing).toContainText('real project')
+  await expect(briefing).toContainText('invented')
+  await expect(briefing.locator('.briefing-sources a').first()).toHaveAttribute(
+    'href',
+    /americustimesrecorder\.com/,
+  )
 
   // No capital has moved yet.
   await expect(page.locator('.hud')).toContainText('$0')

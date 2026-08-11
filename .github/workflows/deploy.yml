@@ -9,9 +9,12 @@ on:
     branches:
       - main
       - master
-      # The repository's current default branch, so the game is live before any
-      # merge. Drop this line once the work lands on main.
-      - claude/georgia-power-sim-game-xbnknh
+  # Verify pull requests without deploying them. The deploy job is gated on the
+  # push event below, so a PR gets the full typecheck/test/build gauntlet and
+  # nothing reaches the live site until it merges.
+  pull_request:
+    branches:
+      - main
   # Lets you redeploy from the Actions tab without pushing anything.
   workflow_dispatch:
 
@@ -92,7 +95,11 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
+      # Pages packaging only matters for a real deploy. On a pull request the
+      # job stops after the tests above, which is the point: PRs are verified,
+      # not published.
       - name: Disable Jekyll processing
+        if: github.event_name != 'pull_request'
         run: touch dist/.nojekyll
 
       # Requires Pages to be enabled on the repository first:
@@ -104,14 +111,17 @@ jobs:
       # this step's clear "Pages is not enabled" message with an opaque one. So
       # it stays off, and the one-time setting is done by hand.
       - uses: actions/configure-pages@v5
+        if: github.event_name != 'pull_request'
 
       - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
         with:
           path: dist
 
   deploy:
     name: Deploy
     needs: verify
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
