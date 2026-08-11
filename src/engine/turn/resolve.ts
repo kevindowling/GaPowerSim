@@ -11,11 +11,15 @@
  * changed.
  */
 
-import type { GameState, Plant } from '../types.ts'
+import type { GameState, Plant, Corridor } from '../types.ts'
 import { Rng } from '../rng.ts'
 import { formatQuarter } from '../time.ts'
 import { plantType } from '../../data/plants.ts'
 import { capacitySummary, pushLog, countyApproval } from '../state.ts'
+import type { Parcel } from '../parcels/types.ts'
+import { resolveOffer, condemnationAward } from '../parcels/negotiation.ts'
+import { acquisitionComplete } from './corridor.ts'
+import { lineClass } from '../../data/transmission.ts'
 
 /** Annualised cost of carrying a negative cash balance. */
 const FINANCING_RATE_PER_QUARTER = 0.0155
@@ -118,11 +122,116 @@ function releaseMilestones(state: GameState): void {
   }
 }
 
-/** True once online firm capacity covers the contracted load. */
+/**
+ * Advance right-of-way acquisition and line construction.
+ *
+ * Offers made during the quarter resolve here, all at once, which gives the
+ * acquisition phase its rhythm: make offers, end the quarter, find out who said
+ * no, decide what to do about them.
+ */
+function advanceCorridor(
+  corridor: Corridor, state: GameState, rng: Rng, parcels: Map<string, Parcel>,
+): void {
+  if (corridor.status === 'acquiring') {
+    let accepted = 0
+    let refused = 0
+    let stillInCourt = 0
+
+    for (const [parcelId, deal] of Object.entries(corridor.deals)) {
+      const parcel = parcels.get(parcelId)
+      const taking = corridor.takings[parcelId]
+      if (!parcel || !taking) continue
+
+      if (deal.status === 'offered') {
+        const result = resolveOffer(
+          parcel, taking, deal,
+          countyApproval(state, parcel.countyFips),
+          corridor.condemnations,
+          rng,
+        )
+        if (result.accepted) {
+          corridor.rowPaid += result.amount
+          state.cash -= result.amount
+          accepted += 1
+        } else {
+          refused += 1
+        }
+      } else if (deal.status === 'condemning') {
+        deal.condemnationQuarters -= 1
+        if (deal.condemnationQuarters <= 0) {
+          // The court sets the price, and it is not a discount for taking by force.
+          const award = condemnationAward(taking, rng)
+          deal.status = 'condemned'
+          deal.paid = award
+          corridor.rowPaid += award
+          state.cash -= award
+          pushLog(
+            state, 'politics',
+            `Court awards ${parcel.owner} $${(award / 1e3).toFixed(0)}K for ${taking.takenAcres.toFixed(1)} acres. The land is taken.`,
+            true,
+          )
+        } else {
+          stillInCourt += 1
+        }
+      }
+    }
+
+    if (accepted > 0 || refused > 0) {
+      pushLog(
+        state, 'money',
+        `${corridor.name}: ${accepted} signed, ${refused} refused.`,
+        refused > 0,
+      )
+    }
+    if (stillInCourt > 0) corridor.delayQuarters += 1
+
+    if (acquisitionComplete(corridor)) {
+      corridor.status = 'building'
+      pushLog(state, 'grid', `${corridor.name}: right-of-way complete, construction begins.`, true)
+    }
+    return
+  }
+
+  if (corridor.status === 'building') {
+    const spend = Math.min(
+      corridor.capexTotal - corridor.capexSpent,
+      corridor.capexTotal / Math.max(1, corridor.buildQuartersRemaining),
+    )
+    corridor.capexSpent += spend
+    state.cash -= spend
+
+    corridor.buildQuartersRemaining -= 1
+    if (corridor.buildQuartersRemaining <= 0) {
+      const remainder = corridor.capexTotal - corridor.capexSpent
+      corridor.capexSpent = corridor.capexTotal
+      state.cash -= remainder
+      corridor.status = 'energized'
+      pushLog(
+        state, 'grid',
+        `${corridor.name} is energized — ${lineClass(corridor.classId).ratingMw} MW of transfer capability.`,
+        true,
+      )
+    }
+  }
+}
+
+/** Transfer capability into the campus from energized corridors. */
+export function deliverableMw(state: GameState): number {
+  return state.corridors
+    .filter((c) => c.status === 'energized')
+    .reduce((sum, c) => sum + lineClass(c.classId).ratingMw, 0)
+}
+
+/**
+ * True once the load can actually be served — which takes BOTH firm generation
+ * and a wire to carry it. Generation alone is a power plant with nowhere to send
+ * its output.
+ */
 function checkEnergized(state: GameState): void {
   if (state.energizedQuarter !== null) return
   const cap = capacitySummary(state)
   if (cap.onlineFirmMw + 1e-6 < state.contract.contractedMw) return
+  if (deliverableMw(state) + 1e-6 < state.contract.contractedMw) return
 
   state.energizedQuarter = state.quarter
   state.contract.status = 'served'
@@ -143,22 +252,31 @@ export interface QuarterResult {
   headlines: string[]
 }
 
-export function endQuarter(prev: GameState): QuarterResult {
+export interface TurnContext {
+  /** Parcels for any county a corridor touches, keyed by id. */
+  parcels?: Map<string, Parcel>
+}
+
+export function endQuarter(prev: GameState, ctx: TurnContext = {}): QuarterResult {
   const state: GameState = structuredClone(prev)
   const rng = new Rng(state.rngState)
   const logStart = state.log.length
+  const parcels = ctx.parcels ?? new Map<string, Parcel>()
 
   // 1. Construction and permitting advance, burning capital as they go.
   for (const plant of state.plants) advancePlant(plant, state, rng)
 
-  // 2. Did that bring enough firm capacity online to serve the contract?
+  // 2. Right-of-way offers resolve, condemnations tick, line construction runs.
+  for (const corridor of state.corridors) advanceCorridor(corridor, state, rng, parcels)
+
+  // 3. Is there now both enough firm generation and a wire to carry it?
   checkEnergized(state)
 
-  // 3. The developer pays against milestones — including, possibly, the one
+  // 4. The developer pays against milestones — including, possibly, the one
   //    that just became true.
   releaseMilestones(state)
 
-  // 4. Late penalties. These accrue every quarter past the date, not once.
+  // 5. Late penalties. These accrue every quarter past the date, not once.
   if (state.energizedQuarter === null && state.quarter >= state.contract.inServiceQuarter) {
     const penalty = state.contract.latePenaltyPerQuarter
     state.penaltiesAccrued += penalty
@@ -170,7 +288,7 @@ export function endQuarter(prev: GameState): QuarterResult {
     )
   }
 
-  // 5. Carrying a negative balance costs money, which is how overcommitting
+  // 6. Carrying a negative balance costs money, which is how overcommitting
   //    early quietly compounds into a problem later.
   if (state.cash < 0) {
     const interest = -state.cash * FINANCING_RATE_PER_QUARTER
@@ -178,7 +296,7 @@ export function endQuarter(prev: GameState): QuarterResult {
     state.cash -= interest
   }
 
-  // 6. Time passes.
+  // 7. Time passes.
   state.quarter += 1
   state.rngState = rng.state
 

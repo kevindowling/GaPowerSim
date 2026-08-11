@@ -8,6 +8,9 @@
 
 import type { QuarterIndex } from './time.ts'
 import type { PlantKind } from '../data/plants.ts'
+import type { LineClassId } from '../data/transmission.ts'
+import type { ParcelDeal } from './parcels/negotiation.ts'
+import type { Taking } from './parcels/takings.ts'
 
 // --- the deal ------------------------------------------------------------
 
@@ -64,6 +67,43 @@ export interface Plant {
   acceleratedQuarters: number
 }
 
+// --- transmission --------------------------------------------------------
+
+export type CorridorStatus =
+  | 'planned'    // drawn but not committed; can be rerouted freely
+  | 'acquiring'  // buying right-of-way, parcel by parcel
+  | 'building'
+  | 'energized'
+
+export interface Corridor {
+  id: string
+  name: string
+  classId: LineClassId
+  /** Hex cells the route runs through, kept so it can be redrawn or rerouted. */
+  cells: number[]
+  /** Simplified polyline in projected km — the actual centerline. */
+  centerline: Array<[number, number]>
+  lengthKm: number
+  status: CorridorStatus
+
+  /** Right-of-way negotiation, by parcel id. */
+  deals: Record<string, ParcelDeal>
+  /** What the corridor takes from each parcel, by parcel id. */
+  takings: Record<string, Taking>
+
+  /** How many parcels have been taken by force on this corridor. */
+  condemnations: number
+  legalCosts: number
+  /** Total paid to landowners so far. */
+  rowPaid: number
+
+  capexTotal: number
+  capexSpent: number
+  buildQuartersRemaining: number
+  /** Quarters lost to condemnation proceedings. */
+  delayQuarters: number
+}
+
 // --- places --------------------------------------------------------------
 
 export interface CountyState {
@@ -108,6 +148,7 @@ export interface GameState {
 
   contract: Contract
   plants: Plant[]
+  corridors: Corridor[]
   counties: Record<string, CountyState>
   log: LogEntry[]
 

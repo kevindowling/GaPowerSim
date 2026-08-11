@@ -14,11 +14,13 @@
     "typecheck": "tsc --noEmit",
     "build:geo": "tsx scripts/build-geo.ts",
     "build:hexgrid": "tsx scripts/build-hexgrid.ts",
+    "build:parcels": "tsx scripts/build-synthetic-parcels.ts",
     "fetch:parcels": "tsx scripts/fetch-parcels.ts",
     "verify:data": "tsx scripts/verify-data.ts",
-    "data": "npm run build:geo && npm run build:hexgrid && npm run verify:data"
+    "data": "npm run build:geo && npm run build:hexgrid && npm run build:parcels && npm run verify:data"
   },
   "dependencies": {
+    "polygon-clipping": "^0.15.7",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "zustand": "^4.5.5"

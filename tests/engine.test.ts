@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { fixtures, cellAtLonLat } from './helpers/loadFixtures.ts'
 import { AMERICUS } from '../src/data/scenarios.ts'
 import { createGame, capacitySummary, resetPlantCounter, quartersToDeadline, canFinishInTime } from '../src/engine/state.ts'
-import { endQuarter, acceptContract } from '../src/engine/turn/resolve.ts'
+import { endQuarter, acceptContract, deliverableMw } from '../src/engine/turn/resolve.ts'
 import { sitePlant, assessSite } from '../src/engine/turn/siting.ts'
 import { plantType } from '../src/data/plants.ts'
 import type { GameState } from '../src/engine/types.ts'
@@ -189,7 +189,7 @@ describe('firm capacity is the thing that matters', () => {
     expect(cap.shortfallMw).toBeGreaterThan(350)
   })
 
-  it('energizes once firm capacity covers the contracted load', () => {
+  it('does not energize on generation alone — the power needs a wire', () => {
     const { grid } = fixtures()
     const t = plantType('gas-ct')
     let game = acceptContract(newGame())
@@ -197,10 +197,10 @@ describe('firm capacity is the thing that matters', () => {
     for (let i = 0; i < 3; i++) game = sitePlant(game, 'gas-ct', RURAL_SUMTER(), grid)
     game = run(game, t.permitQuarters + t.buildQuarters)
 
-    expect(game.energizedQuarter).not.toBeNull()
-    expect(game.contract.status).toBe('served')
-    // Energizing releases the final milestone.
-    expect(game.contract.milestones.every((m) => m.released)).toBe(true)
+    expect(capacitySummary(game).onlineFirmMw).toBeGreaterThan(400)
+    // …and yet nothing is served, because there is no corridor to the campus.
+    expect(deliverableMw(game)).toBe(0)
+    expect(game.energizedQuarter).toBeNull()
   })
 
   it('warns when a technology cannot be finished in time', () => {

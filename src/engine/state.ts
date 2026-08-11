@@ -58,6 +58,7 @@ export function createGame(sc: Scenario, siteCell: number, counties: CountiesFil
     penaltiesAccrued: 0,
     contract,
     plants: [],
+    corridors: [],
     counties: countyStates,
     log: [],
     energizedQuarter: null,
