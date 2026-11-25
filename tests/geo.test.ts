@@ -43,10 +43,6 @@ describe('projection', () => {
   })
 
   it('preserves true area, which is what parcel acreage depends on', () => {
-    // The equal-area property is that a region's PROJECTED area equals its true
-    // area on the sphere — not that different regions come out equal. A half-
-    // degree cell really is ~5% smaller at 34.5°N than at 30.5°N, and a correct
-    // projection reproduces that difference rather than flattening it away.
     const R = 6371.0088
     const DEG = Math.PI / 180
     const STEP = 0.05 // densify edges so straight segments approximate the curve

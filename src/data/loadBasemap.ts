@@ -1,19 +1,7 @@
-/**
- * Loading the optional basemap layers.
- *
- * Both loaders resolve to `null` when the data has not been vendored, rather
- * than throwing. That is the normal state of a fresh checkout: the imagery and
- * road pipelines need network access that not every environment has, so the
- * game must be fully playable without them and simply not offer the layers.
- *
- * Like the parcels, these load lazily — a player who never zooms into a
- * corridor never pays for a county's road network.
- */
-
 import { project } from '../engine/geo/projection.ts'
 import type {
   ImageryManifest, RoadsFile, Road, RoadClass,
-  HydrologyFile, Waterway, WaterBody,
+  HydrologyFile, Waterway, WaterBody, GisFile, Gis,
 } from '../engine/geo/basemapTypes.ts'
 
 export interface Imagery {
@@ -46,7 +34,6 @@ async function getJson<T>(path: string): Promise<T | null> {
   try {
     res = await fetch(url)
   } catch {
-    // Offline or blocked: treat exactly like absent, because to the player it is.
     return null
   }
   if (!res.ok) return null
@@ -74,8 +61,6 @@ export function loadImagery(): Promise<Imagery | null> {
       }),
     ).catch(() => null)
 
-    // A manifest that lists images we cannot decode is worse than no manifest:
-    // the layer would appear in the UI and then draw nothing.
     if (!images) return null
     return { manifest, images }
   })()
@@ -83,13 +68,6 @@ export function loadImagery(): Promise<Imagery | null> {
   return imageryPromise
 }
 
-/**
- * Roads come in two tiers and both go through here.
- *
- * `'state'` is interstates and highways for all of Georgia, small enough to
- * load at startup — the game is statewide, and Sumter is only the tutorial.
- * A county FIPS is the full local network, loaded when the player works there.
- */
 export function loadRoads(key: string): Promise<CountyRoads | null> {
   const existing = roadCache.get(key)
   if (existing) return existing
@@ -100,6 +78,7 @@ export function loadRoads(key: string): Promise<CountyRoads | null> {
 
     const roads: Road[] = file.roads.map((w) => ({
       cls: w.c as RoadClass,
+      name: w.n ?? null,
       points: w.p.map(([lon, lat]) => project(lon, lat)),
     }))
     return {
@@ -114,16 +93,10 @@ export function loadRoads(key: string): Promise<CountyRoads | null> {
   return promise
 }
 
-/** Interstates and highways for the whole state. */
 export const loadStateRoads = (): Promise<CountyRoads | null> => loadRoads('state')
 
-/** Full local road network for one county. */
 export const loadCountyRoads = (fips: string): Promise<CountyRoads | null> => loadRoads(fips)
 
-/**
- * Rivers, lakes and wetlands. Same two tiers as roads: 'state' is major rivers
- * and open water statewide, a county FIPS is every creek and swamp locally.
- */
 export function loadHydrology(key: string): Promise<Hydrology | null> {
   const existing = hydroCache.get(key)
   if (existing) return existing
@@ -156,9 +129,38 @@ export function loadHydrology(key: string): Promise<Hydrology | null> {
 export const loadStateHydrology = (): Promise<Hydrology | null> => loadHydrology('state')
 export const loadCountyHydrology = (fips: string): Promise<Hydrology | null> => loadHydrology(fips)
 
+const gisCache = new Map<string, Promise<Gis | null>>()
+
+export function loadGis(key: string): Promise<Gis | null> {
+  const existing = gisCache.get(key)
+  if (existing) return existing
+  const promise = (async (): Promise<Gis | null> => {
+    const file = await getJson<GisFile>(`data/gis/${key}.json`)
+    if (!file) return null
+    const line = (p: [number, number][]) => p.map(([lon, lat]) => project(lon, lat))
+    return {
+      scope: file.scope,
+      attribution: file.attribution,
+      power: file.power.map((l) => ({ kv: l.kv, points: line(l.p) })),
+      rail: file.rail.map((l) => ({ points: line(l.p) })),
+      parks: file.parks.map((k) => ({ name: k.n, ring: line(k.p) })),
+      substations: file.substations.map((s) => {
+        const [x, y] = project(s.at[0], s.at[1])
+        return { kv: s.kv, name: s.n ?? null, x, y }
+      }),
+      land: file.land.map((l) => ({ kind: l.k, ring: line(l.p) })),
+      buildings: file.buildings.map(([lon, lat]) => project(lon, lat)),
+      churches: file.buildings.filter((b) => b[2] === 1).map(([lon, lat]) => project(lon, lat)),
+    }
+  })()
+  gisCache.set(key, promise)
+  return promise
+}
+
 /** Drop cached basemap data, so a new game re-reads it. */
 export function clearBasemapCache(): void {
   imageryPromise = null
   roadCache.clear()
   hydroCache.clear()
+  gisCache.clear()
 }

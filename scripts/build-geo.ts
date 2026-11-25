@@ -1,17 +1,3 @@
-/**
- * build-geo.ts — Georgia county geometry → projected, simplified, vendored JSON.
- *
- * Source: the `us-atlas` npm package, which is Census TIGER/cartographic boundary
- * data published as TopoJSON. We take it from npm rather than fetching census.gov
- * directly so the build is reproducible and works without network egress to
- * government hosts.
- *
- * Output: public/data/counties.json — committed to the repo. The game loads this
- * static file; it never fetches geodata at runtime.
- *
- * Run: npm run build:geo
- */
-
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -28,11 +14,6 @@ const ROOT = resolve(__dirname, '..')
 /** Georgia's state FIPS code. */
 const GA_FIPS = '13'
 
-/**
- * Simplification tolerance in kilometres. 0.15 km keeps county outlines visually
- * faithful at the deepest zoom the strategic map uses while cutting the vertex
- * count by roughly an order of magnitude.
- */
 const TOLERANCE_KM = 0.15
 
 /** Coordinate decimals to keep. 2 decimals of a kilometre = 10 m precision. */
@@ -89,8 +70,6 @@ function processGeometry(geom: Geometry): { polygons: PolygonRings[]; areaKm2: n
       areaKm2 += r === 0 ? Math.abs(a) : -Math.abs(a)
 
       if (r === 0) {
-        // Area-weighted centroid across exterior rings, so a county with coastal
-        // islands still reports a label point on its mainland.
         const w = Math.abs(a)
         let sx = 0
         let sy = 0

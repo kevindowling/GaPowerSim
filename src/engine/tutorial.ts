@@ -1,78 +1,46 @@
-/**
- * The Americus tutorial.
- *
- * Nine beats, each gated on the previous one, and each taught by consequence
- * rather than by tooltip. The player is never told "solar will not work" — they
- * are shown firm capacity next to nameplate and allowed to find out. They are
- * never told "buy the second circuit" — they are offered it, and then, six beats
- * later, a storm arrives.
- *
- * The beat system only reads GameState, so a beat completes because the player
- * actually did the thing, not because they clicked past a dialog.
- */
-
 import type { GameState } from './types.ts'
 import { capacitySummary } from './state.ts'
 import { acquisitionComplete } from './turn/corridor.ts'
+import { plannedByLinesMw, plannedFirmMw } from './realtime/network.ts'
 
 export interface TutorialState {
   /** Index into BEATS. */
   beat: number
-  /** True once the player has dismissed the coach for good. */
+  /** True while the player has the hints hidden. */
   dismissed: boolean
-  /** Set when the county commission hearing has been held and answered. */
-  hearingResolved: boolean
-  /** Set once the scripted storm has been staged, so it only happens once. */
   stormFired: boolean
-  /** Ticks of operation before the storm arrives. */
-  stormAtTick: number
-  /** Set when the player has seen the final scorecard. */
-  debriefSeen: boolean
+  /** Operating tick the scripted storm arrives. Null until energized. */
+  stormAtTick: number | null
 }
 
 export function createTutorialState(): TutorialState {
-  return {
-    beat: 0,
-    dismissed: false,
-    hearingResolved: false,
-    stormFired: false,
-    // Roughly two days of operations: long enough to believe it is working.
-    stormAtTick: 190,
-    debriefSeen: false,
-  }
+  return { beat: 0, dismissed: false, stormFired: false, stormAtTick: null }
 }
 
 export interface TutorialBeat {
   id: string
   title: string
-  /** What the player should understand at this point. */
   body: string[]
   /** Which panel the player needs. */
-  focus: 'contract' | 'generation' | 'transmission' | 'acquisition' | 'operations' | 'none'
-  /** True once the player has done the thing. */
+  focus: 'build' | 'grid' | 'land' | 'customers' | 'ops'
   isComplete: (state: GameState) => boolean
 }
 
 export const BEATS: readonly TutorialBeat[] = [
   {
     id: 'deal',
-    title: 'The deal',
-    focus: 'contract',
-    body: [
-      'Liberty Data Centers wants 400 megawatts outside Americus — four phases, about 100 each — drawing around the clock from the day it opens.',
-      'They front the capital. You owe them power by the end of 2029, and a penalty every quarter you are late.',
-      'Sign it.',
-    ],
+    title: 'Sign the contract',
+    focus: 'customers',
+    body: ['Click Liberty Americus Campus, read its terms and sign. Its due dates start that day. Customers lists the contracts you have signed and the others you can sign. More come up each year.'],
     isComplete: (s) => s.contract.status !== 'offered',
   },
   {
     id: 'generation',
-    title: 'Something has to make it',
-    focus: 'generation',
+    title: 'Build firm generation',
+    focus: 'build',
     body: [
-      'You need 400 MW of firm capacity — power available at three in the morning in February, not power available on average.',
-      'Every option shows firm megawatts next to nameplate. Look at the gap before you spend anything.',
-      'Site enough generation to cover the contract, and mind how long each one takes to build.',
+      'You need 400 MW of firm capacity. Firm means available at any hour. Solar counts for 8% of its nameplate.',
+      'Pick a plant, then click the map. Rural sites cost less goodwill. Sites near the campus need a shorter line.',
     ],
     isComplete: (s) => {
       const cap = capacitySummary(s)
@@ -81,77 +49,85 @@ export const BEATS: readonly TutorialBeat[] = [
   },
   {
     id: 'route',
-    title: 'Something has to carry it',
-    focus: 'transmission',
+    title: 'Connect it to the campus',
+    focus: 'grid',
     body: [
-      'A power plant with nowhere to send its output serves nobody. You need a line from the plant to the campus.',
-      'Plan a corridor. The route runs across real property, and the plan will tell you how many places it crosses — and how many it cuts in half.',
-      'A line that follows property boundaries takes the same acres for far less money. Where you put it matters as much as how long it is.',
+      'Open Grid and plan a line. Click your plant and the campus, in either order, or drag between them. Click the map afterwards to bend the route.',
+      'You can also tap an existing line, marked in blue while you plan. It needs less land, but it costs a station and has limited room.',
+      'The route style changes who is affected. Following property lines avoids cutting farms in two.',
     ],
-    isComplete: (s) => s.corridors.length > 0,
+    isComplete: (s) => s.energizedQuarter !== null || plannedByLinesMw(s) + 1e-6 >= s.contract.contractedMw,
+  },
+  {
+    id: 'transformer',
+    title: 'Order transformers',
+    focus: 'grid',
+    body: [
+      'A line can only serve the campus through a transformer of the same voltage. The campus has one for 120 MW at 115 kV.',
+      'Click the campus and order one that fits your line. It takes ten quarters, or five from stock at a higher price.',
+      'The substation has transformers too. Click it to see what limits it.',
+    ],
+    isComplete: (s) => !s.equipment || s.energizedQuarter !== null || plannedFirmMw(s) + 1e-6 >= s.contract.contractedMw,
   },
   {
     id: 'acquire',
-    title: 'Somebody owns all of it',
-    focus: 'acquisition',
+    title: 'Make offers for the land',
+    focus: 'land',
     body: [
-      'Every parcel under that line has an owner, and each one has to agree.',
-      'Offers are a multiple of appraised value. Most people will deal. Send some offers and end the quarter to see who signs.',
+      'Each owner has a price in mind that you cannot see. Offer by group, then end the quarter to hear back.',
+      'What you pay becomes the going rate. A high first offer makes the remaining owners ask for more.',
     ],
     isComplete: (s) => s.corridors.some(
-      (c) => Object.values(c.deals).some((d) => d.status === 'accepted'),
+      (c) => acquisitionComplete(c)
+        || Object.values(c.deals).some((d) => d.status === 'accepted' || d.status === 'condemned'),
     ),
   },
   {
     id: 'holdouts',
-    title: 'And somebody will say no',
-    focus: 'acquisition',
+    title: 'Settle with the holdouts',
+    focus: 'land',
     body: [
-      'You have three ways past a refusal, and all of them cost.',
-      'Pay more, and every remaining holdout hears what you paid. Condemn, and you spend quarters in court, county goodwill, and the patience of everyone left on the line. Or reroute, and start the acquisition again somewhere longer.',
-      'Settle every parcel. There is no fourth option.',
+      'Raise the offer, condemn the parcel, or abandon the route and draw another.',
+      'Condemning takes two to four quarters in court, costs goodwill, and raises every other owner\'s price on the line.',
     ],
     isComplete: (s) => s.corridors.some(acquisitionComplete),
   },
   {
     id: 'hearing',
-    title: 'Sumter County has questions',
-    focus: 'none',
-    body: [
-      'The county commission has called a hearing. What you decide here about who pays for the network upgrades will follow you.',
-    ],
-    isComplete: (s) => s.tutorial?.hearingResolved ?? false,
+    title: 'Answer the county commission',
+    focus: 'customers',
+    body: ['The commission wants to know who pays for the network upgrades.'],
+    isComplete: (s) => s.hearing === 'resolved',
   },
   {
     id: 'energize',
-    title: 'Energize',
-    focus: 'operations',
+    title: 'Finish construction',
+    focus: 'customers',
     body: [
-      'Generation online, line built, right-of-way bought. End quarters until the power flows.',
-      'When it does, the game stops being about deadlines.',
+      'End quarters until the plants and the line are done. You can pay to expedite a plant under construction.',
+      'Each phase of the campus turns on when its firm power arrives, and pays from the next quarter. The operating year starts with every phase on.',
     ],
     isComplete: (s) => s.energizedQuarter !== null,
   },
   {
     id: 'operate',
-    title: 'Now keep it on',
-    focus: 'operations',
+    title: 'Run the first month',
+    focus: 'ops',
     body: [
-      'Fifteen minutes an interval. The campus draws flat; the county peaks on summer evenings, which is exactly when your turbines are derated by the heat.',
-      'Run the clock. Watch what it costs you an hour to keep the gap at zero.',
+      'Set a speed to start the clock. Every phase of the campus is on.',
+      'Maintenance, line clearing and crews all cost money. Each one changes how often things fail or how long they stay down.',
     ],
-    isComplete: (s) => (s.realtime?.tick ?? 0) > 40,
+    isComplete: (s) => (s.realtime?.tick ?? 0) >= 30 * 96,
   },
   {
     id: 'storm',
-    title: 'The night it matters',
-    focus: 'operations',
+    title: 'Get through the summer',
+    focus: 'ops',
     body: [
-      'A line of storms is crossing the service area.',
-      'What happens next was decided the day you chose a voltage class.',
+      'Summer heat raises demand, weakens turbines and shrinks imports. Storms take lines down.',
+      'Set who loses power first before you need it. The year ends with your balance, which is your score.',
     ],
-    isComplete: (s) => (s.tutorial?.stormFired ?? false)
-      && (s.realtime?.outages.every((o) => o.kind !== 'corridor') ?? false),
+    isComplete: (s) => s.ending !== null,
   },
 ]
 
@@ -167,80 +143,19 @@ export function advanceTutorial(state: GameState): boolean {
   return moved
 }
 
-/**
- * The beat the player is actually on.
- *
- * Recomputes rather than trusting the stored index, because plenty of actions
- * complete a beat without going through end-of-quarter — signing the contract,
- * siting a plant, committing a route. A coach that only refreshes on the turn
- * boundary spends most of the tutorial telling the player to do something they
- * have already done.
- */
+/** The step the player is on, or null when hidden or finished. */
 export function currentBeat(state: GameState): TutorialBeat | null {
   const t = state.tutorial
   if (!t || t.dismissed) return null
-  let i = t.beat
+  return BEATS[beatIndex(state)] ?? null
+}
+
+export function beatIndex(state: GameState): number {
+  let i = state.tutorial?.beat ?? 0
   while (i < BEATS.length && BEATS[i].isComplete(state)) i += 1
-  return i < BEATS.length ? BEATS[i] : null
+  return i
 }
 
 export function tutorialFinished(state: GameState): boolean {
   return (state.tutorial?.beat ?? 0) >= BEATS.length
 }
-
-// --- the hearing ---------------------------------------------------------
-
-/**
- * Who pays for the network upgrades.
- *
- * This is the sharpest lever in the game and the cheapest one to pull badly:
- * assigning the cost to ratepayers is nearly free for the player's budget and
- * radioactive for everyone who lives there. It is also, in outline, a real fight
- * currently happening in front of the Georgia PSC.
- */
-export interface HearingOption {
-  id: string
-  label: string
-  detail: string
-  /** Dollars the player absorbs. */
-  cost: number
-  /** Approval change in the scenario county. */
-  approvalDelta: number
-  /** Long-term memory: shown in the scorecard and carried into the campaign. */
-  grievance: string | null
-  /** How much of the shared cost was pushed onto ratepayers, 0–1. */
-  ratepayerShare: number
-}
-
-export const HEARING_OPTIONS: readonly HearingOption[] = [
-  {
-    id: 'hyperscaler-pays',
-    label: 'The data centre pays for all of it',
-    detail:
-      'You absorb the negotiation and Liberty covers the network upgrades. It costs you now, and nobody in Sumter County pays a cent for a line they did not ask for.',
-    cost: 62_000_000,
-    approvalDelta: 14,
-    grievance: null,
-    ratepayerShare: 0,
-  },
-  {
-    id: 'split',
-    label: 'Split it down the middle',
-    detail:
-      'Half to the customer, half spread across the rate base. Defensible, unremarkable, and nobody leaves happy.',
-    cost: 31_000_000,
-    approvalDelta: -4,
-    grievance: 'Half the upgrade cost went to the rate base',
-    ratepayerShare: 0.5,
-  },
-  {
-    id: 'ratepayers-pay',
-    label: 'Spread it across the rate base',
-    detail:
-      'The cheapest line on your budget. Every household in the state picks up a share of a line built for one customer, and the commission hearing will be on the news.',
-    cost: 0,
-    approvalDelta: -22,
-    grievance: 'The county paid for a line built for somebody else',
-    ratepayerShare: 1,
-  },
-]

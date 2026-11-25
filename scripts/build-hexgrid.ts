@@ -1,26 +1,3 @@
-/**
- * build-hexgrid.ts — the routing cost surface.
- *
- * Rasterises Georgia into ~1 km² hex cells and bakes one byte-per-cell attribute
- * layer per thing the router cares about. Output is a flat binary blob plus a
- * JSON manifest, both vendored into public/data/ and loaded once at startup.
- *
- *   county     Uint8   index into the manifest's county list; 255 = outside Georgia
- *   terrain    Uint8   physiographic province (see TERRAIN)
- *   population Uint8   log-scaled population density bucket
- *   landValue  Uint16  approximate $/acre, drives right-of-way cost
- *   protection Uint8   bitflags for parks, wetlands, historic sites
- *
- * DATA STATUS: `county` and `terrain` are derived from real geography — Census
- * county boundaries and Georgia's actual physiographic provinces, including the
- * real Fall Line trace through Columbus–Macon–Augusta. `population` and
- * `landValue` are modelled from the (still unverified) city list in
- * src/data/cities.ts. `protection` is ALL ZERO: parks, wetlands and historic-site
- * data needs a source we could not reach, and filling it is an M6 task.
- *
- * Run: npm run build:hexgrid
- */
-
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -30,6 +7,7 @@ import {
   cellCenter, pointToCell, type GridSpec,
 } from '../src/engine/geo/hex.ts'
 import { PROTECT } from '../src/engine/geo/mapTypes.ts'
+import type { GisFile } from '../src/engine/geo/basemapTypes.ts'
 import type { HydrologyFile } from '../src/engine/geo/basemapTypes.ts'
 import { CITIES } from '../src/data/cities.ts'
 
@@ -47,11 +25,6 @@ export const TERRAIN = {
   COASTAL_MARSH: 6,
 } as const
 
-/**
- * Counties lying in Georgia's mountain provinces. The Piedmont/Coastal Plain
- * split is handled separately by the Fall Line, because that boundary cuts
- * through counties rather than following them.
- */
 const BLUE_RIDGE_COUNTIES = new Set([
   '13111', '13291', '13281', '13241', '13123', '13187',
   '13311', '13137', '13085', '13227', '13213', '13257',
@@ -62,13 +35,6 @@ const VALLEY_AND_RIDGE_COUNTIES = new Set([
 const APPALACHIAN_PLATEAU_COUNTIES = new Set(['13083'])
 const COASTAL_COUNTIES = new Set(['13051', '13029', '13179', '13191', '13127', '13039'])
 
-/**
- * The Fall Line: the real geological boundary where the hard rock of the
- * Piedmont meets the sediments of the Coastal Plain. It runs through Columbus,
- * Macon and Augusta — which is exactly why those cities are there, since it is
- * the head of navigation on each river. South of it, the land is flat, sandy and
- * cheap to build across; north of it, rolling and rockier.
- */
 const FALL_LINE_LONLAT: ReadonlyArray<readonly [number, number]> = [
   [-84.988, 32.461], // Columbus
   [-83.632, 32.841], // Macon
@@ -136,101 +102,87 @@ function makeFallLine(): (x: number) => number {
   }
 }
 
-/**
- * Burn vendored hydrology into the protection layer.
- *
- * Water bodies are filled by point-in-polygon at each cell centre; rivers are
- * walked along their centrelines and stamped cell by cell, because a river is
- * narrower than a kilometre cell and a polygon test would miss it entirely.
- * That asymmetry matters: a river the router cannot see is a river the router
- * will happily run a line straight down.
- *
- * Missing data is not an error. The game ships playable without it and the
- * manifest records the gap.
- */
-function rasterizeHydrology(
-  spec: GridSpec,
-  county: Uint8Array,
-  protection: Uint8Array,
-): { waterCells: number; wetlandCells: number; gaps: string[]; note: string } {
-  const dir = resolve(ROOT, 'public/data/hydrology')
-  const files = existsSync(dir)
-    ? readdirSync(dir).filter((f) => f.endsWith('.json'))
-    : []
+/** Share of a cell that has to be water before it counts as open water. */
+const WATER_SHARE = 0.35
+const WETLAND_SHARE = 0.5
+const PARK_SHARE = 0.3
+const SAMPLE_KM = 0.2
 
-  if (files.length === 0) {
-    return {
-      waterCells: 0,
-      wetlandCells: 0,
-      note: 'none vendored',
-      gaps: [
-        'protection layer is all zero — no hydrology vendored ' +
-        '(run the "Fetch map data" workflow, or `npm run fetch:hydrology -- --state`)',
-      ],
+/** Burn vendored water and parks into the protection layer. */
+function rasterizeProtection(
+  spec: GridSpec, county: Uint8Array, protection: Uint8Array,
+): { waterCells: number; wetlandCells: number; parkCells: number; gaps: string[]; note: string } {
+  const cellAt = (x: number, y: number): number => {
+    const [col, row] = pointToCell(spec, x, y)
+    if (col < 0 || col >= spec.cols || row < 0 || row >= spec.rows) return -1
+    const cell = row * spec.cols + col
+    return county[cell] === 255 ? -1 : cell
+  }
+
+  const fill = (area: Float32Array, lonlat: [number, number][]): void => {
+    const ring = lonlat.map(([lon, lat]) => project(lon, lat))
+    const flat = ring.flat()
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+    for (const [x, y] of ring) {
+      minX = Math.min(minX, x); maxX = Math.max(maxX, x)
+      minY = Math.min(minY, y); maxY = Math.max(maxY, y)
+    }
+    const x0 = Math.floor(minX / SAMPLE_KM) * SAMPLE_KM
+    const y0 = Math.floor(minY / SAMPLE_KM) * SAMPLE_KM
+    for (let y = y0; y <= maxY; y += SAMPLE_KM) {
+      for (let x = x0; x <= maxX; x += SAMPLE_KM) {
+        if (!pointInRing(x, y, flat)) continue
+        const c = cellAt(x, y)
+        if (c >= 0) area[c] += SAMPLE_KM * SAMPLE_KM
+      }
     }
   }
 
-  const stamp = (x: number, y: number, flag: number): void => {
-    const [col, row] = pointToCell(spec as GridSpec, x, y)
-    if (col < 0 || col >= spec.cols || row < 0 || row >= spec.rows) return
-    const cell = row * spec.cols + col
-    if (cell < 0 || cell >= protection.length) return
-    if (county[cell] === 255) return
-    protection[cell] |= flag
-  }
+  const water = new Float32Array(protection.length)
+  const wetland = new Float32Array(protection.length)
+  const park = new Float32Array(protection.length)
+  const dir = resolve(ROOT, 'public/data/hydrology')
+  const files = existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith('.json')) : []
 
   for (const f of files) {
     const file = JSON.parse(readFileSync(resolve(dir, f), 'utf8')) as HydrologyFile
-
     for (const way of file.waterways) {
-      // Walk the centreline in steps well under a cell so nothing is skipped.
+      if (way.k !== 'river') continue
       for (let i = 1; i < way.p.length; i++) {
         const [ax, ay] = project(way.p[i - 1][0], way.p[i - 1][1])
         const [bx, by] = project(way.p[i][0], way.p[i][1])
         const steps = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) / (HEX_SIZE_KM / 2)))
         for (let s = 0; s <= steps; s++) {
-          const t = s / steps
-          stamp(ax + (bx - ax) * t, ay + (by - ay) * t, PROTECT.WATER)
+          const c = cellAt(ax + ((bx - ax) * s) / steps, ay + ((by - ay) * s) / steps)
+          if (c >= 0) protection[c] |= PROTECT.RIVER
         }
       }
     }
-
+    // Lakes are in both the state and county files; only count them once.
     for (const body of file.bodies) {
-      const flag = body.k === 'wetland' ? PROTECT.WETLAND : PROTECT.WATER
-      const ring = body.p.map(([lon, lat]) => project(lon, lat))
-      const flat = ring.flat()
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
-      for (const [x, y] of ring) {
-        if (x < minX) minX = x
-        if (x > maxX) maxX = x
-        if (y < minY) minY = y
-        if (y > maxY) maxY = y
-      }
-      // Small bodies can fall between cell centres; stamping the ring itself as
-      // well as the interior keeps a pond from vanishing.
-      for (const [x, y] of ring) stamp(x, y, flag)
-      for (let y = minY; y <= maxY; y += HEX_ROW_KM / 2) {
-        for (let x = minX; x <= maxX; x += HEX_WIDTH_KM / 2) {
-          if (pointInRing(x, y, flat)) stamp(x, y, flag)
-        }
-      }
+      if (body.k === 'wetland') fill(wetland, body.p)
+      else if (f === 'state.json') fill(water, body.p)
     }
   }
 
-  let waterCells = 0
-  let wetlandCells = 0
+  const gisPath = resolve(ROOT, 'public/data/gis/state.json')
+  const hasGis = existsSync(gisPath)
+  if (hasGis) {
+    const gis = JSON.parse(readFileSync(gisPath, 'utf8')) as GisFile
+    for (const p of gis.parks) fill(park, p.p)
+  }
+
+  let waterCells = 0, wetlandCells = 0, parkCells = 0
   for (let i = 0; i < protection.length; i++) {
-    if ((protection[i] & PROTECT.WATER) !== 0) waterCells++
-    if ((protection[i] & PROTECT.WETLAND) !== 0) wetlandCells++
+    if (water[i] >= WATER_SHARE) { protection[i] |= PROTECT.WATER; waterCells++ }
+    if (wetland[i] >= WETLAND_SHARE) { protection[i] |= PROTECT.WETLAND; wetlandCells++ }
+    if (park[i] >= PARK_SHARE) { protection[i] |= PROTECT.PARK; parkCells++ }
   }
 
   const gaps: string[] = []
-  if (!files.includes('state.json')) {
-    gaps.push('hydrology: statewide rivers and lakes not vendored')
-  }
-  gaps.push('protection layer carries water and wetland only — parks and historic sites pending')
-
-  return { waterCells, wetlandCells, gaps, note: files.join(', ') }
+  if (!files.includes('state.json')) gaps.push('hydrology: statewide rivers and lakes missing (npm run build:gis)')
+  if (!hasGis) gaps.push('parks: statewide protected areas missing (npm run build:gis)')
+  return { waterCells, wetlandCells, parkCells, gaps, note: files.join(', ') || 'none' }
 }
 
 function main(): void {
@@ -241,7 +193,6 @@ function main(): void {
   }
 
   const [minX, minY, maxX, maxY] = geo.bbox
-  // One cell of padding so edge geometry is never clipped by the grid boundary.
   const spec: GridSpec = {
     originX: minX - HEX_WIDTH_KM,
     originY: minY - HEX_ROW_KM,
@@ -256,9 +207,6 @@ function main(): void {
   const landValue = new Uint16Array(total)
   const protection = new Uint8Array(total)
 
-  // --- county assignment -------------------------------------------------
-  // Only cells inside a county's bounding box are tested, which keeps this
-  // to a few million point-in-polygon checks rather than 159 × every cell.
   const counties = geo.counties
   for (let ci = 0; ci < counties.length; ci++) {
     for (const rings of counties[ci].polygons) {
@@ -279,11 +227,6 @@ function main(): void {
     }
   }
 
-  // --- terrain -----------------------------------------------------------
-  // The tidal marsh band follows the coastline rather than a line of longitude:
-  // for each grid row, find how far east Georgia reaches, and treat cells within
-  // MARSH_DEPTH_KM of that as marsh. Georgia's coast angles south-west, so a
-  // longitude cutoff would slice straight across it and look obviously wrong.
   const MARSH_DEPTH_KM = 14
   const rowMaxX = new Float64Array(spec.rows).fill(-Infinity)
   for (let row = 0; row < spec.rows; row++) {
@@ -321,17 +264,6 @@ function main(): void {
     }
   }
 
-  // --- population density ------------------------------------------------
-  // Each place spreads its population over a radially decaying kernel. Two
-  // things matter for this to produce a usable cost surface:
-  //
-  //  1. The radius comes from the population itself, since urban area scales
-  //     with the number of people in it. A town of 16,000 occupies a couple of
-  //     kilometres, not the twenty-five a log-of-population rule would give it —
-  //     get this wrong and every rural county reads as suburban.
-  //  2. The kernel is normalised so that its integral returns the actual
-  //     population, which makes the output genuinely people per km² rather than
-  //     an arbitrary index.
   const TYPICAL_URBAN_DENSITY = 900 // people/km² inside a place's own footprint
   const cityPts = CITIES.map((c) => {
     const [x, y] = project(c.lon, c.lat)
@@ -359,9 +291,6 @@ function main(): void {
     }
   }
 
-  // Saturating curve rather than a log one. A log scale anchored to Atlanta's
-  // peak makes 7 people/km² look like 30% density; this keeps genuinely empty
-  // country reading as empty, which is what siting and routing costs turn on.
   const HALF_SATURATION = 120 // people/km² that maps to the middle of the range
   for (let i = 0; i < total; i++) {
     if (county[i] === 255) continue
@@ -369,10 +298,6 @@ function main(): void {
     population[i] = Math.round((d / (d + HALF_SATURATION)) * 255)
   }
 
-  // --- land value --------------------------------------------------------
-  // Rough $/acre. Rural southwest Georgia farmland sits in the low thousands;
-  // metro-fringe land runs an order of magnitude higher. Terrain nudges it:
-  // mountains are cheap but expensive to build across, marsh is near-unbuildable.
   const TERRAIN_LAND_FACTOR: Record<number, number> = {
     [TERRAIN.COASTAL_PLAIN]: 1.0,
     [TERRAIN.PIEDMONT]: 1.35,
@@ -388,13 +313,8 @@ function main(): void {
     landValue[i] = Math.min(65_535, Math.round(base * (TERRAIN_LAND_FACTOR[terrain[i]] ?? 1)))
   }
 
-  // --- hydrology ---------------------------------------------------------
-  // Optional. When water has been vendored it is burned into the protection
-  // layer so the router can price crossings; when it has not, the layer stays
-  // zero and the manifest says so rather than pretending.
-  const hydro = rasterizeHydrology(spec, county, protection)
+  const hydro = rasterizeProtection(spec, county, protection)
 
-  // --- pack --------------------------------------------------------------
   const layers = [
     { name: 'county', type: 'Uint8', array: county as unknown as ArrayBufferView },
     { name: 'terrain', type: 'Uint8', array: terrain as unknown as ArrayBufferView },
@@ -437,7 +357,7 @@ function main(): void {
   )
 
   console.log(`water:    ${hydro.waterCells.toLocaleString()} cells, ` +
-    `${hydro.wetlandCells.toLocaleString()} wetland (${hydro.note})`)
+    `${hydro.wetlandCells.toLocaleString()} wetland, ${hydro.parkCells.toLocaleString()} park (${hydro.note})`)
   console.log(`grid:     ${spec.cols} x ${spec.rows} = ${total.toLocaleString()} cells`)
   console.log(`in-state: ${inState.toLocaleString()} cells (~${Math.round(inState * HEX_AREA_KM2).toLocaleString()} km²)`)
   console.log(`binary:   ${(blob.byteLength / 1024).toFixed(0)} KiB across ${layers.length} layers`)

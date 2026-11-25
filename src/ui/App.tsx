@@ -1,32 +1,48 @@
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo, type ReactNode } from 'react'
 import { useGame } from '../state/gameStore.ts'
-import { MapView, type CellReadout } from './MapView.tsx'
+import { MapView, type MapTip } from './MapView.tsx'
 import { HUD } from './HUD.tsx'
-import { BriefingCard } from './BriefingCard.tsx'
 import { BuildPanel } from './panels/BuildPanel.tsx'
-import { ContractPanel } from './panels/ContractPanel.tsx'
-import { CorridorPanel } from './panels/CorridorPanel.tsx'
-import { AcquisitionPanel } from './panels/AcquisitionPanel.tsx'
+import { GridPanel } from './panels/GridPanel.tsx'
+import { LandPanel } from './panels/LandPanel.tsx'
+import { OpsPanel } from './panels/OpsPanel.tsx'
 import { LogPanel } from './panels/LogPanel.tsx'
-import { DispatchPanel } from './panels/DispatchPanel.tsx'
 import { TutorialCoach } from './TutorialCoach.tsx'
-import { HearingDialog } from './HearingDialog.tsx'
-import { ScoreScreen } from './ScoreScreen.tsx'
-import { currentBeat } from '../engine/tutorial.ts'
+import { BriefingDialog, EventDialog, HearingDialog, MenuDialog, ScoreDialog } from './dialogs.tsx'
+import { Icon } from './Icon.tsx'
+import { STATUS_TEXT } from './DataCenterCard.tsx'
+import { plannedFlow } from '../engine/realtime/network.ts'
+import { lineGear, needAt, roomAt, sortLines } from '../engine/turn/reach.ts'
+import { GearCard } from './GearBuild.tsx'
+import { LinePlanner } from './LinePlanner.tsx'
+import { CustomersPanel } from './panels/CustomersPanel.tsx'
+import { STOPPED, type DataCenter } from '../data/dataCenters.ts'
+import { Inspector, LINE_STATUS, PLANT_STATUS } from './Inspector.tsx'
+import { countyAt, isMain, mapHit, selectionPoint, subFrom, type MapThings, type Selection } from './mapHit.ts'
+import { activeCustomers, beginCompany, firstDue, isExisting, openOffers } from '../engine/customers.ts'
+import { focusOf } from '../engine/focus.ts'
+import { approvalBand, ratingOf } from '../engine/approval.ts'
+import type { GameState } from '../engine/types.ts'
 import { useMediaQuery, MOBILE_QUERY } from './useMediaQuery.ts'
-import { MobileSheet, type SheetTab, type SheetTabDef } from './MobileSheet.tsx'
 import type {
-  Marker, Overlay, SitingPreview, CorridorDraw, ParcelTint,
+  Marker, Overlay, SitingPreview, CorridorDraw, ParcelTint, NodeDraw, FootprintDraw, DataCenterDraw, SubstationDraw,
 } from '../render/mapRenderer.ts'
 import { corridorBuffer } from '../engine/geo/polygon.ts'
-import { cellCenter } from '../engine/geo/hex.ts'
 import { lineClass } from '../data/transmission.ts'
 import type { IconKey } from '../render/icons.ts'
 import { plantType, type PlantKind } from '../data/plants.ts'
-import type { SiteAssessment } from '../engine/turn/siting.ts'
-import { money, acres } from './format.ts'
+import { assessSubstation, type SubstationSite } from '../engine/turn/substations.ts'
+import { substationType } from '../data/newSubstations.ts'
+import { assessSite, cellPoint, footprintCells, type SiteAssessment } from '../engine/turn/siting.ts'
+import { networkNodes, type NetNode } from '../engine/turn/corridor.ts'
+import { capacityDerates } from '../engine/realtime/reliability.ts'
+import { approvalFill } from '../render/mapRenderer.ts'
+import { airFill, countyEnvLines, projectionLines, waterFill } from './environment.ts'
+import type { EnvData } from '../data/loadEnv.ts'
+import { firmFlow } from '../engine/realtime/network.ts'
+import { formatQuarter } from '../engine/time.ts'
+import { money, acres, mw } from './format.ts'
 
-/** Which vector glyph stands for each generation technology. */
 const PLANT_ICON: Record<PlantKind, IconKey> = {
   'gas-ct': 'gasCt',
   'gas-ccgt': 'gasCcgt',
@@ -35,552 +51,721 @@ const PLANT_ICON: Record<PlantKind, IconKey> = {
   'nuclear-uprate': 'nuclear',
 }
 
-const TERRAIN_NAMES: Record<number, string> = {
-  0: 'Outside Georgia',
-  1: 'Coastal Plain',
-  2: 'Piedmont',
-  3: 'Blue Ridge',
-  4: 'Valley and Ridge',
-  5: 'Appalachian Plateau',
-  6: 'Coastal Marsh',
-}
-
-const OVERLAYS: Array<{ id: Overlay; label: string }> = [
-  { id: 'none', label: 'Terrain' },
-  { id: 'population', label: 'People' },
-  { id: 'landValue', label: 'Land value' },
+const OVERLAYS: Array<{ id: Overlay; label: string; help: string }> = [
+  { id: 'none', label: 'Land', help: 'Fields, woods and towns.' },
+  { id: 'population', label: 'People', help: 'Where people live. Building near them costs approval.' },
+  { id: 'landValue', label: 'Land value', help: 'What land and right-of-way cost.' },
+  { id: 'air', label: 'Air', help: 'Fine particles by county. Darker is worse. The yearly limit is 9 µg/m³.' },
+  { id: 'water', label: 'Water', help: 'Darker counties have more impaired streams. Orange streams are impaired, blue are good, grey are not assessed.' },
+  { id: 'approval', label: 'Approval', help: 'Green is supportive, red is hostile. Only the data center\'s county and those bordering it are rated.' },
 ]
 
-/**
- * What each layer is actually for. These are decision aids, not decoration:
- * People is where opposition comes from, Land value is what right-of-way costs,
- * and the router weighs both — so the player should be able to see what the
- * router sees before it proposes a line straight through somebody's front yard.
- */
-const OVERLAY_HELP: Record<Overlay, string> = {
-  none: 'Physical terrain. Switch layers to see what drives cost and opposition.',
-  population: 'Where people live. Siting and routing near them costs county approval.',
-  landValue: 'Appraised land value. This is what right-of-way and plant sites cost you.',
-  terrain: 'Physical terrain.',
-}
-
-/** Footprint radius in km for a plant's acreage, for the siting preview. */
-function footprintRadiusKm(acresValue: number): number {
-  const km2 = acresValue / 247.105
-  return Math.sqrt(km2 / Math.PI)
-}
+type Tab = 'build' | 'grid' | 'ops' | 'customers' | 'log'
 
 export function App({ embedded = false }: { embedded?: boolean }) {
-  const {
-    mapData, loadError, game, scenario, tool, headlines, showBriefing, hoverCell: hoverCellIndex,
-    parcels, parcelsLoading, parcelError, plan, selectedCorridor, hoverParcel,
-    load, startScenario, accept, setTool, setHoverCell, setHoverParcel, placeAt, endQuarter,
-    dismissHeadlines, currentAssessment, setLineClass, clearPlan, commitPlan,
-    selectCorridor, offerAll, setOffer, condemnParcel, abandon, parcelById,
-    alerts, setSpeed, setPolicy, setVegetationSpend, setMaintenanceDeferred, dismissAlerts,
-    chooseHearing, dismissTutorial, restoreTutorial, finishDebrief, cancelPlant,
-    imagery, roads, stateRoads, stateWater, water, ensureBasemap,
-  } = useGame()
+  const g = useGame()
+  const { game, mapData, scenario, tool, plan, parcels, selectedCorridor } = g
+  const { load, ensureBasemap, ensureParcels, setHoverCell } = g
 
   const [overlay, setOverlay] = useState<Overlay>('none')
-  const [showHexes, setShowHexes] = useState(true)
-  // Aerial defaults on when it exists — it is the layer that makes the place
-  // legible, and a player should not have to discover it to benefit from it.
-  const [showImagery, setShowImagery] = useState(true)
-  const [showRoads, setShowRoads] = useState(true)
-  const [showWater, setShowWater] = useState(true)
-  const [hoverName, setHoverName] = useState<string | null>(null)
-  const [hoverCell, setHoverCellLocal] = useState<CellReadout | null>(null)
+  const [layers, setLayers] = useState({ hexes: false, imagery: true, roads: true, water: true })
   const [scale, setScale] = useState(1)
-  /** Set once, when the scenario opens, to bring the player to the site. */
   const [focus, setFocus] = useState<{ x: number; y: number; scale: number } | null>(null)
-
+  const [tab, setTab] = useState<Tab>('build')
   const isMobile = useMediaQuery(MOBILE_QUERY)
-  const [sheetTab, setSheetTab] = useState<SheetTab>('build')
-  // Starts collapsed so the first thing a player sees is the map, not a panel.
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [layersOpen, setLayersOpen] = useState(false)
 
   useEffect(() => { void load() }, [load])
+  const fips = game?.contract.countyFips
+  useEffect(() => {
+    if (!fips) return
+    void ensureBasemap()
+    void ensureParcels()
+  }, [fips, ensureBasemap, ensureParcels])
 
-  // Basemap layers are optional and load in the background; the map is fully
-  // usable before they arrive, and equally usable if they never do.
-  useEffect(() => { if (game) void ensureBasemap() }, [game, ensureBasemap])
+  // Show every contract when a game opens, or the campus once it has signed.
+  const siteCell = game?.contract.siteCell
+  useEffect(() => {
+    if (!mapData || siteCell === undefined || g.showBriefing) return
+    const [x, y] = cellPoint(mapData.grid, siteCell)
+    const list = game?.contract.status === 'offered' ? [...activeCustomers(game), ...openOffers(game)] : []
+    if (list.length === 0) {
+      setFocus({ x, y, scale: isMobile ? 16 : 24 })
+      return
+    }
+    const xs = [x, ...list.map((c) => c.x)]
+    const ys = [y, ...list.map((c) => c.y)]
+    const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)]
+    const wide = window.innerWidth - (isMobile ? 60 : 480)
+    const tall = window.innerHeight - (isMobile ? 360 : 220)
+    setFocus({ x: (x0 + x1) / 2, y: (y0 + y1) / 2, scale: Math.max(0.7, Math.min(8, wide / (x1 - x0 + 1), tall / (y1 - y0 + 1))) })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapData, siteCell, g.showBriefing, game?.contract.status === 'offered'])
+
+  // Follow the work: operations after energizing.
+  const picked = g.selection
+  useEffect(() => { if (picked && isMobile) setSheetOpen(true) }, [picked, isMobile])
+  const operating = game?.phase === 'operate'
+  useEffect(() => { if (operating) setTab('ops') }, [operating])
 
   useEffect(() => {
-    if (mapData && !game) startScenario('americus-400')
-  }, [mapData, game, startScenario])
+    if (g.headlines.length === 0) return
+    const t = setTimeout(() => useGame.getState().dismissHeadlines(), 9000)
+    return () => clearTimeout(t)
+  }, [g.headlines])
 
-  // When the contract is signed, glide from the statewide view down to Sumter
-  // County. Starting the player at 0.9 px/km with the campus as a single dot is
-  // technically the whole state and practically useless.
   useEffect(() => {
-    if (!game || !mapData || showBriefing || focus) return
-    const spec = mapData.grid.spec
-    const cell = game.contract.siteCell
-    const row = Math.floor(cell / spec.cols)
-    const [x, y] = cellCenter(spec, cell - row * spec.cols, row)
-    setFocus({ x, y, scale: isMobile ? 16 : 26 })
-  }, [game, mapData, showBriefing, focus, isMobile])
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key !== 'Escape') return
+      useGame.getState().stepBack()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
-  const handleHover = useCallback(
-    (name: string | null, cell: CellReadout | null, cellIndex: number) => {
-      setHoverName(name)
-      setHoverCellLocal(cell)
-      setHoverCell(cellIndex)
-    },
-    [setHoverCell],
-  )
+  const overlayRef = useRef(overlay)
+  overlayRef.current = overlay
+  const tipAt = useCallback((x: number, y: number, cell: number, pxPerKm: number): MapTip | null => {
+    const st = useGame.getState()
+    if (!st.game || !st.mapData || st.tool.kind === 'route') return null
+    const { grid } = st.mapData
+    if (st.tool.kind === 'substation') return substationTip(st.game, assessSubstation(st.game, st.tool.kv, cell, grid, st.gridLines()), st.tool.kv)
+    if (st.tool.kind === 'site') return siteTip(st.game, assessSite(st.game, st.tool.typeId, cell, grid), st.tool.typeId, st.env, x, y)
+    // On the air and water layers the county answers, so lines stay quiet.
+    const reading = overlayRef.current === 'air' || overlayRef.current === 'water'
+    const hit = mapHit(st.game, grid, x, y, cell, pxPerKm, st.shownCenters(), reading ? undefined : st.mapThings())
+    if (hit) return JSON.stringify(hit) === JSON.stringify(st.selection) ? null : hitTip(st.game, hit, st.dataCenters, st.mapThings())
+    const county = st.game.counties[countyAt(grid, cell) ?? '']
+    if (!county) return null
+    if (st.selection?.kind === 'county' && st.selection.fips === county.fips) return null
+    return {
+      title: `${county.name} County`,
+      lines: overlayRef.current === 'air' || overlayRef.current === 'water'
+        ? countyEnvLines(st.env?.counties[county.fips], overlayRef.current)
+        : [ratingText(st.game, county.fips)],
+    }
+  }, [])
 
-  // Plants and the campus they serve.
+  const outages = game?.realtime?.outages
+  const plants = game?.plants
   const markers = useMemo<Marker[]>(() => {
     if (!game) return []
-    const out: Marker[] = [{
-      cell: game.contract.siteCell,
-      kind: 'datacenter',
-      label: game.contract.name,
-      icon: 'dataCenter',
-    }]
-    for (const p of game.plants) {
+    const out: Marker[] = [
+      { cell: game.system.substationCell, kind: 'substation', label: game.system.substationName, icon: 'tower' },
+      ...openOffers(game).map((o): Marker => ({ cell: -1, at: [o.x, o.y], kind: 'datacenter-offer', label: o.name, icon: 'dataCenter' })),
+      ...activeCustomers(game).map((c): Marker => ({ cell: c.cell, at: [c.x, c.y], kind: 'datacenter', label: c.name, icon: 'dataCenter' })),
+      { cell: game.contract.siteCell, kind: game.contract.status === 'offered' ? 'datacenter-offer' : 'datacenter', label: game.contract.name, icon: 'dataCenter' },
+    ]
+    for (const b of game.builtSubs ?? []) {
+      out.push({ cell: b.cell, kind: b.status === 'in-service' ? 'substation' : 'substation-building', label: b.name, icon: 'tower' })
+    }
+    const down = new Set(outages?.filter((o) => o.capacityFraction <= 0).map((o) => o.assetId))
+    const sites = new Map<number, typeof game.plants>()
+    for (const p of game.plants) sites.set(p.cell, [...(sites.get(p.cell) ?? []), p])
+    for (const units of sites.values()) {
+      const p = units.find((u) => u.status !== 'online') ?? units[0]
       const t = plantType(p.typeId)
       const total = p.status === 'permitting' ? t.permitQuarters : t.buildQuarters
+      const mixed = units.some((u) => u.typeId !== p.typeId)
       out.push({
         cell: p.cell,
-        kind: p.status === 'online' ? 'plant-online'
-          : p.status === 'construction' ? 'plant-construction'
-          : 'plant-permitting',
-        label: p.name,
-        progress: total > 0 ? (total - p.quartersRemaining) / total : 0,
+        kind: units.some((u) => down.has(u.id)) ? 'plant-out'
+          : p.status === 'online' ? 'plant-online'
+          : p.status === 'construction' ? 'plant-construction' : 'plant-permitting',
+        label: units.length === 1 ? p.name
+          : mixed ? `${units.length} plants` : `${units.length} × ${t.shortName.toLowerCase()}`,
+        count: units.length,
+        progress: Math.max(0, (total - p.quartersRemaining) / total),
         icon: PLANT_ICON[p.typeId],
       })
     }
     return out
-  }, [game])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plants, game?.customers, game?.offers, game?.quarter, game?.contract.status, game?.builtSubs, game?.contract.siteCell, game?.system.substationCell, outages])
 
-  // Committed corridors plus the one being previewed.
-  const corridorDraws = useMemo<CorridorDraw[]>(() => {
-    const out: CorridorDraw[] = []
-    for (const c of game?.corridors ?? []) {
-      out.push({
-        centerline: c.centerline,
-        buffer: corridorBuffer(c.centerline, lineClass(c.classId).rowHalfWidthKm),
-        status: c.status,
-      })
-    }
-    if (plan) {
-      out.push({ centerline: plan.centerline, buffer: plan.takings.buffer, status: 'planned' })
-    }
+  // The header behind the opening shows how the game will start.
+  const opened = useMemo(() => (g.showBriefing && game && mapData && g.dataCenters.length > 0
+    ? beginCompany(game, g.dataCenters, mapData.counties, mapData.grid) : game), [g.showBriefing, game, mapData, g.dataCenters])
+
+  const committed = game?.corridors
+  const buffers = useMemo(
+    () => new Map((committed ?? []).map((c) =>
+      [c.id, corridorBuffer(c.centerline, lineClass(c.classId).rowHalfWidthKm)])),
+    [committed],
+  )
+  const corridors = useMemo<CorridorDraw[]>(() => {
+    const derates = game?.realtime ? capacityDerates(game.realtime) : new Map<string, number>()
+    const out: CorridorDraw[] = (committed ?? []).map((c) => ({
+      centerline: c.centerline,
+      buffer: buffers.get(c.id) ?? [],
+      status: c.status,
+      available: derates.get(c.id) ?? 1,
+      gear: game ? lineGear(game, c) : [],
+    }))
+    if (plan) out.push({ centerline: plan.centerline, buffer: plan.takings.buffer, status: 'planned', available: 1,
+      gear: game ? lineGear(game, { fromNode: plan.from.id, toNode: plan.to.id, classId: plan.classId }) : [] })
     return out
-  }, [game?.corridors, plan])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [committed, buffers, outages, plan, game?.equipment, game?.customers])
 
-  // Colour every parcel the current corridor touches by where its deal stands.
+  const centers = useMemo<DataCenterDraw[]>(() => {
+    const picked = g.selection?.kind === 'dc' ? g.selection.id : ''
+    const icons = new Set(game ? [...activeCustomers(game), ...openOffers(game)].map((c) => c.id) : [])
+    return useGame.getState().shownCenters().filter((d) => !icons.has(d.id)).map((d) => ({
+      x: d.x, y: d.y, mw: d.mw, label: d.name, stopped: STOPPED.has(d.status), selected: d.id === picked,
+    }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [g.dataCenters, g.showCenters, scenario, g.selection, game?.customers, game?.offers, game?.quarter])
+
+  const things = g.mapThings()
+  const gridSubs = useMemo<SubstationDraw[]>(() => {
+    if (!game || !mapData) return []
+    const mine = new Set((game.equipment ?? []).map((e) => e.siteId))
+    const picked = g.selection?.kind === 'gsub' ? g.selection.id : ''
+    return things.substations.filter((s) => !isMain(game, mapData.grid, s)).map((s) => ({
+      x: s.x, y: s.y, kv: s.kv, label: s.name, from: subFrom(s.kv), mine: mine.has(s.id), selected: s.id === picked,
+    }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [things, game?.equipment, mapData, g.selection])
+  const pickedLine = g.selection?.kind === 'xline' ? things.lines[g.selection.index]?.points ?? null : null
+
+  const activeCorridor = game?.corridors.find((c) => c.id === selectedCorridor) ?? null
+
   const parcelTints = useMemo<Record<string, ParcelTint>>(() => {
     const tints: Record<string, ParcelTint> = {}
     if (plan) {
       for (const t of plan.takings.takings) tints[t.parcelId] = t.severed ? 'severed' : 'taken'
+      return tints
     }
-    const corridor = game?.corridors.find((c) => c.id === selectedCorridor)
-    if (corridor) {
-      for (const [id, deal] of Object.entries(corridor.deals)) {
-        tints[id] = deal.status === 'accepted' ? 'accepted'
-          : deal.status === 'condemned' || deal.status === 'condemning' ? 'condemned'
-          : deal.status === 'blocked' ? 'blocked'
-          : deal.status === 'holdout' ? 'holdout'
-          : corridor.takings[id]?.severed ? 'severed' : 'taken'
+    if (activeCorridor && activeCorridor.status === 'acquiring') {
+      for (const [id, d] of Object.entries(activeCorridor.deals)) {
+        tints[id] = d.status === 'accepted' ? 'accepted'
+          : d.status === 'condemned' || d.status === 'condemning' ? 'condemned'
+          : d.status === 'blocked' ? 'blocked'
+          : d.status === 'holdout' ? 'holdout'
+          : d.status === 'offered' ? 'offered'
+          : activeCorridor.takings[id]?.severed ? 'severed' : 'taken'
       }
     }
     return tints
-  }, [plan, game?.corridors, selectedCorridor])
+  }, [plan, activeCorridor])
 
-  // Statewide highways always; the county's full network layered on when it has
-  // loaded. Drawn as one list because the renderer already fades classes by
-  // zoom, so the tiers self-sort without extra bookkeeping.
-  const allRoads = useMemo(
-    () => [...(stateRoads?.roads ?? []), ...(roads?.roads ?? [])],
-    [stateRoads, roads],
-  )
-
+  const roads = useMemo(
+    () => [...(g.stateRoads?.roads ?? []), ...(g.roads?.roads ?? [])], [g.stateRoads, g.roads])
   const waterways = useMemo(
-    () => [...(stateWater?.waterways ?? []), ...(water?.waterways ?? [])],
-    [stateWater, water],
-  )
+    () => [...(g.stateWater?.waterways ?? []), ...(g.water?.waterways ?? [])], [g.stateWater, g.water])
   const waterBodies = useMemo(
-    () => [...(stateWater?.bodies ?? []), ...(water?.bodies ?? [])],
-    [stateWater, water],
-  )
-  const hasWater = waterways.length > 0 || waterBodies.length > 0
+    () => [...(g.stateWater?.bodies ?? []), ...(g.water?.bodies ?? [])], [g.stateWater, g.water])
+  const imagery = useMemo(
+    () => (g.imagery ? { images: g.imagery.images, tiles: g.imagery.manifest.tiles } : null), [g.imagery])
 
-  const imageryDraw = useMemo(
-    () => (imagery
-      ? { images: imagery.images, tiles: imagery.manifest.tiles }
-      : null),
-    [imagery],
-  )
-
-  const activeCorridor = game?.corridors.find((c) => c.id === selectedCorridor) ?? null
-
-  const assessment = currentAssessment()
+  const assessment = g.currentAssessment()
   const siting = useMemo<SitingPreview | null>(() => {
-    if (tool.kind !== 'site' || !assessment) return null
+    if (tool.kind !== 'site' || !assessment || !mapData || !game) return null
+    const near = assessment.ok && tool.typeId !== 'nuclear-uprate'
     return {
-      cell: hoverCellIndex,
       ok: assessment.ok,
-      radiusKm: footprintRadiusKm(plantType(tool.typeId).acres),
+      cells: assessment.cells.length > 0 ? assessment.cells : [g.hoverCell],
+      toward: near ? cellPoint(mapData.grid, game.contract.siteCell) : null,
     }
-  }, [tool, assessment, hoverCellIndex])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tool, g.hoverCell, mapData, game?.plants])
 
-  if (loadError) {
+  const footprints = useMemo<FootprintDraw[]>(() => {
+    if (!mapData || !plants) return []
+    const picked = g.selection?.kind === 'site' ? g.selection.cell : -1
+    return plants
+      .filter((p) => p.typeId !== 'nuclear-uprate' && (plantType(p.typeId).acres > 300 || p.cell === picked))
+      .map((p) => ({
+        cells: footprintCells(mapData.grid, p.cell, plantType(p.typeId).acres),
+        selected: p.cell === picked,
+        solar: p.typeId === 'solar',
+        stage: p.status === 'outage' ? 'online' as const : p.status,
+      }))
+  }, [plants, mapData, g.selection])
+
+  const routing = tool.kind === 'route'
+  const tappable = useMemo(
+    () => (routing ? useGame.getState().tappable() : undefined),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [routing, g.gis, game?.system.substationCell],
+  )
+
+  const lineFrom = tool.kind === 'route' ? plan?.from ?? tool.from : null
+  const lineClassId = tool.kind === 'route' ? tool.classId : null
+  const sorted = useMemo(() => {
+    if (!tappable || !game || !mapData) return undefined
+    return lineFrom && lineClassId ? sortLines(game, mapData.grid, lineFrom, lineClassId, tappable) : { enough: tappable, short: [] }
+  }, [tappable, game, mapData, lineFrom, lineClassId])
+
+  const probe = useCallback(
+    (x: number, y: number, k: number) => useGame.getState().probeRoute(x, y, k), [])
+  const drawStart = useCallback(
+    (x: number, y: number, k: number) => useGame.getState().beginLine(x, y, k), [])
+
+  const counties = game?.counties
+  const env = g.env
+  const countyFill = useMemo<Record<string, string> | undefined>(() => {
+    if (!game || (overlay !== 'approval' && overlay !== 'air' && overlay !== 'water')) return undefined
+    const out: Record<string, string> = {}
+    for (const f of Object.keys(counties ?? {})) {
+      const r = ratingOf(game, f)
+      const fill = overlay === 'approval' ? (r === null ? undefined : approvalFill(r))
+        : overlay === 'air' ? airFill(env?.counties[f]) : waterFill(env?.counties[f])
+      if (fill) out[f] = fill
+    }
+    return out
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [counties, overlay, game?.quarter, game?.contract.approval, env])
+
+  const hitAt = useCallback((x: number, y: number, cell: number, pxPerKm: number) => {
+    const s = useGame.getState()
+    return s.tool.kind === 'none' && s.game !== null && s.mapData !== null
+      && mapHit(s.game, s.mapData.grid, x, y, cell, pxPerKm, s.shownCenters(), s.mapThings()) !== null
+  }, [])
+
+  const nodes = useMemo<NodeDraw[]>(() => {
+    if (!game || !mapData) return []
+    if (tool.kind !== 'route') {
+      const at = g.selection && selectionPoint(game, mapData.grid, g.selection)
+      return at ? [{ x: at[0], y: at[1], selected: true }] : []
+    }
+    const picked = new Set([tool.from?.id, plan?.from.id, plan?.to.id])
+    const ends = [tool.from, plan?.from, plan?.to]
+      .filter((n): n is NetNode => Boolean(n) && /^(tap|grid):/.test(n!.id))
+    const flow = lineFrom ? plannedFlow(game) : undefined
+    const next = lineFrom ? needAt(game, lineFrom.id, flow)?.nextMw ?? 0 : 0
+    // Substations without room for the next phase get no ring.
+    const fits = (n: NetNode): boolean => {
+      const room = next > 0 && lineClassId && !picked.has(n.id) ? roomAt(game, n, lineClassId, flow) : null
+      return room === null || room + 1e-6 >= next
+    }
+    return [
+      ...networkNodes(game, mapData.grid).filter(fits).map((n) => ({ x: n.x, y: n.y, selected: picked.has(n.id) })),
+      ...ends.map((n) => ({ x: n.x, y: n.y, selected: true })),
+    ]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tool, plan, game?.plants, mapData, g.selection])
+
+  if (g.loadError) {
     return (
-      <div className="fill center">
-        <div className="notice">
-          <h2>Could not load map data</h2>
-          <p className="mono">{loadError}</p>
-          <p>Run <code>npm run data</code> to regenerate <code>public/data/</code>.</p>
-        </div>
+      <div className="splash" role="alert">
+        <h1>The map did not load</h1>
+        <p>Check your connection and try again. ({g.loadError})</p>
+        <button className="btn primary" onClick={() => void load()}>Try again</button>
       </div>
     )
   }
-
   if (!mapData || !game || !scenario) {
-    return (
-      <div className="fill center">
-        <div className="loading">
-          <div className="loading-bar"><span /></div>
-          <p>Loading Georgia…</p>
-        </div>
-      </div>
-    )
+    return <div className="splash"><p>Loading the map of Georgia</p></div>
   }
 
-  // The panels, built once and placed either in the desktop sidebar or the
-  // mobile sheet. Same components, two arrangements.
-  const dispatchPanel = game.realtime && (
-    <DispatchPanel
-      game={game}
-      rt={game.realtime}
-      onSpeed={setSpeed}
-      onPolicy={setPolicy}
-      onVegetation={setVegetationSpend}
-      onMaintenance={setMaintenanceDeferred}
-    />
-  )
-  const buildPanel = (
-    <BuildPanel game={game} tool={tool} onSelect={setTool} onCancelPlant={cancelPlant} />
-  )
-  const corridorPanel = (
-    <CorridorPanel
-      game={game}
-      tool={tool}
-      plan={plan}
-      parcelsLoading={parcelsLoading}
-      parcelError={parcelError}
-      syntheticParcels={parcels?.synthetic ?? false}
-      selectedCorridor={selectedCorridor}
-      onStartRoute={() => setTool({ kind: 'route', from: null, classId: '230' })}
-      onSetClass={setLineClass}
-      onCommit={commitPlan}
-      onCancel={clearPlan}
-      onSelectCorridor={selectCorridor}
-    />
-  )
-  const acquisitionPanel = activeCorridor && activeCorridor.status !== 'energized' && (
-    <AcquisitionPanel
-      game={game}
-      corridor={activeCorridor}
-      parcelById={parcelById}
-      onOfferAll={offerAll}
-      onSetOffer={setOffer}
-      onCondemn={condemnParcel}
-      onAbandon={abandon}
-      onHoverParcel={setHoverParcel}
-    />
-  )
-  const contractPanel = <ContractPanel game={game} />
+  const blocked = g.showBriefing ? 'Start first.'
+    : game.hearing === 'called' ? 'Answer the commission first.'
+    : game.pendingEvent ? 'Answer the pending decision first.' : null
 
-  // Unsettled parcels and live faults are the two things that need the player
-  // back in a panel, so they get a badge on the tab rather than staying hidden.
-  const outstanding = activeCorridor
-    ? Object.values(activeCorridor.deals).filter(
-        (d) => d.status !== 'accepted' && d.status !== 'condemned').length
-    : 0
+  const unsettled = game.corridors.filter((c) => c.status === 'acquiring')
+    .reduce((n, c) => n + Object.values(c.deals).filter((d) => d.status === 'holdout' || d.status === 'pending').length, 0)
   const faults = game.realtime?.outages.length ?? 0
-
-  const sheetTabs: SheetTabDef[] = [
+  const tabs: Array<{ id: Tab; label: string; badge?: number }> = [
     { id: 'build', label: 'Build' },
-    {
-      id: 'grid',
-      label: 'Grid',
-      badge: outstanding > 0 ? outstanding : undefined,
-      urgent: outstanding > 0,
-    },
-    { id: 'deal', label: 'Deal' },
-    ...(game.realtime
-      ? [{
-          id: 'ops' as const,
-          label: 'Ops',
-          badge: faults > 0 ? faults : undefined,
-          urgent: faults > 0,
-        }]
-      : []),
+    { id: 'grid', label: 'Grid', badge: unsettled || undefined },
+    ...(game.realtime ? [{ id: 'ops' as const, label: 'Operate', badge: faults || undefined }] : []),
+    { id: 'customers', label: 'Customers' },
     { id: 'log', label: 'Log' },
   ]
+  const current: Tab = tabs.some((t) => t.id === tab) ? tab : 'grid'
 
-  const sheetContent = sheetTab === 'build' ? buildPanel
-    : sheetTab === 'grid' ? <>{corridorPanel}{acquisitionPanel}</>
-    : sheetTab === 'deal' ? contractPanel
-    : sheetTab === 'ops' ? dispatchPanel
-    : <LogPanel log={game.log} />
+  const center = focusOf(game, g.focus, g.dataCenters)
+  /** Look at a data center: the header, the panels and the map all turn to it. */
+  const showCenter = (id: string): void => {
+    g.setTool({ kind: 'none' })
+    if (id === 'main') {
+      const [x, y] = cellPoint(mapData.grid, game.contract.siteCell)
+      g.select({ kind: 'campus' })
+      setFocus({ x, y, scale: Math.max(scale, 14) })
+      return
+    }
+    const d = g.dataCenters.find((k) => k.id === id)
+    if (!d) return
+    g.setShowCenters(true)
+    g.select({ kind: 'dc', id }, [d.x, d.y])
+    setFocus({ x: d.x, y: d.y, scale: Math.max(scale, 8) })
+  }
+
+  /** Open a line's card on the map. Its land offers are there while land is being bought. */
+  const openLine = (id: string): void => {
+    const c = game.corridors.find((k) => k.id === id)
+    if (!c) return
+    const [x, y] = c.centerline[c.centerline.length >> 1]
+    g.setTool({ kind: 'none' })
+    g.select({ kind: 'line', id }, [x, y])
+    setFocus({ x, y, scale: Math.max(scale, 14) })
+  }
+
+  const planner = tool.kind === 'route' ? (
+    <LinePlanner game={game} tool={tool} plan={plan} planNote={g.planNote} parcelsLoading={g.parcelsLoading}
+      onSetClass={g.setLineClass} onSetStyle={g.setRouteStyle} onUndoWaypoint={g.undoWaypoint}
+      onStartOver={g.stepBack} onCommit={g.commitPlan} onCancel={g.clearPlan} onOrder={g.orderGear} onCancelOrder={g.cancelGear} planSpare={g.planSpare} onSetSpare={g.setPlanSpare} />
+  ) : null
+  const planAt = plan ? g.planAt ?? ([plan.to.x, plan.to.y] as const) : tool.kind === 'route' && tool.from ? ([tool.from.x, tool.from.y] as const) : null
+  const pickedLineId = g.selection?.kind === 'line' ? g.selection.id : null
+  const landLine = game.corridors.find((c) => c.id === pickedLineId && c.status === 'acquiring')
+  const panels: Record<Tab, () => ReactNode> = {
+    build: () => (
+      <BuildPanel game={game} focus={center} tool={tool} onSelect={g.setTool} onWithdraw={g.cancelPlant} onExpedite={g.expedite}
+        onShow={(cell) => {
+          g.setTool({ kind: 'none' })
+          g.select({ kind: 'site', cell })
+          const [x, y] = cellPoint(mapData.grid, cell)
+          setFocus({ x, y, scale: Math.max(scale, 14) })
+        }}
+        onShowSub={(id) => {
+          const b = game.builtSubs?.find((k) => k.id === id)
+          if (!b) return
+          g.setTool({ kind: 'none' })
+          g.select({ kind: 'nsub', id })
+          setFocus({ x: b.x, y: b.y, scale: Math.max(scale, 14) })
+        }} />
+    ),
+    grid: () => (
+      <GridPanel game={game} focus={center} tool={tool} plan={plan} planner={isMobile ? planner : null}
+        selectedCorridor={selectedCorridor}
+        onStartRoute={() => g.setTool({ kind: 'route', from: null, classId: '230', style: 'balanced' })}
+        onSelectCorridor={openLine} onAbandon={g.abandon} />
+    ),
+    ops: () => game.realtime && (
+      <OpsPanel game={game} rt={game.realtime} onPolicy={g.setPolicy} onVegetation={g.setVegetationSpend}
+        onMaintenance={g.setMaintenanceDeferred} onCrews={g.setCrews} onPrioritize={g.prioritize} />
+    ),
+    customers: () => <CustomersPanel game={game} focusId={g.focus} list={g.dataCenters} onShow={showCenter} />,
+    log: () => <LogPanel log={game.log} />,
+  }
+
+  const inspecting = g.selection !== null && tool.kind === 'none'
+  const details = inspecting ? (
+    <Inspector
+      game={game} grid={mapData.grid} selection={g.selection!} centers={g.dataCenters} env={g.env} things={things}
+      onTapLine={(index) => {
+        const at = g.selectionAt
+        if (at) g.planFromLine(index, at as [number, number])
+        setTab('grid')
+        if (isMobile) setSheetOpen(false)
+      }}
+      land={(c) => (
+        <LandPanel key={c.id} game={game} corridor={c} onOfferAll={g.offerAll}
+          onSetOffer={g.setOffer} onCondemn={g.condemnParcel} onAbandon={g.abandon} onHoverParcel={g.setHoverParcel} />
+      )}
+      onClose={() => g.select(null)} onWithdraw={g.cancelPlant} onExpedite={g.expedite}
+      onRunProgramme={g.runProgramme} onOrder={g.orderGear} onCancelOrder={g.cancelGear} onSign={g.sign} onSignMain={g.accept} onSetSpare={g.setSpare}
+      onPlanLine={(from) => {
+        g.planLineFrom(from)
+        setTab('grid')
+        if (isMobile) setSheetOpen(false)
+      }}
+      onOpenLine={(id) => {
+        g.selectCorridor(id)
+        g.select(null)
+        setTab('grid')
+      }}
+    />
+  ) : null
+  const popover = isMobile ? null
+    : planner && g.planGear ? {
+        at: g.planGear.at as [number, number], avoid: plan?.centerline,
+        content: <GearCard game={game} id={g.planGear.id} kv={g.planGear.kv} onOrder={g.orderGear} onCancelOrder={g.cancelGear} onClose={g.closePlanGear} />,
+      }
+    : planner && planAt ? {
+        at: [planAt[0], planAt[1]] as [number, number], content: planner,
+        // Plants and data centers matter more than substations, so they count several times.
+        avoid: [
+          ...networkNodes(game, mapData.grid).flatMap((n) => Array<readonly [number, number]>(/^(site:|dc:|campus)/.test(n.id) ? 8 : 1).fill([n.x, n.y])),
+          ...(plan?.centerline ?? []),
+        ],
+      }
+    : details && g.selectionAt ? { at: g.selectionAt as [number, number], content: details, avoid: landLine?.centerline }
+    : null
+
+  // Phones have no room beside a tap, so details go in the sheet.
+  const inSheet = isMobile && details !== null
+  const content = inSheet ? details : panels[current]()
+
+  const choose = (t: Tab): void => {
+    if (inSheet) {
+      g.select(null)
+      setTab(t)
+      setSheetOpen(true)
+      return
+    }
+    if (isMobile && t === current) setSheetOpen((v) => !v)
+    else { setTab(t); setSheetOpen(true) }
+  }
+  const tabBar = (
+    <div className="tabs" role="tablist" aria-label="Panels">
+      {tabs.map((t) => (
+        <button key={t.id} role="tab" aria-selected={current === t.id && !inSheet}
+          className={current === t.id && !inSheet ? 'tab on' : 'tab'} onClick={() => choose(t.id)}>
+          {t.label}{t.badge !== undefined && <span className="badge">{t.badge}</span>}
+        </button>
+      ))}
+    </div>
+  )
+  const coach = !g.showBriefing && game.tutorial && !game.ending && (
+    game.tutorial.dismissed
+      ? <button className="btn small coach-restore" onClick={() => g.setTutorialHidden(false)}>Show the guide</button>
+      : <TutorialCoach key={isMobile ? 'm' : 'd'} game={game} activeTab={landLine ? 'land' : inSheet ? '' : current} startOpen={!isMobile}
+          onGo={(t) => {
+            const c = game.corridors.find((k) => k.status === 'acquiring')
+            if (t === 'land') { if (c) openLine(c.id); else setTab('grid') }
+            else { g.select(null); setTab(t) }
+            setSheetOpen(true)
+          }} onHide={() => g.setTutorialHidden(true)} />
+  )
+
+  const credit = [...new Set([
+    layers.imagery && g.imagery ? g.imagery.manifest.attribution : null,
+    (layers.roads && roads.length > 0) || (layers.water && waterways.length > 0) || (g.showGrid && g.stateGis)
+      ? '© OpenStreetMap contributors' : null,
+  ].filter(Boolean))].join(' · ')
+
+  const layerBox = (key: keyof typeof layers, label: string): ReactNode => (
+    <label className="check">
+      <input type="checkbox" checked={layers[key]}
+        onChange={(e) => setLayers({ ...layers, [key]: e.target.checked })} />
+      {label}
+    </label>
+  )
 
   return (
     <div className={`app${isMobile ? ' mobile' : ''}${isMobile && sheetOpen ? ' sheet-open' : ''}`}>
-      <HUD game={game} onEndQuarter={endQuarter} busy={showBriefing} compact={isMobile} />
+      <HUD game={opened ?? game} onEndQuarter={g.endQuarter} onSpeed={g.setSpeed}
+        onMenu={() => g.setShowMenu(true)} onRunProgramme={g.runProgramme} centers={g.dataCenters} focusId={g.showBriefing && opened ? firstDue(opened)?.id ?? g.focus : g.focus} onFocus={showCenter} blocked={blocked} compact={isMobile} embedded={embedded} />
 
       <div className="body">
         <main className="stage">
           <MapView
-            data={mapData}
-            overlay={overlay}
-            showHexes={showHexes}
-            markers={markers}
-            siting={siting}
-            placing={tool.kind === 'site' || tool.kind === 'route'}
-            parcels={parcels?.parcels}
-            parcelTints={parcelTints}
-            corridors={corridorDraws}
-            hoverParcel={hoverParcel}
-            storms={game.realtime?.storms}
-            imagery={imageryDraw}
-            roads={allRoads}
-            waterways={waterways}
-            waterBodies={waterBodies}
-            showWater={showWater}
-            showImagery={showImagery}
-            showRoads={showRoads}
-            focus={focus}
-            onHoverCounty={handleHover}
-            onClickCell={placeAt}
-            onScaleChange={setScale}
+            data={mapData} overlay={overlay} showHexes={layers.hexes} markers={markers} dataCenters={centers} substations={gridSubs} pickedLine={pickedLine} siting={siting}
+            placing={tool.kind !== 'none'} parcels={parcels?.parcels} parcelTints={parcelTints}
+            extraParcels={plan?.parcels} corridors={corridors} hoverParcel={g.hoverParcel}
+            storms={game.realtime?.storms} imagery={imagery} roads={roads} waterways={waterways}
+            waterBodies={waterBodies} showWater={layers.water} showImagery={layers.imagery}
+            showRoads={layers.roads} showGrid={g.showGrid} stateGis={g.stateGis} gis={g.gis}
+            selectedCounty={g.selection?.kind === 'county' ? g.selection.fips : null}
+            countyFill={countyFill} streams={env?.streams}
+            footprints={footprints} hitAt={hitAt} tappable={sorted?.enough} tappableShort={sorted?.short}
+            probe={routing ? probe : undefined} onDrawStart={routing ? drawStart : undefined}
+            probeKey={plan ?? tool}
+            nodes={nodes} waypoints={plan?.waypoints} focus={focus}
+            popover={popover}
+            tipAt={tipAt} onHoverCell={setHoverCell} onClickMap={g.clickMap} onScaleChange={setScale}
           />
 
           <div className="map-controls">
-            <span className="controls-label" id="layer-label">Map layer</span>
-            <div className="controls-row">
-            <div className="seg" role="group" aria-labelledby="layer-label">
-              {OVERLAYS.map((o) => (
-                <button
-                  key={o.id}
-                  className={overlay === o.id ? 'seg-btn on' : 'seg-btn'}
-                  onClick={() => setOverlay(o.id)}
-                  aria-pressed={overlay === o.id}
-                  title={OVERLAY_HELP[o.id]}
-                >
-                  {o.label}
-                </button>
-              ))}
-            </div>
-            <label className="check">
-              <input type="checkbox" checked={showHexes} onChange={(e) => setShowHexes(e.target.checked)} />
-              Grid
-            </label>
-            {/* Only offered when the data was actually vendored — a dead toggle
-                is worse than a missing one. */}
-            {imagery && (
-              <label className="check">
-                <input
-                  type="checkbox"
-                  checked={showImagery}
-                  onChange={(e) => setShowImagery(e.target.checked)}
-                />
-                Aerial
-              </label>
-            )}
-            {(stateRoads || roads) && (
-              <label className="check">
-                <input
-                  type="checkbox"
-                  checked={showRoads}
-                  onChange={(e) => setShowRoads(e.target.checked)}
-                />
-                Roads
-              </label>
-            )}
-            {hasWater && (
-              <label className="check">
-                <input
-                  type="checkbox"
-                  checked={showWater}
-                  onChange={(e) => setShowWater(e.target.checked)}
-                />
-                Water
-              </label>
-            )}
-            </div>
-            {/* A layer nobody understands is a layer nobody switches to, so the
-                active one says what it is for and which way the colour runs. */}
-            <p className="controls-help">
-              {OVERLAY_HELP[overlay]}
-              {overlay !== 'none' && (
-                <span className="ramp" aria-hidden="true">
-                  <em>low</em><i className={`ramp-bar ramp-${overlay}`} /><em>high</em>
-                </span>
-              )}
-            </p>
-          </div>
-
-          <div
-            className={tool.kind === 'site' && assessment ? 'readout siting' : 'readout'}
-            aria-live="polite"
-          >
-            {tool.kind === 'site' && assessment ? (
-              <SiteReadout assessment={assessment} typeId={tool.typeId} />
-            ) : hoverName ? (
-              <>
-                <div className="readout-title">{hoverName} County</div>
-                {hoverCell && (
-                  <dl className="readout-grid">
-                    <dt>Terrain</dt><dd>{TERRAIN_NAMES[hoverCell.terrain] ?? '—'}</dd>
-                    <dt>Land</dt><dd>${hoverCell.landValue.toLocaleString()}/acre</dd>
-                    <dt>Density</dt><dd>{Math.round((hoverCell.population / 255) * 100)}%</dd>
-                  </dl>
+            <button className="btn small layers-toggle" aria-expanded={layersOpen}
+              onClick={() => setLayersOpen((v) => !v)}>
+              <Icon name="layers" /> Layers
+            </button>
+            {layersOpen && (
+              <div className="layers">
+                <div className="segmented three" role="group" aria-label="Map colouring">
+                  {OVERLAYS.map((o) => (
+                    <button key={o.id} className={overlay === o.id ? 'on' : ''}
+                      onClick={() => setOverlay(o.id)} aria-pressed={overlay === o.id}>{o.label}</button>
+                  ))}
+                </div>
+                <p className="note">{OVERLAYS.find((o) => o.id === overlay)?.help}</p>
+                {(overlay === 'population' || overlay === 'landValue') && (
+                  <p className="ramp"><span>Low</span><i className={`ramp-${overlay}`} /><span>High</span></p>
                 )}
-              </>
-            ) : (
-              <div className="readout-hint">
-                Drag to pan · scroll to zoom · <kbd>0</kbd> to reset
+                <div className="checks">
+                  {roads.length > 0 && layerBox('roads', 'Roads and rail')}
+                  {waterways.length > 0 && layerBox('water', 'Rivers and lakes')}
+                  {g.stateGis && (
+                    <label className="check">
+                      <input type="checkbox" checked={g.showGrid} onChange={(e) => g.setShowGrid(e.target.checked)} />
+                      Existing lines and substations
+                    </label>
+                  )}
+                  {imagery && layerBox('imagery', 'Aerial photo')}
+                  {g.dataCenters.length > 0 && (
+                    <label className="check">
+                      <input type="checkbox" checked={g.showCenters} onChange={(e) => g.setShowCenters(e.target.checked)} />
+                      Data centers
+                    </label>
+                  )}
+                  {layerBox('hexes', 'Grid cells')}
+                  <p className="fine">Filled data center icon: you have a contract. Outlined icon: a contract you can sign. Dot: no contract.</p>
+                </div>
               </div>
             )}
           </div>
 
-          <div className="scalebar"><ScaleBar pxPerKm={scale} /></div>
-
-          {/* Attribution is a licence obligation for the road data, not a
-              courtesy, so it renders whenever the layer is on rather than
-              living in a README. */}
-          {((showImagery && imagery)
-            || (showRoads && (stateRoads || roads))
-            || (showWater && hasWater)) && (
-            <p className="map-attribution">
-              {/* One credit covers roads and water — both are OpenStreetMap —
-                  so the same string is not printed twice. */}
-              {[...new Set([
-                showImagery && imagery ? imagery.manifest.attribution : null,
-                showRoads ? (stateRoads?.attribution ?? roads?.attribution ?? null) : null,
-                showWater && hasWater
-                  ? (stateWater?.attribution ?? water?.attribution ?? null)
-                  : null,
-              ].filter(Boolean))].join(' · ')}
-            </p>
+          {g.headlines.length > 0 && (
+            <div className="toast" role="status">
+              <ul>{g.headlines.map((h) => <li key={h}>{h}</li>)}</ul>
+              <button className="btn ghost icon-only" onClick={g.dismissHeadlines} aria-label="Dismiss"><Icon name="close" /></button>
+            </div>
+          )}
+          {g.alerts.length > 0 && game.realtime && !game.outcome && (
+            <div className={game.realtime.inShortfall ? 'toast alerts' : 'toast'} role="status" aria-live="polite">
+              <ul>{g.alerts.slice(0, 4).map((a, i) => <li key={`${i}${a}`}>{a}</li>)}</ul>
+              <button className="btn ghost icon-only" onClick={g.dismissAlerts} aria-label="Dismiss alerts"><Icon name="close" /></button>
+            </div>
           )}
 
-        {isMobile && (
-          <MobileSheet
-            tabs={sheetTabs}
-            active={sheetTab}
-            open={sheetOpen}
-            onSelect={(t) => { setSheetTab(t); setSheetOpen(true) }}
-            onToggle={() => setSheetOpen((v) => !v)}
-          >
-            {sheetContent}
-          </MobileSheet>
-        )}
+          {tool.kind !== 'none' && !(popover && planner) && (
+            <div className="map-banner" role="status">
+              <span>
+                {tool.kind === 'substation' ? `Click where the ${tool.kv} kV substation goes.`
+                  : tool.kind === 'site' ? `Click where the ${plantType(tool.typeId).name.toLowerCase()} goes.`
+                  : g.parcelsLoading ? 'Loading parcels.'
+                  : plan ? `${plan.from.label} to ${plan.to.label}, ${plan.lengthKm.toFixed(1)} km. Click the map to bend it.`
+                  : tool.from ? `From ${tool.from.label}. Click or drag to where it connects.`
+                  : 'Click either end of the line, or drag from one to the other.'}
+                {g.planNote && !plan && <em>{g.planNote}</em>}
+              </span>
+              {plan && <button className="btn small primary" onClick={g.commitPlan}>File</button>}
+              {tool.kind === 'route' && (plan || tool.from) && (
+                <button className="btn small" onClick={g.stepBack}>Start over</button>
+              )}
+              <button className="btn small" onClick={() => g.setTool({ kind: 'none' })}>Cancel</button>
+            </div>
+          )}
+
+          <div className="map-foot">
+            {credit && <span className="map-attribution">{credit}</span>}
+            <ScaleBar pxPerKm={scale} />
+          </div>
+
+          {isMobile && (
+            <>
+              {coach && <div className="coach-dock">{coach}</div>}
+              <div className="sheet">
+                {tabBar}
+                <div className="sheet-body" role="tabpanel" hidden={!sheetOpen}>{content}</div>
+              </div>
+            </>
+          )}
         </main>
 
         {!isMobile && (
           <aside className="sidebar">
-            {dispatchPanel}
-            {buildPanel}
-            {corridorPanel}
-            {acquisitionPanel}
-            {contractPanel}
+            {coach}
+            {tabBar}
+            <div className="sidebar-body" role="tabpanel">{content}</div>
           </aside>
         )}
       </div>
 
-      {!embedded && !isMobile && <LogPanel log={game.log} />}
-
-      {!showBriefing && !game.outcome && (
-        <TutorialCoach game={game} onDismiss={dismissTutorial} />
-      )}
-
-      {/* Dismissing the coach used to be final, with nothing anywhere to undo
-          it. One stray click and the tutorial was gone for the rest of the run. */}
-      {!showBriefing && !game.outcome && game.tutorial?.dismissed && (
-        <button className="coach-restore" onClick={restoreTutorial}>
-          Show hints
-        </button>
-      )}
-
-      {showBriefing && <BriefingCard scenario={scenario} onAccept={accept} />}
-
-      {!showBriefing && currentBeat(game)?.id === 'hearing' && (
-        <HearingDialog game={game} onChoose={chooseHearing} />
-      )}
-
-      {game.outcome && !game.tutorial?.debriefSeen && (
-        <ScoreScreen game={game} outcome={game.outcome} onContinue={finishDebrief} />
-      )}
-
-      {alerts.length > 0 && (
-        <div className="alert-stack" role="status" aria-live="assertive">
-          <div className="alert-head">
-            <strong>Grid alerts</strong>
-            <button className="btn-link" onClick={dismissAlerts}>Dismiss</button>
-          </div>
-          <ul>{alerts.slice(0, 6).map((a, i) => <li key={i}>{a}</li>)}</ul>
-        </div>
-      )}
-
-      {headlines.length > 0 && (
-        <div className="overlay soft" onClick={dismissHeadlines}>
-          <div className="headlines" role="dialog" aria-modal="true">
-            <h2>This quarter</h2>
-            <ul>{headlines.map((h, i) => <li key={i}>{h}</li>)}</ul>
-            <button className="btn-primary" onClick={dismissHeadlines}>Continue</button>
-          </div>
-        </div>
-      )}
+      {g.showMenu ? (
+        <MenuDialog game={game} onStart={() => g.startScenario('americus-400')} onClose={() => g.setShowMenu(false)} />
+      ) : g.showBriefing ? (
+        <BriefingDialog game={game} existing={g.dataCenters.filter(isExisting)} onStart={() => void g.begin()} />
+      ) : game.outcome && !g.debriefClosed ? (
+        <ScoreDialog game={game} outcome={game.outcome} closing={scenario.closing} onContinue={g.finishDebrief} onCarryOn={g.carryOn} />
+      ) : game.hearing === 'called' ? (
+        <HearingDialog game={game} onChoose={g.chooseHearing} />
+      ) : game.pendingEvent ? (
+        <EventDialog game={game} onChoose={g.chooseEvent} />
+      ) : null}
     </div>
   )
 }
 
-/** What siting here would actually cost, shown before the click that commits it. */
-function SiteReadout({
-  assessment, typeId,
-}: {
-  assessment: SiteAssessment
-  typeId: PlantKind
-}) {
-  const t = plantType(typeId)
-  if (!assessment.ok) {
-    return (
-      <>
-        <div className="readout-title tone-bad">Cannot site here</div>
-        <p className="readout-blocker">{assessment.blocker}</p>
-      </>
-    )
-  }
-  return (
-    <>
-      <div className="readout-title">{assessment.countyName} County</div>
-      <dl className="readout-grid">
-        <dt>Land</dt><dd>{money(assessment.landCost)}</dd>
-        <dt>Footprint</dt><dd>{acres(t.acres)}</dd>
-        <dt>Approval</dt><dd className="tone-bad">−{Math.round(assessment.approvalCost)}</dd>
-      </dl>
-      {assessment.notes.map((n, i) => <p key={i} className="readout-note">{n}</p>)}
-    </>
-  )
+function ratingText(game: GameState, fips: string): string {
+  const r = ratingOf(game, fips)
+  if (r === null) return 'No rating: not next to a data center you supply'
+  const home = fips === game.contract.countyFips
+  return `${home ? 'Data center approval' : 'Approval'} ${Math.round(r)}, ${approvalBand(r).label.toLowerCase()}`
 }
 
-/** A scale bar that snaps to a round distance near 120 px wide. */
+function substationTip(game: GameState, a: SubstationSite, kv: 115 | 230 | 500): MapTip {
+  if (!a.ok) return { title: 'Cannot build here', lines: [a.blocker ?? ''], tone: 'bad' }
+  const t = substationType(kv)
+  return {
+    title: `${a.countyName} County`,
+    lines: [
+      a.looped ? `On an existing ${kv} kV line, so it joins that line` : `Not on a ${kv} kV line, so it needs lines drawn to it`,
+      `In service ${formatQuarter(game.quarter + t.quarters - 1)}`,
+      `Land ${money(a.landCost)}, ${acres(t.acres)}`,
+      a.approvalCost > 0.5 ? `Approval -${Math.round(a.approvalCost)}` : 'No effect on approval',
+    ],
+  }
+}
+
+function siteTip(
+  game: GameState, a: SiteAssessment, typeId: PlantKind, env: EnvData | null, x: number, y: number,
+): MapTip {
+  if (!a.ok) return { title: 'Cannot build here', lines: [a.blocker ?? ''], tone: 'bad' }
+  const t = plantType(typeId)
+  return {
+    title: `${a.countyName} County`,
+    lines: [
+      `${mw(t.nameplateMw * t.firmCapacityFraction)} firm, finished ${formatQuarter(game.quarter + t.permitQuarters + t.buildQuarters - 1)}`,
+      `Land ${money(a.landCost)}, ${acres(plantType(typeId).acres)}`,
+      a.approvalCost > 0 ? `${a.countyFips === game.contract.countyFips ? 'Data center approval' : `${a.countyName} County approval`} -${Math.round(a.approvalCost)}` : 'No effect on approval',
+      ...projectionLines(game, env, typeId, a.countyFips, x, y),
+      ...a.notes,
+    ],
+  }
+}
+
+function arriving(game: GameState, units: GameState['plants']): number {
+  const flow = firmFlow(game)
+  return units.reduce((n, p) => n + (flow.plants.get(p.id)?.arrivingMw ?? 0), 0)
+}
+
+function hitTip(game: GameState, s: Selection, centers: readonly DataCenter[], things: MapThings): MapTip | null {
+  switch (s.kind) {
+    case 'nsub': {
+      const b = game.builtSubs?.find((k) => k.id === s.id)
+      return b ? { title: b.name, lines: [b.status === 'in-service' ? 'In service' : 'Being built'] } : null
+    }
+    case 'gsub': {
+      const x = things.substations.find((k) => k.id === s.id)
+      const n = x?.transformers.reduce((t, k) => t + k.count, 0) ?? 0
+      return x ? { title: x.name, lines: [`${x.voltages.join(', ')} kV`, n > 0 ? `${n} mapped ${n === 1 ? 'transformer' : 'transformers'}` : 'No transformer mapped'] } : null
+    }
+    case 'xline': {
+      const l = things.lines[s.index]
+      return l ? { title: `Existing ${l.kv} kV line`, lines: [] } : null
+    }
+    case 'dc': {
+      const d = centers.find((x) => x.id === s.id)
+      const c = activeCustomers(game).find((x) => x.id === s.id)
+      const o = openOffers(game).find((x) => x.id === s.id)
+      const note = c ? [`Contract, ${c.phasesOn} of ${c.phaseCount} phases on`] : o ? [`Contract open until ${formatQuarter(o.closes)}`] : []
+      return d ? { title: d.name, lines: [d.mw === null ? 'MW not published' : mw(d.mw), STATUS_TEXT[d.status] ?? d.status, ...note] } : null
+    }
+    case 'gear': {
+      const t = game.corridors.flatMap((c) => (lineClass(c.classId).kv === s.kv ? lineGear(game, c) : [])).find((x) => x.id === s.id)
+      return { title: `${s.kv} kV transformer`, lines: [t?.state === 'missing' ? 'Not built. Click to build it.' : t?.state === 'ordered' ? 'Being built' : 'In service'] }
+    }
+    case 'campus': return { title: game.contract.name, lines: [`${game.contract.contractedMw} MW ${game.contract.status === 'offered' ? 'contract you can sign' : 'contracted'}`, ratingText(game, game.contract.countyFips)] }
+    case 'substation': return { title: game.system.substationName, lines: ['Homes and imports connect here'] }
+    case 'line': {
+      const c = game.corridors.find((x) => x.id === s.id)
+      return c ? { title: c.name, lines: [LINE_STATUS[c.status]] } : null
+    }
+    case 'site': {
+      const units = game.plants.filter((p) => p.cell === s.cell)
+      return units.length > 0
+        ? { title: units.length === 1 ? units[0].name : `${units.length} units`,
+            lines: [...new Set(units.map((p) => PLANT_STATUS[p.status])), `${mw(arriving(game, units))} reaching the campus`] }
+        : null
+    }
+    case 'county': return null
+  }
+}
+
 function ScaleBar({ pxPerKm }: { pxPerKm: number }) {
-  const targetPx = 120
-  const rawKm = targetPx / Math.max(pxPerKm, 1e-6)
-  const pow = 10 ** Math.floor(Math.log10(rawKm))
-  const nice = [1, 2, 5, 10].map((m) => m * pow).find((v) => v >= rawKm) ?? 10 * pow
-  const label = nice >= 1 ? `${nice} km` : `${Math.round(nice * 1000)} m`
+  const raw = 110 / Math.max(pxPerKm, 1e-6)
+  const pow = 10 ** Math.floor(Math.log10(raw))
+  const nice = [1, 2, 5, 10].map((m) => m * pow).find((v) => v >= raw) ?? 10 * pow
   return (
-    <div className="scalebar-inner" style={{ width: `${nice * pxPerKm}px` }}>
-      <span>{label}</span>
+    <div className="scalebar" style={{ width: `${nice * pxPerKm}px` }}>
+      <span>{nice >= 1 ? `${nice} km` : `${Math.round(nice * 1000)} m`}</span>
     </div>
   )
 }

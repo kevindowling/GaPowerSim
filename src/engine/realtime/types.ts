@@ -1,51 +1,38 @@
-/**
- * Real-time operations state.
- *
- * Once the load is energized the game stops being about quarters and starts
- * being about fifteen-minute intervals, because that is the timescale on which
- * the grid actually fails. Everything here is serialisable and lives inside
- * GameState, so a save still captures the whole simulation.
- */
-
 /** Minutes per tick. Fifteen is the interval utilities settle on. */
 export const TICK_MINUTES = 15
 export const TICKS_PER_HOUR = 60 / TICK_MINUTES
 export const TICKS_PER_DAY = 24 * TICKS_PER_HOUR
 
-export type Speed = 0 | 1 | 2 | 4
+/** Intervals simulated per clock beat. A beat is a quarter second. */
+export type Speed = 0 | 1 | 6 | 24 | 72
 
-/**
- * Who gets the power when there isn't enough.
- *
- * This is the game's central moral choice made into a setting, because in the
- * real thing it is a setting too — a pre-agreed curtailment order, decided long
- * before the night it matters.
- */
 export type SheddingPolicy =
-  /** Curtail the data centre first. Contract penalties, but the lights stay on. */
   | 'protect-homes'
   /** Curtail homes and businesses first. Keeps the contract whole. */
   | 'protect-contract'
-  /** Share the pain proportionally. */
   | 'proportional'
 
 export interface Outage {
   /** Plant id or corridor id. */
   assetId: string
-  kind: 'plant' | 'corridor'
+  kind: 'plant' | 'corridor' | 'transformer'
   cause: string
   /** Ticks of repair work left, before crew effects. */
   ticksRemaining: number
-  /**
-   * Fraction of the asset's rating still available while this outage lasts.
-   * Zero for a dead asset; 0.5 when one circuit of a double-circuit line is
-   * down and the other is still carrying. This is what the extra money bought.
-   */
   capacityFraction: number
   /** Crews currently working it. */
   crews: number
   /** Tick it began, for the outage report. */
   startedTick: number
+  /** Set by the player to pull crews here first. */
+  priority?: boolean
+}
+
+export interface HeatWave {
+  /** Degrees above the seasonal norm. */
+  deltaC: number
+  ticksUntil: number
+  ticksRemaining: number
 }
 
 export interface Storm {
@@ -68,6 +55,17 @@ export interface Storm {
 export interface RealtimeState {
   /** Ticks since the moment of energization. */
   tick: number
+  /** Calendar tick (from 1 January) at energization. Season and hour use this. */
+  startTick: number
+  /** Quarters already closed since energization. */
+  quartersClosed: number
+  /** True while somebody is being curtailed, so the alarm sounds once. */
+  inShortfall: boolean
+  heatWave: HeatWave | null
+  /** Campus load it has agreed to drop on request, and hours left this year. */
+  demandResponse: { mw: number; hoursLeft: number } | null
+  /** Tick of the next operating decision. */
+  nextEventTick: number
   speed: Speed
   policy: SheddingPolicy
 
@@ -76,13 +74,14 @@ export interface RealtimeState {
   /** Repair crews available in total. */
   crewsTotal: number
 
-  /** Spend per quarter on keeping vegetation off the line, 0–1. */
+  /** Vegetation programme, 0–1. Costs money per km of line. */
   vegetationSpend: number
-  /** Deferring maintenance saves money now and raises failure rates. */
+  /** Skips the plant maintenance budget and raises trip rates. */
   maintenanceDeferred: boolean
 
-  // --- running totals ---
   servedMwh: number
+  servedContractMwh: number
+  servedCustomerMwh: number
   /** Data-centre load that could not be served. */
   unservedContractMwh: number
   /** Homes and businesses that could not be served. */
@@ -105,22 +104,38 @@ export interface IntervalRecord {
   customerMw: number
   /** What was actually delivered. */
   servedMw: number
-  /** Generation dispatched by source, MW. */
+  /** Output of the player's own plants, MW. */
   generationMw: number
   marketMw: number
   /** Shortfall, MW. */
   unservedMw: number
   /** Wholesale price this interval, $/MWh. */
   priceMwh: number
-  /** How much of the corridor's rating was in use, 0–1+. */
+  importLimitMw: number
+  /** Stored energy across all batteries, MWh. */
+  storedMwh: number
+  /** Busiest line as a fraction of its rating. */
   corridorLoading: number
+  unservedContractMw: number
+  unservedCustomerMw: number
+  lineFlowMw: Record<string, number>
 }
 
 export const HISTORY_LENGTH = 192 // two days at fifteen minutes
 
-export function createRealtimeState(): RealtimeState {
+/** One year of operation, after which the scenario is scored. */
+export const OPERATING_YEAR_TICKS = 365 * TICKS_PER_DAY
+export const QUARTER_TICKS = Math.round((365 / 4) * TICKS_PER_DAY)
+
+export function createRealtimeState(startTick = 0): RealtimeState {
   return {
     tick: 0,
+    startTick,
+    quartersClosed: 0,
+    inShortfall: false,
+    heatWave: null,
+    demandResponse: null,
+    nextEventTick: 12 * TICKS_PER_DAY,
     speed: 0,
     policy: 'proportional',
     outages: [],
@@ -129,6 +144,8 @@ export function createRealtimeState(): RealtimeState {
     vegetationSpend: 0.5,
     maintenanceDeferred: false,
     servedMwh: 0,
+    servedContractMwh: 0,
+    servedCustomerMwh: 0,
     unservedContractMwh: 0,
     unservedCustomerMwh: 0,
     fuelCost: 0,

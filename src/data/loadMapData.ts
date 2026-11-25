@@ -1,11 +1,5 @@
-/**
- * Loads the vendored map data. Everything here is a static file that ships with
- * the build — the game makes no requests to any external host at runtime, which
- * is both a privacy property and the reason it works offline inside an iframe.
- */
-
 import type {
-  CountiesFile, HexGrid, HexGridManifest, MapData,
+  CountiesFile, HexGrid, HexGridManifest, MapData, StateShape,
 } from '../engine/geo/mapTypes.ts'
 
 /** Resolve a data path relative to the deployed base, so iframes at any path work. */
@@ -20,10 +14,11 @@ async function loadJson<T>(name: string): Promise<T> {
 }
 
 export async function loadMapData(): Promise<MapData> {
-  const [counties, manifest, binRes] = await Promise.all([
+  const [counties, manifest, binRes, states] = await Promise.all([
     loadJson<CountiesFile>('counties.json'),
     loadJson<HexGridManifest>('hexgrid.json'),
     fetch(dataUrl('hexgrid.bin')),
+    loadJson<StateShape[]>('neighbors.json').catch(() => []),
   ])
 
   if (!binRes.ok) {
@@ -50,5 +45,5 @@ export async function loadMapData(): Promise<MapData> {
     protection: view('protection').u8,
   }
 
-  return { counties, grid }
+  return { counties, grid, states }
 }

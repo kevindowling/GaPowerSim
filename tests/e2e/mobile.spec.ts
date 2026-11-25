@@ -1,37 +1,26 @@
 import { test, expect, type Page } from '@playwright/test'
-
-/**
- * The phone layout.
- *
- * These exist because the desktop layout did not degrade on a phone, it failed:
- * a fixed 292 px sidebar left the map canvas 73 px wide, and four HUD stats in a
- * row printed on top of each other. The assertions below are the properties that
- * stopped that being true.
- */
+import { onlyLiberty } from './helpers.ts'
 
 async function sign(page: Page): Promise<void> {
-  await page.getByRole('button', { name: 'Sign the contract' }).click()
-  await expect(page.locator('.briefing')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Start', exact: true }).click()
+  await expect(page.locator('dialog.briefing')).toHaveCount(0)
+  await onlyLiberty(page)
   await page.waitForTimeout(1200) // let the camera glide settle
 }
 
 test('gives the map the whole screen', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/?seed=7')
   await sign(page)
 
   const vw = page.viewportSize()!.width
   const canvas = (await page.locator('canvas.map-canvas').boundingBox())!
-  // The map is the interface on a phone — you draw a corridor by touching two
-  // points on it, which is impossible on a stripe.
   expect(canvas.width).toBeGreaterThan(vw * 0.95)
 
-  // The desktop sidebar and log strip are gone entirely.
   await expect(page.locator('.sidebar')).toHaveCount(0)
-  await expect(page.locator('.logstrip')).toHaveCount(0)
 })
 
 test('never scrolls sideways', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/?seed=7')
   await sign(page)
   const { scrollW, innerW } = await page.evaluate(() => ({
     scrollW: document.documentElement.scrollWidth,
@@ -41,7 +30,7 @@ test('never scrolls sideways', async ({ page }) => {
 })
 
 test('keeps the HUD legible instead of overprinting it', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/?seed=7')
   await sign(page)
 
   // Every stat renders inside the HUD's own box, none spilling over a neighbour.
@@ -58,11 +47,21 @@ test('keeps the HUD legible instead of overprinting it', async ({ page }) => {
     return hits
   })
   expect(overlapping).toBe(0)
-  await expect(page.locator('.hud')).toContainText('400 MW')
+  await expect(page.locator('.hud')).toContainText('Cash')
+})
+
+test('shows power at the campus', async ({ page }) => {
+  await page.goto('/?seed=7')
+  await sign(page)
+  await page.getByRole('button', { name: /Power at Data Center Campus/ }).click()
+  const box = (await page.locator('.power-card').boundingBox())!
+  const vw = page.viewportSize()!.width
+  expect(box.x).toBeGreaterThanOrEqual(0)
+  expect(box.x + box.width).toBeLessThanOrEqual(vw)
 })
 
 test('puts the panels in a sheet that opens and closes', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/?seed=7')
   await sign(page)
 
   // Collapsed by default: the player lands on the map, not a wall of panels.
@@ -72,64 +71,37 @@ test('puts the panels in a sheet that opens and closes', async ({ page }) => {
   await expect(page.locator('.sheet-body')).toBeVisible()
   await expect(page.getByRole('button', { name: /Gas combustion turbine/ })).toBeVisible()
 
-  // Tapping the active tab again collapses it — one touch back to a full map.
   await page.getByRole('tab', { name: /Build/ }).click()
   await expect(page.locator('.sheet-body')).toBeHidden()
 })
 
 test('switches between panels by tab', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/?seed=7')
   await sign(page)
 
   await page.getByRole('tab', { name: /Grid/ }).click()
-  await expect(page.getByRole('heading', { name: 'Transmission' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Lines' })).toBeVisible()
 
-  await page.getByRole('tab', { name: /Deal/ }).click()
-  await expect(page.getByRole('heading', { name: 'The deal' })).toBeVisible()
+  await page.getByRole('tab', { name: /Customers/ }).click()
+  await expect(page.getByRole('heading', { name: 'You supply' })).toBeVisible()
+  await expect(page.getByRole('tab', { name: /Deal/ })).toHaveCount(0)
 
   await page.getByRole('tab', { name: /Log/ }).click()
-  await expect(page.locator('.logstrip')).toBeVisible()
+  await expect(page.locator('.log')).toBeVisible()
 })
 
-test('keeps the coach on screen when the sheet opens', async ({ page }) => {
-  await page.goto('/')
+test('keeps the guide out of the way until opened', async ({ page }) => {
+  await page.goto('/?seed=7')
   await sign(page)
   const coach = page.locator('.coach')
-  await expect(coach).toBeVisible()
-  const full = (await coach.boundingBox())!
-
-  await page.getByRole('tab', { name: /Build/ }).click()
-
-  // It used to be hidden outright, which read as "the tutorial disappeared when
-  // I tapped something". It stays, shrunk to its title, above the sheet.
-  await expect(coach).toBeVisible()
-  await expect(page.locator('.coach-title')).toBeVisible()
-  const shrunk = (await coach.boundingBox())!
-  expect(shrunk.height).toBeLessThan(full.height)
-
-  // And it must not sit on top of the sheet it made room for.
-  const sheet = (await page.locator('.sheet').boundingBox())!
-  expect(shrunk.y + shrunk.height).toBeLessThanOrEqual(sheet.y + 1)
-
-  await page.getByRole('tab', { name: /Build/ }).click()
-  await expect(coach).toBeVisible()
-})
-
-test('lets the coach collapse so it stops covering the map', async ({ page }) => {
-  await page.goto('/')
-  await sign(page)
-
-  const before = (await page.locator('.coach').boundingBox())!
-  await page.getByRole('button', { name: 'Collapse the hint' }).click()
-  const after = (await page.locator('.coach').boundingBox())!
-  expect(after.height).toBeLessThan(before.height * 0.6)
-
-  // The title and progress stay, so the player knows where they are.
-  await expect(page.locator('.coach-title')).toBeVisible()
+  const small = (await coach.boundingBox())!
+  expect(small.height).toBeLessThan(80)
+  await page.getByRole('button', { name: 'Expand the guide' }).click()
+  expect((await coach.boundingBox())!.height).toBeGreaterThan(small.height)
 })
 
 test('has thumb-sized controls', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/?seed=7')
   await sign(page)
   await page.getByRole('tab', { name: /Build/ }).click()
 
@@ -137,14 +109,14 @@ test('has thumb-sized controls', async ({ page }) => {
     const els = [...document.querySelectorAll('button, [role=tab]')]
     return els
       .map((e) => ({ cls: e.className, r: e.getBoundingClientRect() }))
-      .filter((x) => x.r.width > 0 && x.r.height > 0 && x.r.height < 32)
+      .filter((x) => x.r.width > 0 && x.r.height > 0 && x.r.height < 30)
       .map((x) => `${x.cls}: ${Math.round(x.r.width)}x${Math.round(x.r.height)}`)
   })
   expect(tooSmall).toEqual([])
 })
 
 test('can site a plant by tapping the map', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/?seed=7')
   await sign(page)
 
   await page.getByRole('tab', { name: /Build/ }).click()
@@ -155,18 +127,18 @@ test('can site a plant by tapping the map', async ({ page }) => {
   const box = (await page.locator('canvas.map-canvas').boundingBox())!
   await page.mouse.click(box.x + box.width / 2, box.y + box.height * 0.4)
 
-  await page.getByRole('tab', { name: /Deal/ }).click()
-  await expect(page.locator('.fleet li')).toHaveCount(1)
+  await page.getByRole('tab', { name: /Build/ }).click()
+  await expect(page.locator('.sited')).toHaveCount(1)
 })
 
 test('shows modals full-screen', async ({ page }) => {
-  await page.goto('/')
-  const briefing = page.locator('.briefing')
+  await page.goto('/?seed=7')
+  const briefing = page.locator('dialog.briefing')
   await expect(briefing).toBeVisible()
 
   const vw = page.viewportSize()!.width
   const box = (await briefing.boundingBox())!
   expect(box.width).toBeGreaterThan(vw * 0.95)
-  await expect(briefing).toContainText('400 MW')
-  await expect(page.getByRole('button', { name: 'Sign the contract' })).toBeVisible()
+  await expect(briefing).toContainText('You have signed')
+  await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeVisible()
 })

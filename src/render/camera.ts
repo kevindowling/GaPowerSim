@@ -1,12 +1,3 @@
-/**
- * Map camera: converts between world kilometres (+x east, +y north) and screen
- * pixels (+x right, +y down), and owns pan/zoom state.
- *
- * Zoom is expressed as pixels-per-kilometre, which keeps level-of-detail
- * thresholds meaningful: "draw individual hexes above 12 px/km" is a statement
- * about how big a 1 km cell is on screen, not an arbitrary zoom number.
- */
-
 export interface Viewport {
   width: number
   height: number
@@ -69,10 +60,6 @@ export class Camera {
     this.clampCenter()
   }
 
-  /**
-   * Zoom by a multiplicative factor, keeping the world point currently under
-   * (anchorX, anchorY) pinned to that same screen position.
-   */
   zoomAt(factor: number, anchorSx: number, anchorSy: number, vp: Viewport): void {
     const [wx, wy] = this.toWorld(anchorSx, anchorSy, vp)
     const next = this.clampScale(this.scale * factor)

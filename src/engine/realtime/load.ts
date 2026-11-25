@@ -1,20 +1,3 @@
-/**
- * What the grid is being asked to deliver, interval by interval.
- *
- * Two very different customers share one wire, and the difference between them
- * is the whole reason this game has a moral centre:
- *
- *   - A data centre is flat. It draws almost the same power at four in the
- *     morning in February as it does at five on an August afternoon. It does not
- *     care that it is the peak. It is simply always there.
- *   - Homes and businesses are peaky and seasonal. In south Georgia the peak is
- *     air conditioning on a summer evening, which is exactly when thermal plants
- *     are derated and the margin is thinnest.
- *
- * Stack the first on top of the second and the peak gets worse in a way that
- * average-demand figures hide completely.
- */
-
 import { TICKS_PER_DAY, TICKS_PER_HOUR } from './types.ts'
 
 /** Hour of day, 0–24, from a tick count. */
@@ -27,13 +10,6 @@ export function dayOfYear(tick: number): number {
   return Math.floor(tick / TICKS_PER_DAY) % 365
 }
 
-/**
- * Residential and commercial demand shape, as a multiple of average.
- *
- * Two daily peaks — a small one in the morning, a large one in the early
- * evening — over a seasonal curve that peaks hard in summer. South Georgia is
- * summer-peaking and it is not close.
- */
 export function customerShape(tick: number): number {
   const h = hourOfDay(tick)
   const d = dayOfYear(tick)
@@ -52,11 +28,6 @@ export function customerShape(tick: number): number {
   return daily * (1 + summer + winter)
 }
 
-/**
- * Ambient temperature, °C — drives both cooling demand and thermal derating.
- * A rough sinusoid on the year with a daily swing; good enough to make August
- * afternoons the hard part, which is the point.
- */
 export function ambientC(tick: number): number {
   const d = dayOfYear(tick)
   const h = hourOfDay(tick)
@@ -65,10 +36,6 @@ export function ambientC(tick: number): number {
   return seasonal + daily
 }
 
-/**
- * Solar output as a fraction of nameplate.
- * Zero at night, peaking near solar noon, higher in summer.
- */
 export function solarFraction(tick: number): number {
   const h = hourOfDay(tick)
   const d = dayOfYear(tick)
@@ -87,32 +54,30 @@ export interface LoadSlice {
   ambientC: number
 }
 
-/**
- * Demand for one interval.
- *
- * `rampFraction` lets a campus phase in rather than appearing at full load: a
- * hyperscaler energises hall by hall over a year or two.
- */
+/** Days between one block of data halls coming on and the next. */
+export const RAMP_DAYS_PER_PHASE = 45
+
+export function rampFraction(tick: number, phases: number): number {
+  if (phases <= 1) return 1
+  const phase = Math.floor(tick / (RAMP_DAYS_PER_PHASE * TICKS_PER_DAY)) + 1
+  return Math.min(1, phase / phases)
+}
+
+/** Demand for one interval. `heatC` is extra heat from a heat wave. */
 export function loadAt(
-  tick: number, contractedMw: number, customerAverageMw: number, rampFraction = 1,
+  tick: number, contractedMw: number, customerAverageMw: number, ramp = 1, heatC = 0,
 ): LoadSlice {
   // Data centres run flat, with a little variation as workloads shift.
-  const contractMw = contractedMw * rampFraction * (0.94 + 0.05 * Math.sin(tick / 37))
-  const customerMw = customerAverageMw * customerShape(tick)
+  const contractMw = contractedMw * ramp * (0.95 + 0.04 * Math.sin(tick / 37))
+  const customerMw = customerAverageMw * customerShape(tick) * (1 + 0.035 * heatC)
   return {
     contractMw,
     customerMw,
     totalMw: contractMw + customerMw,
-    ambientC: ambientC(tick),
+    ambientC: ambientC(tick) + heatC,
   }
 }
 
-/**
- * Average non-data-centre demand for a population.
- *
- * About 1.4 kW per person, averaged across residential, commercial and light
- * industrial — the right order of magnitude for a rural Georgia county.
- */
 export function customerLoadForPopulation(population: number): number {
   return (population * 1.4) / 1000
 }

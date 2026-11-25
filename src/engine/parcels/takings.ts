@@ -1,32 +1,28 @@
-/**
- * What a corridor actually takes.
- *
- * This is where real parcel geometry earns its place. A transmission line does
- * not buy whole properties — it buys a strip across them, and the compensation
- * owed is the value of the strip PLUS the damage done to whatever is left. That
- * second part, severance damage, is what makes the *shape* of a route matter
- * and not just its length:
- *
- *   - A corridor that clips the corner of a field takes some acres and leaves a
- *     working farm behind. Cheap.
- *   - The same length of corridor straight through the middle of that field
- *     takes the same acres but leaves two pieces that equipment cannot cross.
- *     Far more expensive, and far more likely to produce a holdout.
- *
- * Because that difference falls out of the geometry rather than a lookup table,
- * hugging a property line is a real strategy that the real map rewards.
- */
-
 import {
   corridorBuffer, intersect, subtract, multiPolyArea, polyArea, bbox, bboxOverlaps,
   km2ToAcres, centerlineLength, type Point, type MultiPoly,
 } from '../geo/polygon.ts'
 import {
-  ARCHETYPE_SEVERANCE_SENSITIVITY, type Parcel,
+  ARCHETYPE_SEVERANCE_SENSITIVITY, type Parcel, type ParcelArchetype,
 } from './types.ts'
 
 /** A remainder piece smaller than this is effectively unusable. */
 const UNECONOMIC_REMNANT_ACRES = 4
+
+const SEVERED_MIN_ACRES = 2
+const SEVERED_MIN_SHARE = 0.04
+
+/** Survey, title, closing and crop damage: what any easement costs at minimum. */
+const MINIMUM_PAYMENT: Record<ParcelArchetype, number> = {
+  timber: 35_000, 'row-crop': 70_000, homestead: 210_000, church: 340_000,
+  historic: 0, industrial: 130_000, public: 40_000,
+}
+
+/** A line beside a house lowers what the house is worth. */
+const PROXIMITY_PREMIUM: Record<ParcelArchetype, number> = {
+  timber: 1, 'row-crop': 1.15, homestead: 2.4, church: 2.4,
+  historic: 1, industrial: 1.3, public: 1,
+}
 
 export interface Taking {
   parcelId: string
@@ -63,20 +59,12 @@ export interface CorridorTakings {
   buffer: MultiPoly
 }
 
-/**
- * How badly a severed remainder is damaged.
- *
- * An even split is the worst case — two half-parcels are worth much less than
- * one whole one. A sliver off the edge barely registers.
- */
 function severanceFactorFor(
   pieces: number[], parcel: Parcel, uneconomicAcres: number,
 ): number {
   const sensitivity = ARCHETYPE_SEVERANCE_SENSITIVITY[parcel.archetype]
 
-  if (pieces.length <= 1) {
-    // Not severed: a strip off one side, with modest damage to access and
-    // the loss of whatever could have been built in the right-of-way.
+  if (!isSevered(pieces)) {
     return Math.min(0.12, 0.03 * sensitivity)
   }
 
@@ -91,6 +79,13 @@ function severanceFactorFor(
   if (uneconomicAcres > 0) factor += 0.08
 
   return Math.min(0.75, factor * sensitivity)
+}
+
+function isSevered(pieceAcres: readonly number[]): boolean {
+  if (pieceAcres.length < 2) return false
+  const sorted = [...pieceAcres].sort((a, b) => b - a)
+  const total = sorted.reduce((n, a) => n + a, 0)
+  return sorted[1] >= SEVERED_MIN_ACRES && sorted[1] / total >= SEVERED_MIN_SHARE
 }
 
 /** Compute the taking on one parcel from an already-built right-of-way. */
@@ -110,8 +105,10 @@ export function takingFor(parcel: Parcel, buffer: MultiPoly): Taking | null {
   const takenAcres = km2ToAcres(takenKm2)
   const severanceFactor = severanceFactorFor(pieceAcres, parcel, uneconomicRemnantAcres)
 
-  const landPayment = takenAcres * parcel.assessedPerAcre
+  const severed = isSevered(pieceAcres)
+  const landPayment = takenAcres * parcel.assessedPerAcre * PROXIMITY_PREMIUM[parcel.archetype]
   const severancePayment = remainderAcres * parcel.assessedPerAcre * severanceFactor
+    + uneconomicRemnantAcres * parcel.assessedPerAcre * 0.6
 
   return {
     parcelId: parcel.id,
@@ -122,21 +119,29 @@ export function takingFor(parcel: Parcel, buffer: MultiPoly): Taking | null {
     severanceFactor,
     landPayment,
     severancePayment,
-    appraisedTotal: landPayment + severancePayment,
-    severed: pieceAcres.length >= 2,
+    appraisedTotal: Math.max(MINIMUM_PAYMENT[parcel.archetype], landPayment + severancePayment),
+    severed,
   }
 }
 
-/**
- * Run a corridor across a set of parcels and price it.
- *
- * Only parcels whose bounding box overlaps the corridor's are tested, which
- * keeps this cheap enough to run live while the player drags a route around.
- */
+const boxes = new WeakMap<Parcel, [number, number, number, number]>()
+
+/** A parcel's bounding box, computed once. */
+export function parcelBox(parcel: Parcel): [number, number, number, number] {
+  let b = boxes.get(parcel)
+  if (!b) {
+    b = bbox([parcel.poly])
+    boxes.set(parcel, b)
+  }
+  return b
+}
+
 export function computeTakings(
   centerline: Point[], halfWidthKm: number, parcels: readonly Parcel[],
+  trim?: (buffer: MultiPoly) => MultiPoly,
 ): CorridorTakings {
-  const buffer = corridorBuffer(centerline, halfWidthKm)
+  const whole = corridorBuffer(centerline, halfWidthKm)
+  const buffer = trim ? trim(whole) : whole
   const empty: CorridorTakings = {
     takings: [], totalAcres: 0, totalAppraised: 0,
     parcelsAffected: 0, parcelsSevered: 0,
@@ -145,10 +150,19 @@ export function computeTakings(
   if (buffer.length === 0) return empty
 
   const bufferBox = bbox(buffer)
+  const segments = centerline.slice(1).map(([x, y], i) => {
+    const [px, py] = centerline[i]
+    return [
+      Math.min(x, px) - halfWidthKm, Math.min(y, py) - halfWidthKm,
+      Math.max(x, px) + halfWidthKm, Math.max(y, py) + halfWidthKm,
+    ] as [number, number, number, number]
+  })
   const takings: Taking[] = []
 
   for (const parcel of parcels) {
-    if (!bboxOverlaps(bufferBox, bbox([parcel.poly]))) continue
+    const box = parcelBox(parcel)
+    if (!bboxOverlaps(bufferBox, box)) continue
+    if (!segments.some((s) => bboxOverlaps(s, box))) continue
     const t = takingFor(parcel, buffer)
     if (t) takings.push(t)
   }

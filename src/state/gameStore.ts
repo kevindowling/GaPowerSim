@@ -1,49 +1,77 @@
-/**
- * The one mutable thing in the app.
- *
- * The engine produces new GameState values; this store just holds the current
- * one plus the UI-only state that has no business inside the simulation (which
- * tool is active, what the pointer is over). Keeping that split means a save
- * file is `state.game` and nothing else.
- */
-
 import { create } from 'zustand'
 import type { MapData } from '../engine/geo/mapTypes.ts'
+import { centerlineLength, type Point } from '../engine/geo/polygon.ts'
+import { routeLeg, type RouteStyle, type RouteSurface } from '../engine/geo/fineRoute.ts'
+import type { Gis } from '../engine/geo/basemapTypes.ts'
 import type { GameState } from '../engine/types.ts'
 import type { PlantKind } from '../data/plants.ts'
+import type { ParcelArchetype, Parcel } from '../engine/parcels/types.ts'
+import { inServiceArea, loadDataCenters, type DataCenter } from '../data/dataCenters.ts'
+import { loadEnv, type EnvData } from '../data/loadEnv.ts'
+import { loadSubstations, type Substation } from '../data/substations.ts'
 import { loadMapData } from '../data/loadMapData.ts'
-import { createGame, resetPlantCounter } from '../engine/state.ts'
+import { createGame } from '../engine/state.ts'
 import { endQuarter as resolveQuarter, acceptContract, resolveHearing } from '../engine/turn/resolve.ts'
-import { advanceTutorial, type HearingOption } from '../engine/tutorial.ts'
-import { scoreScenario } from '../engine/scoring.ts'
-import { sitePlant, assessSite, cancelPlant, type SiteAssessment } from '../engine/turn/siting.ts'
-import { scenario, type Scenario } from '../data/scenarios.ts'
+import type { HearingOption } from '../engine/turn/hearing.ts'
+import { migrateApproval } from '../engine/approval.ts'
+import { advanceTutorial } from '../engine/tutorial.ts'
+import {
+  sitePlant, assessSite, cancelPlant, expeditePlant, type SiteAssessment,
+} from '../engine/turn/siting.ts'
+import { scenario, type Scenario, type ScenarioSite } from '../data/scenarios.ts'
 import { project } from '../engine/geo/projection.ts'
 import { pointToCell } from '../engine/geo/hex.ts'
 import type { LineClassId } from '../data/transmission.ts'
 import {
-  loadImagery, loadStateRoads, loadCountyRoads,
-  loadStateHydrology, loadCountyHydrology,
+  loadImagery, loadStateRoads, loadCountyRoads, loadStateHydrology, loadCountyHydrology, loadGis,
   type Imagery, type CountyRoads, type Hydrology,
 } from '../data/loadBasemap.ts'
 import { loadCountyParcels, clearParcelCache, type CountyParcels } from '../data/loadParcels.ts'
 import {
-  planCorridor, commitCorridor, offerAll as engineOfferAll, setOffer as engineSetOffer,
-  condemn as engineCondemn, abandonCorridor as engineAbandon, resetCorridorCounter,
-  type CorridorPlan,
+  planCorridor, repricePlan, commitCorridor, offerAll as engineOfferAll,
+  setOffer as engineSetOffer, condemn as engineCondemn, abandonCorridor as engineAbandon,
+  areaSubstations, networkNodes, nodeNear, tapNear, tappableLines, type ExistingLine, type CorridorPlan, type NetNode,
 } from '../engine/turn/corridor.ts'
-import type { Parcel } from '../engine/parcels/types.ts'
-import { stepRealtime } from '../engine/realtime/operate.ts'
+import { stepRealtime, setCrews as engineSetCrews, togglePriority } from '../engine/realtime/operate.ts'
 import type { Speed, SheddingPolicy } from '../engine/realtime/types.ts'
+import { canJoin, sitesTouch } from '../engine/realtime/network.ts'
+import { linePower, roomAt, suggestSpare } from '../engine/turn/reach.ts'
+import { runProgramme as engineRunProgramme } from '../engine/turn/community.ts'
+import { dropOwnedDeals, ownedCells, refreshSiteLinks } from '../engine/turn/ownedLand.ts'
+import { assignSpare, beginCompany, firstDue, signCustomer } from '../engine/customers.ts'
+import { continueGame } from '../engine/ending.ts'
+import { assessSubstation, buildSubstation } from '../engine/turn/substations.ts'
+import { cancelEquipment, orderEquipment } from '../engine/turn/equipment.ts'
+import type { EquipmentId } from '../data/equipment.ts'
+import { resolveEvent } from '../engine/events/events.ts'
+import { countyAt, mapHit, planGearAt, selectionPoint, withBox, type MapThings, type Selection } from '../ui/mapHit.ts'
+import { writeSave, readSave, clearSave } from './save.ts'
 
 export type Tool =
   | { kind: 'none' }
   | { kind: 'site'; typeId: PlantKind }
-  /** Picking the two ends of a new transmission corridor. */
-  | { kind: 'route'; from: number | null; classId: LineClassId }
+  | { kind: 'substation'; kv: 115 | 230 | 500 }
+  | { kind: 'route'; from: NetNode | null; classId: LineClassId; style: RouteStyle }
+
+/** How close a click has to be to count. */
+const NODE_REACH_PX = 24
+const LINE_REACH_PX = 16
+
+/** What the map shows under the pointer while a line is being drawn. */
+export interface RouteDraft {
+  from: Point | null
+  at: Point
+  /** Route to a place that can be connected. */
+  line: readonly Point[] | null
+  state: 'free' | 'valid' | 'invalid'
+  label: string
+}
 
 interface Store {
   mapData: MapData | null
+  dataCenters: DataCenter[]
+  env: EnvData | null
+  substations: Substation[]
   loadError: string | null
   game: GameState | null
   scenario: Scenario | null
@@ -51,425 +79,777 @@ interface Store {
   tool: Tool
   hoverCell: number
   hoverParcel: string | null
-  /** Headlines from the most recent quarter, shown as a summary card. */
   headlines: string[]
   showBriefing: boolean
+  showMenu: boolean
+  debriefClosed: boolean
 
-  /** Parcels for the scenario county, loaded on demand. */
   parcels: CountyParcels | null
   parcelsLoading: boolean
-  /** Aerial photography for the study area; null when it has not been vendored. */
+  /** County FIPS whose parcel file is missing, so it is not asked for again. */
+  parcelsMissing: string | null
+  basemapFor: string | null
   imagery: Imagery | null
-  /** Interstates and highways for all of Georgia; null when not vendored. */
   stateRoads: CountyRoads | null
-  /** Full local road network for the contract's county; null when not vendored. */
   roads: CountyRoads | null
-  /** Rivers and lakes statewide; null when not vendored. */
   stateWater: Hydrology | null
-  /** Creeks, ponds and wetlands for the contract's county; null when not vendored. */
   water: Hydrology | null
-  parcelError: string | null
+  stateGis: Gis | null
+  gis: Gis | null
 
-  /** The route currently being previewed, before it is committed. */
   plan: CorridorPlan | null
-  /** Which corridor the acquisition panel is showing. */
+  planNote: string | null
   selectedCorridor: string | null
-
-  /** Most recent operate-phase alerts, newest first. */
+  /** What the map card is showing. */
+  selection: Selection | null
+  /** Data center the header and panels are about. 'main' is the first. */
+  focus: string
+  setFocus: (id: string) => void
+  showGrid: boolean
+  setShowGrid: (show: boolean) => void
+  showCenters: boolean
+  setShowCenters: (show: boolean) => void
+  /** Where on the map it was opened, projected km. */
+  selectionAt: Point | null
   alerts: string[]
 
   load: () => Promise<void>
-  startScenario: (id: string) => void
+  startScenario: (id: string, seed?: number) => void
+  setShowMenu: (show: boolean) => void
+  /** Close the opening and start as Georgia Power. */
+  begin: () => Promise<void>
   accept: () => void
-  dismissBriefing: () => void
   setTool: (tool: Tool) => void
   setHoverCell: (cell: number) => void
   setHoverParcel: (id: string | null) => void
-  placeAt: (cell: number) => void
+  clickMap: (x: number, y: number, cell: number, pxPerKm: number) => void
   endQuarter: () => void
   dismissHeadlines: () => void
 
   ensureParcels: () => Promise<void>
-  /**
-   * Load the optional aerial and road layers. Safe to call repeatedly and safe
-   * to fail — absent basemap data simply means those layers are not offered.
-   */
   ensureBasemap: () => Promise<void>
   setLineClass: (classId: LineClassId) => void
+  setRouteStyle: (style: RouteStyle) => void
+  undoWaypoint: () => void
+  /** Where the plan was last clicked, projected km. */
+  planAt: Point | null
+  /** Spare power chosen for the line being planned. Null until it is changed. */
+  planSpare: number | null
+  /** The transformer opened on the line being planned. */
+  planGear: { id: string; kv: number; at: Point } | null
+  closePlanGear: () => void
+  setPlanSpare: (mw: number) => void
   clearPlan: () => void
   commitPlan: () => void
   selectCorridor: (id: string | null) => void
-  offerAll: (multiple: number) => void
+  select: (selection: Selection | null, at?: Point) => void
+  sign: (dcId: string) => void
+  setSpare: (id: string, mw: number) => void
+  carryOn: () => void
+  orderGear: (id: string, rush: boolean, siteId?: string) => void
+  cancelGear: (id: string) => void
+  runProgramme: (fips: string, id: string) => void
+  planLineFrom: (from: string | NetNode) => void
+  planFromLine: (index: number, at: Point) => void
+  offerAll: (multiple: number, archetype?: ParcelArchetype) => void
   setOffer: (parcelId: string, multiple: number) => void
   condemnParcel: (parcelId: string) => void
   abandon: (corridorId: string) => void
-
-  /** Withdraw a plant that is still in permitting, recovering most of the land. */
   cancelPlant: (plantId: string) => void
+  expedite: (plantId: string) => void
 
   chooseHearing: (option: HearingOption) => void
-  dismissTutorial: () => void
-  /** Bring the coach back after it has been dismissed. */
-  restoreTutorial: () => void
+  chooseEvent: (index: number) => void
+  setTutorialHidden: (hidden: boolean) => void
   finishDebrief: () => void
   setSpeed: (speed: Speed) => void
   setPolicy: (policy: SheddingPolicy) => void
   setVegetationSpend: (value: number) => void
   setMaintenanceDeferred: (value: boolean) => void
+  setCrews: (n: number) => void
+  prioritize: (assetId: string) => void
   dismissAlerts: () => void
 
-  /** Assessment of the hovered cell for the active siting tool, if any. */
+  /** Existing substations and lines a click can open. */
+  mapThings: () => MapThings
+  /** Data centers drawn on the map. */
+  shownCenters: () => DataCenter[]
   currentAssessment: () => SiteAssessment | null
-  parcelById: (id: string) => Parcel | undefined
+  /** Begin a line at a point. True if there was something there to begin from. */
+  beginLine: (x: number, y: number, pxPerKm: number) => boolean
+  probeRoute: (x: number, y: number, pxPerKm: number) => RouteDraft | null
+  /** Undo the last step of drawing a line. */
+  stepBack: () => void
+  surface: () => RouteSurface | null
+  /** Existing lines that can be tapped from here. */
+  tappable: () => ExistingLine[]
+  /** Every existing line of 115 kV or more. */
+  gridLines: () => ExistingLine[]
 }
 
-/**
- * The operate-phase clock.
- *
- * One tick is fifteen simulated minutes; at 1x the game runs an hour of grid
- * time per second. The timer lives outside the store because it is a side
- * effect, not state — the store only holds the speed it is running at.
- */
 let tickTimer: ReturnType<typeof setInterval> | null = null
-const TICK_INTERVAL_MS = 250
+const BEAT_MS = 250
+/** Autosave at most this often while the clock runs. */
+const SAVE_EVERY_MS = 4000
+let lastSave = 0
 
 function stopClock(): void {
-  if (tickTimer !== null) {
-    clearInterval(tickTimer)
-    tickTimer = null
-  }
+  if (tickTimer !== null) clearInterval(tickTimer)
+  tickTimer = null
 }
 
-/** Resolve a scenario's lon/lat site to a grid cell index. */
-function siteCellOf(sc: Scenario, map: MapData): number {
-  const [x, y] = project(sc.contract.site.lon, sc.contract.site.lat)
+function cellOf(site: ScenarioSite, map: MapData): number {
+  const [x, y] = project(site.lon, site.lat)
   const [col, row] = pointToCell(map.grid.spec, x, y)
   return row * map.grid.spec.cols + col
 }
 
-export const useGame = create<Store>((set, get) => ({
-  mapData: null,
-  loadError: null,
-  game: null,
-  scenario: null,
-  tool: { kind: 'none' },
-  hoverCell: -1,
-  hoverParcel: null,
-  headlines: [],
-  showBriefing: true,
-  parcels: null,
-  parcelsLoading: false,
-  imagery: null,
-  stateRoads: null,
-  roads: null,
-  stateWater: null,
-  water: null,
-  parcelError: null,
-  plan: null,
-  selectedCorridor: null,
-  alerts: [],
+function randomSeed(): number {
+  return Math.floor(Math.random() * 0x7fffffff)
+}
 
-  load: async () => {
-    try {
-      const mapData = await loadMapData()
-      set({ mapData, loadError: null })
-    } catch (e) {
-      set({ loadError: e instanceof Error ? e.message : String(e) })
+/** Fixed by ?seed= in the URL, so a run can be shared or replayed. */
+function seedFromUrl(): number | null {
+  const v = new URLSearchParams(window.location.search).get('seed')
+  const n = v === null ? NaN : Number(v)
+  return Number.isFinite(n) ? Math.floor(n) : null
+}
+
+const CLEAN = {
+  focus: 'main',
+  headlines: [] as string[], tool: { kind: 'none' } as Tool, plan: null, planNote: null,
+  selectedCorridor: null, selection: null, selectionAt: null, alerts: [] as string[], hoverParcel: null, showMenu: false, debriefClosed: false,
+}
+
+export const useGame = create<Store>((set, get) => {
+  /** Put a new state in place and save it. */
+  const commit = (game: GameState, extra: Partial<Store> = {}): void => {
+    set({ game, ...extra })
+    writeSave(game)
+  }
+
+  const endAt = (x: number, y: number, pxPerKm: number): NetNode | null => {
+    const { game, mapData } = get()
+    if (!game || !mapData) return null
+    return nodeNear(networkNodes(game, mapData.grid), x, y, NODE_REACH_PX / pxPerKm)
+      ?? tapNear(game, mapData.grid, get().tappable(), x, y, LINE_REACH_PX / pxPerKm)
+  }
+
+  // Only places with a fixed position are worth routing to on every hover.
+  const drafts = new Map<string, readonly Point[] | null>()
+  const draftLine = (from: NetNode, to: NetNode, style: RouteStyle): readonly Point[] | null => {
+    if (/^(tap|grid):/.test(to.id)) return null
+    const surface = get().surface()
+    if (!surface) return null
+    const key = `${from.id}|${to.id}|${style}|${surface.parcels.length}|${surface.buildings?.length ?? 0}|${surface.owned?.size ?? 0}`
+    let line = drafts.get(key)
+    if (line === undefined) {
+      line = routeLeg(surface, [from.x, from.y], [to.x, to.y], style)
+      drafts.set(key, line)
     }
-  },
+    return line
+  }
 
-  startScenario: (id) => {
-    const { mapData } = get()
-    if (!mapData) return
-    const sc = scenario(id)
-    stopClock()
-    resetPlantCounter()
-    resetCorridorCounter()
-    clearParcelCache()
-    const game = createGame(sc, siteCellOf(sc, mapData), mapData.counties)
-    set({
-      game, scenario: sc, showBriefing: true, headlines: [], tool: { kind: 'none' },
-      parcels: null, plan: null, selectedCorridor: null, parcelError: null,
-      imagery: null, stateRoads: null, roads: null, stateWater: null, water: null,
-      alerts: [],
-    })
-  },
+  const replan = (from: NetNode, to: NetNode, waypoints: Point[], classId: LineClassId, style: RouteStyle): void => {
+    const surface = get().surface()
+    if (!surface) return
+    const plan = planCorridor(surface, from, to, classId, style, waypoints)
+    set(plan
+      ? { plan, planNote: null }
+      : { plan: null, planNote: 'No route exists between those points. Protected land may be in the way.' })
+  }
 
-  accept: () => {
-    const { game } = get()
-    if (!game) return
-    const next = acceptContract(game)
-    advanceTutorial(next)
-    set({ game: next, showBriefing: false })
-  },
+  return {
+    mapData: null,
+    dataCenters: [],
+    env: null,
+    substations: [],
+    loadError: null,
+    game: null,
+    scenario: null,
+    hoverCell: -1,
+    showBriefing: true,
+    parcels: null,
+    parcelsLoading: false,
+    parcelsMissing: null,
+    basemapFor: null,
+    imagery: null,
+    stateRoads: null,
+    roads: null,
+    stateWater: null,
+    water: null,
+    stateGis: null,
+    gis: null,
+    ...CLEAN,
 
-  dismissBriefing: () => set({ showBriefing: false }),
+    load: async () => {
+      try {
+        const mapData = await loadMapData()
+        void loadDataCenters().then((dataCenters) => set({ dataCenters }))
+        const saved = readSave()
+        if (saved && (saved.started || saved.contract.status !== 'offered')) {
+          if (saved.realtime) saved.realtime.speed = 0
+          refreshSiteLinks(saved, mapData.grid)
+          dropOwnedDeals(saved, mapData.grid)
+          migrateApproval(saved, mapData.counties)
+          set({
+            mapData, loadError: null, game: saved, scenario: scenario(saved.scenarioId),
+            showBriefing: false,
+            focus: saved.contract.status === 'offered' ? firstDue(saved)?.id ?? 'main' : 'main',
+            selectedCorridor: saved.corridors.find((c) => c.status === 'acquiring')?.id ?? null,
+          })
+        } else {
+          set({ mapData, loadError: null })
+          get().startScenario('americus-400', seedFromUrl() ?? undefined)
+        }
+      } catch (e) {
+        set({ loadError: e instanceof Error ? e.message : String(e) })
+      }
+    },
 
-  setTool: (tool) => {
-    set({ tool, plan: null })
-    // Routing needs the cadastre; start fetching as soon as the tool is picked
-    // rather than making the player wait after their first click.
-    if (tool.kind === 'route') void get().ensureParcels()
-  },
+    startScenario: (id, seed) => {
+      const { mapData } = get()
+      if (!mapData) return
+      const sc = scenario(id)
+      stopClock()
+      clearSave()
+      clearParcelCache()
+      const game = createGame(
+        sc, cellOf(sc.contract.site, mapData), mapData.counties,
+        cellOf(sc.system.site, mapData), seed ?? randomSeed(),
+      )
+      set({
+        ...CLEAN,
+        game,
+        scenario: sc, showBriefing: true, parcels: null, parcelsMissing: null,
+        basemapFor: null, roads: null, water: null, gis: null,
+      })
+    },
 
-  setHoverCell: (cell) => {
-    if (get().hoverCell !== cell) set({ hoverCell: cell })
-  },
+    focus: 'main',
+    setFocus: (focus) => set({ focus }),
+    planAt: null,
+    planSpare: null,
+    planGear: null,
+    closePlanGear: () => set({ planGear: null }),
+    setPlanSpare: (planSpare) => set({ planSpare }),
+    showGrid: true,
+    setShowGrid: (showGrid) => set({ showGrid }),
+    showCenters: true,
+    setShowCenters: (showCenters) => set({ showCenters }),
 
-  setHoverParcel: (id) => {
-    if (get().hoverParcel !== id) set({ hoverParcel: id })
-  },
+    setShowMenu: (showMenu) => {
+      if (showMenu && get().game?.realtime) get().setSpeed(0)
+      set({ showMenu })
+    },
 
-  placeAt: (cell) => {
-    const { game, mapData, tool, parcels } = get()
-    if (!game || !mapData) return
+    begin: async () => {
+      const { game, mapData } = get()
+      if (!game || !mapData) return
+      const dataCenters = get().dataCenters.length > 0 ? get().dataCenters : await loadDataCenters()
+      const now = get().game
+      if (!now) return
+      const next = beginCompany(now, dataCenters, mapData.counties, mapData.grid)
+      const list = get().substations
+      commit(list.length > 0 ? { ...next, substations: areaSubstations(next, mapData.grid, list) } : next, { showBriefing: false, dataCenters, focus: firstDue(next)?.id ?? 'main' })
+    },
 
-    if (tool.kind === 'site') {
-      const assessment = assessSite(game, tool.typeId, cell, mapData.grid)
-      if (!assessment.ok) return
-      const next = sitePlant(game, tool.typeId, cell, mapData.grid)
+    accept: () => {
+      const { game } = get()
+      if (!game) return
+      const next = acceptContract(game)
+      set({ focus: 'main' })
       advanceTutorial(next)
-      set({ game: next, tool: { kind: 'none' } })
-      return
-    }
+      commit(next, { showBriefing: false })
+    },
 
-    if (tool.kind === 'route') {
-      if (tool.from === null) {
-        set({ tool: { ...tool, from: cell }, plan: null })
+    setTool: (tool) => {
+      set({ tool, plan: null, planNote: null, planGear: null, ...(tool.kind !== 'none' && { selection: null }) })
+      if (tool.kind === 'route') void get().ensureParcels()
+    },
+
+    setHoverCell: (cell) => { if (get().hoverCell !== cell) set({ hoverCell: cell }) },
+    setHoverParcel: (id) => { if (get().hoverParcel !== id) set({ hoverParcel: id }) },
+
+    clickMap: (x, y, cell, pxPerKm) => {
+      const { game, mapData, tool, plan } = get()
+      if (!game || !mapData) return
+
+      if (tool.kind === 'site') {
+        const next = sitePlant(game, tool.typeId, cell, mapData.grid)
+        if (next === game) {
+          set({ planNote: assessSite(game, tool.typeId, cell, mapData.grid).blocker })
+          return
+        }
+        advanceTutorial(next)
+        commit(next, { tool: { kind: 'none' }, planNote: null })
         return
       }
-      // Second click closes the route and prices it.
-      const plan = planCorridor(
-        mapData.grid, tool.from, cell, tool.classId, parcels?.parcels ?? [],
-      )
-      set({ plan })
-    }
-  },
+      if (tool.kind === 'substation') {
+        const lines = get().gridLines()
+        const next = buildSubstation(game, tool.kv, cell, mapData.grid, lines)
+        if (next === game) {
+          set({ planNote: assessSubstation(game, tool.kv, cell, mapData.grid, lines).blocker })
+          return
+        }
+        commit(next, { tool: { kind: 'none' }, planNote: null })
+        return
+      }
+      if (tool.kind === 'none') {
+        const fips = countyAt(mapData.grid, cell)
+        const open = get().selection
+        const again = open?.kind === 'county' && open.fips === fips
+        const next = mapHit(game, mapData.grid, x, y, cell, pxPerKm, get().shownCenters(), get().mapThings())
+          ?? (fips && !again ? { kind: 'county' as const, fips } : null)
+        get().select(next, [x, y])
+        return
+      }
+      if (get().parcelsLoading) return
 
-  endQuarter: () => {
-    const { game, parcels } = get()
-    if (!game) return
-    const lookup = new Map((parcels?.parcels ?? []).map((p) => [p.id, p]))
-    const { state, headlines } = resolveQuarter(game, { parcels: lookup })
-    set({ game: state, headlines })
-  },
+      if (plan) {
+        const gear = planGearAt(game, plan, x, y, pxPerKm)
+        if (gear) {
+          set({ planGear: gear })
+          return
+        }
+        set({ planGear: null })
+        const hit = nodeNear(networkNodes(game, mapData.grid), x, y, NODE_REACH_PX / pxPerKm)
+        // With both ends set, a click bends the route through that point.
+        if (hit && hit.id !== plan.from.id && hit.id !== plan.to.id) {
+          set({ planAt: [hit.x, hit.y], planSpare: null })
+          replan(plan.from, hit, plan.waypoints, tool.classId, tool.style)
+          return
+        }
+        if (hit) return
+        set({ planAt: [x, y] })
+        replan(plan.from, plan.to, insertWaypoint(plan, [x, y]), tool.classId, tool.style)
+        return
+      }
+      const hit = endAt(x, y, pxPerKm)
+      if (!hit) {
+        set({ planNote: 'Click a plant, the campus, the substation, or a line of 115 kV or more.' })
+        return
+      }
+      if (!tool.from) {
+        set({ tool: { ...tool, from: hit }, planNote: null })
+        return
+      }
+      if (!canJoin(tool.from.id, hit.id) || sitesTouch(game, tool.from.id, hit.id)) {
+        set({ planNote: 'Those two ends are already joined. Pick a different place.' })
+        return
+      }
+      set({ planAt: [hit.x, hit.y], planSpare: null })
+      replan(tool.from, hit, [], tool.classId, tool.style)
+    },
 
-  dismissHeadlines: () => set({ headlines: [] }),
+    endQuarter: () => {
+      const { game } = get()
+      if (!game || game.phase !== 'build' || game.pendingEvent || game.hearing === 'called') return
+      const { state, headlines } = resolveQuarter(game)
+      commit(state, { headlines, tool: { kind: 'none' }, plan: null, planNote: null })
+    },
 
-  ensureBasemap: async () => {
-    const { game, imagery, stateRoads, roads, stateWater, water } = get()
-    if (!game || (imagery && stateRoads && roads && stateWater && water)) return
-    // Statewide roads and the county detail load together; they are separate
-    // files so that a player who never leaves the statewide view never pays for
-    // a county's farm tracks.
-    const [img, sr, rd, sw, cw] = await Promise.all([
-      imagery ? Promise.resolve(imagery) : loadImagery(),
-      stateRoads ? Promise.resolve(stateRoads) : loadStateRoads(),
-      roads ? Promise.resolve(roads) : loadCountyRoads(game.contract.countyFips),
-      stateWater ? Promise.resolve(stateWater) : loadStateHydrology(),
-      water ? Promise.resolve(water) : loadCountyHydrology(game.contract.countyFips),
-    ])
-    set({ imagery: img, stateRoads: sr, roads: rd, stateWater: sw, water: cw })
-  },
+    dismissHeadlines: () => set({ headlines: [] }),
 
-  ensureParcels: async () => {
-    const { parcels, parcelsLoading, game } = get()
-    if (parcels || parcelsLoading || !game) return
-    set({ parcelsLoading: true, parcelError: null })
-    try {
-      const loaded = await loadCountyParcels(game.contract.countyFips)
-      set({ parcels: loaded, parcelsLoading: false })
-    } catch (e) {
-      set({
-        parcelsLoading: false,
-        parcelError: e instanceof Error ? e.message : String(e),
+    ensureBasemap: async () => {
+      const { game, basemapFor } = get()
+      if (!game) return
+      const fips = game.contract.countyFips
+      if (basemapFor === fips) return
+      set({ basemapFor: fips })
+      void loadEnv(fips).then((env) => { if (get().game?.contract.countyFips === fips) set({ env }) })
+      const [imagery, stateRoads, roads, stateWater, water, stateGis, gis] = await Promise.all([
+        loadImagery(), loadStateRoads(), loadCountyRoads(fips),
+        loadStateHydrology(), loadCountyHydrology(fips), loadGis('state'), loadGis(fips),
+      ])
+      if (get().game?.contract.countyFips !== fips) return
+      const substations = get().substations.length > 0 ? get().substations : await loadSubstations()
+      set({ imagery, stateRoads, roads, stateWater, water, stateGis, gis, substations })
+      const { game: now, mapData } = get()
+      if (now?.equipment && !now.substations && gis && mapData) {
+        const next = { ...now, substations: areaSubstations(now, mapData.grid, substations.length > 0 ? substations : gis.substations) }
+        if (next.started || next.contract.status !== 'offered') commit(next)
+        else set({ game: next })
+      }
+    },
+
+    ensureParcels: async () => {
+      const { parcels, parcelsLoading, parcelsMissing, game } = get()
+      const fips = game?.contract.countyFips
+      if (!fips || parcels || parcelsLoading || parcelsMissing === fips) return
+      set({ parcelsLoading: true })
+      try {
+        const loaded = await loadCountyParcels(fips)
+        set({ parcels: loaded, parcelsLoading: false })
+      } catch {
+        // Routing falls back to generated parcels.
+        set({ parcelsLoading: false, parcelsMissing: fips })
+      }
+    },
+
+    setLineClass: (classId) => {
+      const { tool, plan } = get()
+      const surface = get().surface()
+      if (tool.kind !== 'route') return
+      set({ tool: { ...tool, classId }, planGear: null })
+      if (plan && surface) set({ plan: repricePlan(surface, plan, classId) })
+    },
+
+    setRouteStyle: (style) => {
+      const { tool, plan } = get()
+      if (tool.kind !== 'route') return
+      set({ tool: { ...tool, style } })
+      if (plan) replan(plan.from, plan.to, plan.waypoints, tool.classId, style)
+    },
+
+    undoWaypoint: () => {
+      const { tool, plan } = get()
+      if (tool.kind !== 'route' || !plan) return
+      replan(plan.from, plan.to, plan.waypoints.slice(0, -1), tool.classId, tool.style)
+    },
+
+    clearPlan: () => set({ plan: null, planNote: null, planGear: null, tool: { kind: 'none' } }),
+
+    commitPlan: () => {
+      const { game, plan, planAt } = get()
+      if (!game || !plan) return
+      const ends = { fromNode: plan.from.id, toNode: plan.to.id, classId: plan.classId }
+      const dc = linePower(game, ends)
+      const spared = dc ? assignSpare(game, dc.id, get().planSpare ?? suggestSpare(game, ends)) : game
+      const next = commitCorridor(spared, plan)
+      advanceTutorial(next)
+      const line = next.corridors[next.corridors.length - 1]
+      commit(next, {
+        plan: null, planNote: null, planGear: null, tool: { kind: 'none' },
+        selectedCorridor: line?.id ?? null,
+        selection: line ? { kind: 'line', id: line.id } : null, selectionAt: planAt ?? [plan.to.x, plan.to.y],
       })
-    }
-  },
+    },
 
-  setLineClass: (classId) => {
-    const { tool, mapData, parcels } = get()
-    if (tool.kind !== 'route') return
-    set({ tool: { ...tool, classId } })
-    // Re-price the existing route at the new voltage rather than making the
-    // player redraw it — the right-of-way width, and so the taking, changes.
-    const { plan } = get()
-    if (plan && mapData && tool.from !== null) {
-      const last = plan.cells[plan.cells.length - 1]
-      set({ plan: planCorridor(mapData.grid, tool.from, last, classId, parcels?.parcels ?? []) })
-    }
-  },
+    selectCorridor: (id) => set({ selectedCorridor: id }),
+    select: (selection, at) => {
+      const { game, mapData } = get()
+      const fixed = selection && game && mapData ? selectionPoint(game, mapData.grid, selection) : null
+      const focus = selection?.kind === 'campus' ? 'main' : selection?.kind === 'dc' || selection?.kind === 'gear' ? selection.id : get().focus
+      set({ selection, selectionAt: fixed ?? at ?? null, focus, ...(selection?.kind === 'line' && { selectedCorridor: selection.id }) })
+    },
 
-  clearPlan: () => set({ plan: null, tool: { kind: 'none' } }),
+    sign: (dcId) => {
+      const { game, mapData, dataCenters } = get()
+      const dc = dataCenters.find((d) => d.id === dcId)
+      if (!game || !mapData || !dc) return
+      const next = signCustomer(game, dc, mapData.counties, mapData.grid)
+      if (next === game) return
+      commit({ ...next, substations: areaSubstations(next, mapData.grid, get().substations) })
+    },
 
-  commitPlan: () => {
-    const { game, plan, parcels } = get()
-    if (!game || !plan) return
-    const next = commitCorridor(game, plan, parcels?.parcels ?? [])
-    advanceTutorial(next)
-    set({
-      game: next,
-      plan: null,
-      tool: { kind: 'none' },
-      selectedCorridor: next.corridors[next.corridors.length - 1]?.id ?? null,
-    })
-  },
+    setSpare: (id, mw) => {
+      const { game } = get()
+      if (game) commit(assignSpare(game, id, mw))
+    },
 
-  selectCorridor: (id) => set({ selectedCorridor: id }),
+    carryOn: () => {
+      const { game } = get()
+      if (game) commit(continueGame(game), { debriefClosed: false })
+    },
 
-  offerAll: (multiple) => {
-    const { game, selectedCorridor } = get()
-    if (!game || !selectedCorridor) return
-    set({ game: engineOfferAll(game, selectedCorridor, multiple) })
-  },
+    orderGear: (id, rush, siteId) => {
+      const { game } = get()
+      if (!game) return
+      const next = orderEquipment(game, id as EquipmentId, rush, siteId)
+      advanceTutorial(next)
+      if (next !== game) commit(next)
+    },
 
-  setOffer: (parcelId, multiple) => {
-    const { game, selectedCorridor } = get()
-    if (!game || !selectedCorridor) return
-    set({ game: engineSetOffer(game, selectedCorridor, parcelId, multiple) })
-  },
+    cancelGear: (id) => {
+      const { game } = get()
+      if (game) commit(cancelEquipment(game, id))
+    },
 
-  condemnParcel: (parcelId) => {
-    const { game, selectedCorridor } = get()
-    if (!game || !selectedCorridor) return
-    const parcel = get().parcelById(parcelId)
-    if (!parcel) return
-    set({ game: engineCondemn(game, selectedCorridor, parcelId, parcel) })
-  },
+    runProgramme: (fips, id) => {
+      const { game } = get()
+      if (game) commit(engineRunProgramme(game, fips, id))
+    },
 
-  abandon: (corridorId) => {
-    const { game } = get()
-    if (!game) return
-    set({ game: engineAbandon(game, corridorId), selectedCorridor: null })
-  },
+    planFromLine: (index, at) => {
+      const { game, mapData } = get()
+      const line = get().mapThings().lines[index]
+      if (!game || !mapData || !line) return
+      const tap = tapNear({ ...game, corridors: [] }, mapData.grid, [line], at[0], at[1], 5)
+      if (tap) get().planLineFrom(tap)
+    },
 
-  chooseHearing: (option) => {
-    const { game } = get()
-    if (!game) return
-    set({ game: resolveHearing(game, option) })
-  },
+    planLineFrom: (from) => {
+      const { game, mapData } = get()
+      if (!game || !mapData) return
+      const node = typeof from === 'string'
+        ? networkNodes(game, mapData.grid).find((n) => n.id === from) ?? null
+        : from
+      get().setTool({ kind: 'route', from: node, classId: '230', style: 'balanced' })
+    },
 
-  cancelPlant: (plantId) => {
-    const { game } = get()
-    if (!game) return
-    const next = cancelPlant(game, plantId)
-    if (next === game) return
-    // Clear a siting tool so the player is not left mid-placement after undoing
-    // the last placement they made.
-    set({ game: next, tool: { kind: 'none' } })
-  },
+    offerAll: (multiple, archetype) => {
+      const { game, selectedCorridor } = get()
+      if (game && selectedCorridor) commit(engineOfferAll(game, selectedCorridor, multiple, archetype))
+    },
 
-  dismissTutorial: () => {
-    const { game } = get()
-    if (!game?.tutorial) return
-    game.tutorial.dismissed = true
-    set({ game: { ...game } })
-  },
+    setOffer: (parcelId, multiple) => {
+      const { game, selectedCorridor } = get()
+      if (game && selectedCorridor) commit(engineSetOffer(game, selectedCorridor, parcelId, multiple))
+    },
 
-  restoreTutorial: () => {
-    const { game } = get()
-    if (!game?.tutorial) return
-    game.tutorial.dismissed = false
-    set({ game: { ...game } })
-  },
+    condemnParcel: (parcelId) => {
+      const { game, selectedCorridor } = get()
+      if (game && selectedCorridor) commit(engineCondemn(game, selectedCorridor, parcelId))
+    },
 
-  finishDebrief: () => {
-    const { game } = get()
-    if (!game?.tutorial) return
-    game.tutorial.debriefSeen = true
-    set({ game: { ...game } })
-  },
+    abandon: (corridorId) => {
+      const { game } = get()
+      if (game) commit(engineAbandon(game, corridorId), { selectedCorridor: null, selection: null })
+    },
 
-  setSpeed: (speed) => {
-    const { game, mapData } = get()
-    if (!game?.realtime || !mapData) return
-    game.realtime.speed = speed
-    stopClock()
+    cancelPlant: (plantId) => {
+      const { game } = get()
+      if (!game) return
+      const next = cancelPlant(game, plantId)
+      if (next !== game) commit(next, { tool: { kind: 'none' } })
+    },
 
-    if (speed === 0) {
-      set({ game: { ...game } })
-      return
-    }
+    expedite: (plantId) => {
+      const { game } = get()
+      if (game) commit(expeditePlant(game, plantId))
+    },
 
-    const [minX, minY, maxX, maxY] = mapData.counties.bbox
-    const bounds = { minX, minY, maxX, maxY }
+    chooseHearing: (option) => {
+      const { game } = get()
+      if (game) commit(resolveHearing(game, option))
+    },
 
-    tickTimer = setInterval(() => {
-      const current = get().game
-      if (!current?.realtime) return stopClock()
+    chooseEvent: (index) => {
+      const { game } = get()
+      if (game) commit(resolveEvent(game, index))
+    },
 
-      const collected: string[] = []
-      // stepRealtime mutates for speed; the spread below is what tells React.
-      for (let i = 0; i < current.realtime.speed; i++) {
-        const { events, severe } = stepRealtime(current, bounds)
-        collected.push(...events)
-        // Something serious deserves the player's attention, so stop the clock
-        // rather than letting it scroll past at 4x.
-        if (severe) {
-          current.realtime.speed = 0
-          stopClock()
-          break
+    setTutorialHidden: (hidden) => {
+      const { game } = get()
+      if (game?.tutorial) commit({ ...game, tutorial: { ...game.tutorial, dismissed: hidden } })
+    },
+
+    finishDebrief: () => {
+      stopClock()
+      set({ showMenu: true, debriefClosed: true })
+    },
+
+    setSpeed: (speed) => {
+      const { game, mapData } = get()
+      if (!game?.realtime || !mapData || game.phase !== 'operate') return
+      stopClock()
+      game.realtime.speed = speed
+      commit({ ...game })
+      if (speed === 0) return
+
+      const [minX, minY, maxX, maxY] = mapData.counties.bbox
+      const bounds = { minX, minY, maxX, maxY }
+      tickTimer = setInterval(() => {
+        const current = get().game
+        if (!current?.realtime || current.phase !== 'operate') return stopClock()
+
+        const collected: string[] = []
+        const steps = current.realtime.speed
+        for (let i = 0; i < steps; i++) {
+          const { events, severe } = stepRealtime(current, bounds)
+          collected.push(...events)
+          if (severe) {
+            current.realtime.speed = 0
+            stopClock()
+            break
+          }
+        }
+        set((s) => ({
+          game: { ...current },
+          alerts: collected.length > 0 ? [...collected.reverse(), ...s.alerts].slice(0, 30) : s.alerts,
+        }))
+        const now = Date.now()
+        if (tickTimer === null || now - lastSave > SAVE_EVERY_MS) {
+          lastSave = now
+          writeSave(current)
+        }
+      }, BEAT_MS)
+    },
+
+    setPolicy: (policy) => {
+      const { game } = get()
+      if (!game?.realtime) return
+      game.realtime.policy = policy
+      commit({ ...game })
+    },
+
+    setVegetationSpend: (value) => {
+      const { game } = get()
+      if (!game?.realtime) return
+      game.realtime.vegetationSpend = Math.min(1, Math.max(0, value))
+      commit({ ...game })
+    },
+
+    setMaintenanceDeferred: (value) => {
+      const { game } = get()
+      if (!game?.realtime) return
+      game.realtime.maintenanceDeferred = value
+      commit({ ...game })
+    },
+
+    setCrews: (n) => {
+      const { game } = get()
+      if (!game) return
+      engineSetCrews(game, n)
+      commit({ ...game })
+    },
+
+    prioritize: (assetId) => {
+      const { game } = get()
+      if (!game) return
+      togglePriority(game, assetId)
+      commit({ ...game })
+    },
+
+    dismissAlerts: () => set({ alerts: [] }),
+
+    mapThings: () => {
+      const { substations, stateGis, gis, showGrid } = get()
+      if (!showGrid) return { substations: [], lines: [] }
+      if (thingsCache?.subs !== substations || thingsCache.state !== stateGis || thingsCache.local !== gis) {
+        const all = [...(stateGis?.power ?? []), ...(gis?.power.filter((l) => l.kv < 115) ?? [])]
+        thingsCache = {
+          subs: substations, state: stateGis, local: gis,
+          things: { substations, lines: all.map(withBox) },
         }
       }
+      return thingsCache.things
+    },
 
-      // The tutorial ends when the storm has been ridden out; score it once.
-      if (!current.outcome && (current.tutorial?.beat ?? 0) >= 9) {
-        current.outcome = scoreScenario(current)
-        current.realtime.speed = 0
-        stopClock()
+    shownCenters: () => {
+      const { scenario: sc, showCenters } = get()
+      const dataCenters = get().dataCenters.filter(inServiceArea)
+      if (!showCenters) return []
+      // The campus marker stands for the scenario's own data center.
+      return sc?.id === 'americus-400' ? dataCenters.filter((d) => !d.id.startsWith('liberty-data-centers-americus')) : dataCenters
+    },
+
+    currentAssessment: () => {
+      const { game, mapData, tool, hoverCell } = get()
+      if (!game || !mapData || tool.kind !== 'site' || hoverCell < 0) return null
+      return assessSite(game, tool.typeId, hoverCell, mapData.grid)
+    },
+
+    gridLines: () => {
+      const { stateGis, gis } = get()
+      return stateGis?.power ?? gis?.power ?? []
+    },
+
+    tappable: () => {
+      const { game, mapData } = get()
+      // The state file reaches every customer. The county file is the fallback.
+      const gis = game?.customers?.length ? get().stateGis ?? get().gis : get().gis
+      if (!game || !mapData || !gis) return []
+      const key = `${game.system.substationCell}|${(game.customers ?? []).filter((c) => c.status !== 'cancelled').map((c) => c.id).join()}`
+      if (tapCache?.gis !== gis || tapCache.key !== key) {
+        tapCache = { gis, key, lines: tappableLines(game, mapData.grid, gis.power) }
       }
+      return tapCache.lines
+    },
 
-      set((s) => ({
-        game: { ...current },
-        alerts: collected.length > 0
-          ? [...collected.reverse(), ...s.alerts].slice(0, 40)
-          : s.alerts,
-      }))
-    }, TICK_INTERVAL_MS)
+    beginLine: (x, y, pxPerKm) => {
+      const { tool, plan, parcelsLoading } = get()
+      if (tool.kind !== 'route' || plan || parcelsLoading) return false
+      const hit = endAt(x, y, pxPerKm)
+      if (!hit) return false
+      if (tool.from) return hit.id === tool.from.id
+      set({ tool: { ...tool, from: hit }, planNote: null })
+      return true
+    },
 
-    set({ game: { ...game } })
-  },
+    probeRoute: (x, y, pxPerKm) => {
+      const { game, mapData, tool, plan } = get()
+      if (!game || !mapData || tool.kind !== 'route') return null
+      const here: Point = [x, y]
+      if (plan) {
+        const gear = planGearAt(game, plan, x, y, pxPerKm)
+        if (gear) return { from: null, at: gear.at, line: null, state: 'valid', label: 'Build the transformer' }
+        const near = nodeNear(networkNodes(game, mapData.grid), x, y, NODE_REACH_PX / pxPerKm)
+        return near ? null : { from: null, at: here, line: null, state: 'free', label: 'Bend the route here' }
+      }
+      const hit = endAt(x, y, pxPerKm)
+      const from = tool.from
+      if (!from) {
+        return hit
+          ? { from: null, at: [hit.x, hit.y], line: null, state: 'valid', label: `Start at ${hit.label}` }
+          : { from: null, at: here, line: null, state: 'free', label: 'Pick a marked place' }
+      }
+      const start: Point = [from.x, from.y]
+      if (!hit) {
+        const km = Math.hypot(x - from.x, y - from.y)
+        return { from: start, at: here, line: null, state: 'free', label: `${km.toFixed(1)} km` }
+      }
+      const at: Point = [hit.x, hit.y]
+      if (!canJoin(from.id, hit.id) || sitesTouch(game, from.id, hit.id)) {
+        return {
+          from: start, at, line: null, state: 'invalid',
+          label: from.id === hit.id ? 'This is the start' : 'Already joined',
+        }
+      }
+      const line = draftLine(from, hit, tool.style)
+      const km = line ? centerlineLength([...line]) : Math.hypot(at[0] - from.x, at[1] - from.y)
+      const room = roomAt(game, hit, tool.classId)
+      const spare = room === null ? '' : room < 0.5 ? ', nothing to spare at this voltage' : `, ${Math.round(room).toLocaleString()} MW to spare`
+      return {
+        from: start, at, line, state: 'valid',
+        label: `Connect to ${hit.label}, ${line ? '' : 'about '}${km.toFixed(1)} km${spare}`,
+      }
+    },
 
-  setPolicy: (policy) => {
-    const { game } = get()
-    if (!game?.realtime) return
-    game.realtime.policy = policy
-    set({ game: { ...game } })
-  },
+    stepBack: () => {
+      const { tool, plan, selection, planGear } = get()
+      if (planGear) set({ planGear: null })
+      else if (plan) set({ plan: null, planNote: null, tool: { ...tool, from: null } as Tool })
+      else if (tool.kind === 'route' && tool.from) set({ tool: { ...tool, from: null }, planNote: null })
+      else if (tool.kind !== 'none') get().setTool({ kind: 'none' })
+      else if (selection) set({ selection: null })
+    },
 
-  setVegetationSpend: (value) => {
-    const { game } = get()
-    if (!game?.realtime) return
-    game.realtime.vegetationSpend = Math.min(1, Math.max(0, value))
-    set({ game: { ...game } })
-  },
+    surface: () => {
+      const { game, mapData, parcels, gis } = get()
+      if (!mapData) return null
+      return {
+        grid: mapData.grid,
+        owned: game ? ownedCells(game, mapData.grid) : undefined,
+        parcels: parcels?.parcels ?? NO_PARCELS,
+        buildings: gis?.buildings,
+        powerLines: gis?.power,
+      }
+    },
+  }
+})
 
-  setMaintenanceDeferred: (value) => {
-    const { game } = get()
-    if (!game?.realtime) return
-    game.realtime.maintenanceDeferred = value
-    set({ game: { ...game } })
-  },
+let thingsCache: { subs: Substation[]; state: Gis | null; local: Gis | null; things: MapThings } | null = null
+const NO_PARCELS: Parcel[] = []
+let tapCache: { gis: Gis; key: string; lines: ExistingLine[] } | null = null
 
-  dismissAlerts: () => set({ alerts: [] }),
+/** Place a new waypoint on whichever leg it lengthens least. */
+function insertWaypoint(plan: CorridorPlan, p: Point): Point[] {
+  const stops: Point[] = [[plan.from.x, plan.from.y], ...plan.waypoints, [plan.to.x, plan.to.y]]
+  const d = (a: Point, b: Point): number => Math.hypot(a[0] - b[0], a[1] - b[1])
+  let best = 0
+  let least = Infinity
+  for (let i = 1; i < stops.length; i++) {
+    const extra = d(stops[i - 1], p) + d(p, stops[i]) - d(stops[i - 1], stops[i])
+    if (extra < least) { least = extra; best = i - 1 }
+  }
+  const out = [...plan.waypoints]
+  out.splice(best, 0, p)
+  return out
+}
 
-  parcelById: (id) => get().parcels?.parcels.find((p) => p.id === id),
-
-  currentAssessment: () => {
-    const { game, mapData, tool, hoverCell } = get()
-    if (!game || !mapData || tool.kind !== 'site' || hoverCell < 0) return null
-    return assessSite(game, tool.typeId, hoverCell, mapData.grid)
-  },
-}))
-
-/**
- * Debug handle on the store.
- *
- * Exposed deliberately: the browser tests use it to drop the game straight into
- * a state that would otherwise take eleven quarters of clicking to reach, and it
- * makes the game inspectable from the console. There is nothing sensitive in
- * here — it is a single-player game with no backend and no credentials.
- */
+// Used by the browser tests.
 if (typeof window !== 'undefined') {
   ;(window as unknown as { __game: typeof useGame }).__game = useGame
 }

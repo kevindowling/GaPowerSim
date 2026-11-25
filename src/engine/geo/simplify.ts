@@ -1,12 +1,3 @@
-/**
- * Ramer–Douglas–Peucker polyline simplification, operating on flat [x0,y0,x1,y1,…]
- * coordinate arrays in projected kilometres.
- *
- * Used at build time to cut county outlines and parcel boundaries down to a size
- * worth shipping. Tolerance is in kilometres, so it means the same thing
- * everywhere on the map.
- */
-
 function perpendicularDistanceSq(
   px: number, py: number,
   ax: number, ay: number,
@@ -22,10 +13,6 @@ function perpendicularDistanceSq(
   return (px - (ax + t * dx)) ** 2 + (py - (ay + t * dy)) ** 2
 }
 
-/**
- * Simplify a flat coordinate array. Returns a new flat array; the first and last
- * points are always preserved so closed rings stay closed.
- */
 export function simplifyFlat(coords: number[], toleranceKm: number): number[] {
   const n = coords.length / 2
   if (n < 3) return coords.slice()
@@ -35,7 +22,6 @@ export function simplifyFlat(coords: number[], toleranceKm: number): number[] {
   keep[0] = 1
   keep[n - 1] = 1
 
-  // Iterative rather than recursive: a pathological ring should not blow the stack.
   const stack: Array<[number, number]> = [[0, n - 1]]
   while (stack.length > 0) {
     const [first, last] = stack.pop()!

@@ -1,0 +1,1386 @@
+{
+ "air": {
+  "naaqs": {
+   "pm25Annual": {
+    "value": 9.0,
+    "unit": "ug/m3 (3-yr mean)",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://law.justia.com/cases/federal/appellate-courts/cadc/24-1050/24-1050-2026-06-26.html",
+      "title": "Kentucky v. EPA, No. 24-1050 (D.C. Cir.)",
+      "date": "2026-06-26"
+     },
+     {
+      "url": "https://www.epa.gov/system/files/documents/2026-10/9.29.26-signed-region-4_georgia_120-day-letter_2026.pdf",
+      "title": "EPA Region 4 120-day letter to Georgia, 2024 PM2.5 designations",
+      "date": "2026-09-29"
+     }
+    ],
+    "note": "In force. D.C. Cir. denied petitions and EPA vacatur motion 2026-06-26; cert petitions filed 2026-08-28; N.D. Cal. ordered designations by 2027-02-06, EPA appealing."
+   },
+   "pm25Daily": {
+    "value": 35,
+    "unit": "ug/m3 (98th pct, 3-yr)",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.epa.gov/sites/default/files/2020-09/documents/epa-454_r-19-003.pdf",
+      "title": "EPA MERPs guidance EPA-454/R-19-003 with April 30, 2024 clarification memo",
+      "date": "2019-04-30; 2024-04-30"
+     }
+    ]
+   },
+   "ozone8h": {
+    "value": 0.07,
+    "unit": "ppm (4th-high daily max 8-h, 3-yr)",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.epa.gov/system/files/documents/2026-06/o3_designvalues_2023_2025_final_06_08_26.xlsx",
+      "title": "EPA ozone design values 2023-2025",
+      "date": "2026-06-08"
+     }
+    ]
+   },
+   "no2Annual": {
+    "value": 53,
+    "unit": "ppb",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.epa.gov/system/files/documents/2026-06/no2_designvalues_2023_2025_final_06_02_26_0.xlsx",
+      "title": "EPA NO2 design values",
+      "date": "2026-06-02"
+     }
+    ]
+   }
+  },
+  "attainment": {
+   "currentNonattainmentCounties": {
+    "value": [],
+    "unit": "county list",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www3.epa.gov/airquality/greenbook/ancl.html",
+      "title": "EPA Green Book current nonattainment counties (data as of 2026-10-31)",
+      "date": "2026-10-31"
+     }
+    ],
+    "note": "Georgia absent from current nonattainment list as of 2026-10-31."
+   },
+   "ozone2015Maintenance": {
+    "value": [
+     "Bartow",
+     "Clayton",
+     "Cobb",
+     "DeKalb",
+     "Fulton",
+     "Gwinnett",
+     "Henry"
+    ],
+    "unit": "county list",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www3.epa.gov/airquality/greenbook/anayo_ga.html",
+      "title": "EPA Green Book Georgia status by year",
+      "date": "2026-10-31"
+     }
+    ],
+    "note": "Redesignated to attainment 2022-10-17; maintenance plan."
+   },
+   "pm25_2024_mayNotMeet": {
+    "value": [
+     "Gwinnett",
+     "Clayton",
+     "Fulton",
+     "Richmond",
+     "Muscogee",
+     "Bibb"
+    ],
+    "unit": "county list",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.epa.gov/system/files/documents/2026-10/9.29.26-signed-region-4_georgia_120-day-letter_2026.pdf",
+      "title": "EPA Region 4 120-day letter to Georgia, 2024 PM2.5 designations",
+      "date": "2026-09-29"
+     }
+    ],
+    "note": "Counties EPA listed as containing monitors that may not meet 9.0; not final designations. Georgia recommended attainment/unclassifiable statewide. Walker and Washington have 2023-2025 DV 9.1 and 9.2 in the EPA table but are not in the letter enclosure; EPA intends attainment/unclassifiable for the rest of the state."
+   },
+   "ozoneAboveNaaqs2023_2025": {
+    "value": {
+     "Fulton": 0.073,
+     "Pike": 0.072
+    },
+    "unit": "ppm",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.epa.gov/system/files/documents/2026-06/o3_designvalues_2023_2025_final_06_08_26.xlsx",
+      "title": "EPA ozone design values 2023-2025",
+      "date": "2026-06-08"
+     }
+    ],
+    "note": "Design values above 0.070; no nonattainment designation as of 2026-10-31."
+   }
+  },
+  "dataNotes": [
+   "air.json pm25 for monitored counties is the 2023-2025 annual design value at the highest site; yearly means in pm25Mean2023..2025 at that site. Cobb is an EPA-invalid design value (monitored-incomplete).",
+   "air.json pm25/ozone for other counties is the 2022 FAQSD tract mean averaged over tracts (unweighted by population). Ozone modeled value is the mean over tracts of the 4th-highest 2022 daily max 8-h, a one-year proxy for a design value.",
+   "Monitored minus FAQSD 2022 at monitored counties: PM2.5 mean -0.39 ug/m3 (range -1.27 to +0.28, n=17); ozone mean +2.7 ppb (range -3.7 to +11.6, n=18). Modeled PM2.5 above 9.0 does not show a violation.",
+   "Sumter, Douglas and Chattooga ozone use the valid 2022-2024 design value (Sumter Leslie and Chattooga Summerville have no 2025 value; Douglas 2025 incomplete). Columbia has no valid 2022-2024 or 2023-2025 design value.",
+   "no2 is the 2025 annual design value in ppb (NAAQS 53); only DeKalb and Fulton have NO2 monitors."
+  ],
+  "sources": [
+   {
+    "url": "https://www.epa.gov/system/files/documents/2026-06/pm25_designvalues_2023_2025_final_06_12_26.xlsx",
+    "title": "EPA PM2.5 design values 2023-2025",
+    "date": "2026-06-12"
+   },
+   {
+    "url": "https://www.epa.gov/system/files/documents/2026-06/o3_designvalues_2023_2025_final_06_08_26.xlsx",
+    "title": "EPA ozone design values 2023-2025",
+    "date": "2026-06-08"
+   },
+   {
+    "url": "https://www.epa.gov/system/files/documents/2026-06/no2_designvalues_2023_2025_final_06_02_26_0.xlsx",
+    "title": "EPA NO2 design values",
+    "date": "2026-06-02"
+   },
+   {
+    "url": "https://www.epa.gov/hesc/rsig-related-downloadable-data-files",
+    "title": "EPA FAQSD downscaler 2022 daily tract PM2.5 and ozone",
+    "date": "2025-09"
+   }
+  ]
+ },
+ "plantFactors": {
+  "gasCT": {
+   "description": "New advanced-class dual-fuel simple cycle with SCR and oxidation catalyst (Plant Yates 8-10, 3 units, up to 1,400 MW gas)",
+   "NOx": {
+    "value": 0.081,
+    "unit": "lb/MWh",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://epd.georgia.gov/document/document/tv-802465-final/download",
+      "title": "Title V permit amendment 4911-077-0001-V-05-2, Plant Yates CT8-10",
+      "date": "2024"
+     },
+     {
+      "url": "https://epd.georgia.gov/document/document/tv-802465-pd/download",
+      "title": "Georgia EPD PSD Preliminary Determination, Plant Yates CT 8-10",
+      "date": "2024"
+     },
+     {
+      "url": "https://www.ecfr.gov/current/title-40/chapter-I/subchapter-C/part-60/appendix-Appendix%20A-7%20to%20Part%2060",
+      "title": "40 CFR 60 App. A-7 Method 19 (Fd 8,710 dscf/MMBtu; 1.194e-7 lb/scf-ppm NOx)",
+      "date": null
+     }
+    ],
+    "note": "Gas steady state: 2.5 ppmvd@15%O2 x 0.003684 lb/MMBtu-ppm x 8.75 MMBtu/MWh (4,084 MMBtu/h / 467 MW)."
+   },
+   "NOxPermitAverage": {
+    "value": 0.17,
+    "unit": "lb/MWh",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://epd.georgia.gov/document/document/tv-802465-pd/download",
+      "title": "Georgia EPD PSD Preliminary Determination, Plant Yates CT 8-10",
+      "date": "2024"
+     }
+    ],
+    "note": "511 tpy NOx / 3,075,978 tpy CO2e x 1,024 lb CO2/MWh; potential to emit including startups and oil."
+   },
+   "PM25": {
+    "value": 0.053,
+    "unit": "lb/MWh",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://epd.georgia.gov/document/document/tv-802465-final/download",
+      "title": "Title V permit amendment 4911-077-0001-V-05-2, Plant Yates CT8-10",
+      "date": "2024"
+     },
+     {
+      "url": "https://epd.georgia.gov/document/document/tv-802465-pd/download",
+      "title": "Georgia EPD PSD Preliminary Determination, Plant Yates CT 8-10",
+      "date": "2024"
+     }
+    ],
+    "note": "0.006 lb/MMBtu total PM gas limit x 8.75 MMBtu/MWh. Permit-average PTE 0.106."
+   },
+   "SO2": {
+    "value": 0.01,
+    "unit": "lb/MWh",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://epd.georgia.gov/document/document/tv-802465-pd/download",
+      "title": "Georgia EPD PSD Preliminary Determination, Plant Yates CT 8-10",
+      "date": "2024"
+     }
+    ],
+    "note": "31 tpy / 3,075,978 tpy CO2e x 1,024 lb/MWh."
+   },
+   "CO2": {
+    "value": 1024,
+    "unit": "lb/MWh",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://epd.georgia.gov/document/document/tv-802465-pd/download",
+      "title": "Georgia EPD PSD Preliminary Determination, Plant Yates CT 8-10",
+      "date": "2024"
+     },
+     {
+      "url": "https://www.law.cornell.edu/cfr/text/40/appendix-Table_C-1_to_subpart_C_of_part_98",
+      "title": "40 CFR 98 Subpart C Table C-1 (53.06 kg CO2/MMBtu gas)",
+      "date": null
+     }
+    ],
+    "note": "8.75 MMBtu/MWh x 116.98 lb/MMBtu. Rating basis; not a permit lb/MWh limit."
+   },
+   "permitLimits": {
+    "value": {
+     "NOxGasPpmvd": 2.5,
+     "NOxOilPpmvd": 5.0,
+     "COgasPpmvd": 3.5,
+     "VOCppmvd": 2.0,
+     "PMgasLbPerMMBtu": 0.006,
+     "PMoilLbPerMMBtu": 0.014,
+     "NOxTpyPerUnit": 168.3,
+     "CO2eTpyPerUnit": 1020020,
+     "projectTpy": {
+      "NOx": 511,
+      "PM2.5": 318,
+      "SO2": 31,
+      "VOC": 1046,
+      "CO": 3025,
+      "CO2e": 3075978
+     }
+    },
+    "unit": "mixed",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://epd.georgia.gov/document/document/tv-802465-final/download",
+      "title": "Title V permit amendment 4911-077-0001-V-05-2, Plant Yates CT8-10",
+      "date": "2024"
+     },
+     {
+      "url": "https://epd.georgia.gov/document/document/tv-802465-pd/download",
+      "title": "Georgia EPD PSD Preliminary Determination, Plant Yates CT 8-10",
+      "date": "2024"
+     }
+    ],
+    "note": "Project tpy from preliminary determination."
+   },
+   "waterConsumption": {
+    "value": 0,
+    "unit": "gal/MWh",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.ucs.org/resources/water-natural-gas",
+      "title": "UCS, How it Works: Water for Natural Gas (Meldrum/Macknick ranges)",
+      "date": null
+     }
+    ],
+    "note": "Cooling water only. Evaporative inlet cooling and water injection on oil use some water; not quantified, null."
+   },
+   "waterWithdrawal": {
+    "value": 0,
+    "unit": "gal/MWh",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.ucs.org/resources/water-natural-gas",
+      "title": "UCS, How it Works: Water for Natural Gas (Meldrum/Macknick ranges)",
+      "date": null
+     }
+    ]
+   },
+   "waterProcess": {
+    "value": null,
+    "unit": "gal/MWh",
+    "basis": "unknown",
+    "sources": []
+   },
+   "thermal": "No condenser; no thermal discharge."
+  },
+  "gasCC": {
+   "description": "New advanced-class 1x1 combined cycle, SCR, wet tower (Plant McIntosh 12-13, Plant Bowen 7-10)",
+   "NOx": {
+    "value": 0.069,
+    "unit": "lb/MWh",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://epd.georgia.gov/document/document/959863-pd/download",
+      "title": "Georgia EPD PSD Preliminary Determination, Plant McIntosh CC 12-13",
+      "date": "2026-06"
+     },
+     {
+      "url": "https://epd.georgia.gov/document/document/tv-905935-pd/download",
+      "title": "Georgia EPD PSD Preliminary Determination, Plant Bowen CC 7-10",
+      "date": "2025-07-28"
+     }
+    ],
+    "note": "McIntosh 429.7 tpy / 5,571,760 tpy CO2e x 900 lb/MWh-gross limit. Bowen same method 0.068. Includes startups and oil; gross MWh."
+   },
+   "PM25": {
+    "value": 0.038,
+    "unit": "lb/MWh",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://epd.georgia.gov/document/document/959863-pd/download",
+      "title": "Georgia EPD PSD Preliminary Determination, Plant McIntosh CC 12-13",
+      "date": "2026-06"
+     },
+     {
+      "url": "https://epd.georgia.gov/document/document/tv-905935-pd/download",
+      "title": "Georgia EPD PSD Preliminary Determination, Plant Bowen CC 7-10",
+      "date": "2025-07-28"
+     }
+    ],
+    "note": "233.6 tpy (462 Bowen) by the same method; includes tower drift and auxiliaries."
+   },
+   "SO2": {
+    "value": 0.012,
+    "unit": "lb/MWh",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://epd.georgia.gov/document/document/959863-pd/download",
+      "title": "Georgia EPD PSD Preliminary Determination, Plant McIntosh CC 12-13",
+      "date": "2026-06"
+     },
+     {
+      "url": "https://epd.georgia.gov/document/document/tv-905935-pd/download",
+      "title": "Georgia EPD PSD Preliminary Determination, Plant Bowen CC 7-10",
+      "date": "2025-07-28"
+     }
+    ]
+   },
+   "CO2": {
+    "value": 900,
+    "unit": "lb CO2e/MWh-gross",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://epd.georgia.gov/document/document/959863-pd/download",
+      "title": "Georgia EPD PSD Preliminary Determination, Plant McIntosh CC 12-13",
+      "date": "2026-06"
+     }
+    ],
+    "note": "Permit limit (Bowen final 905). Operating Georgia CC units in 2023 ran about 800-866.",
+    "range": [
+     799,
+     905
+    ]
+   },
+   "CO2observed": {
+    "value": {
+     "Jack McDonough": 799,
+     "McIntosh CC": 841,
+     "Chattahoochee": 817,
+     "Wansley CC 55965": 824,
+     "Thomas A. Smith": 865
+    },
+    "unit": "lb/MWh",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.epa.gov/system/files/documents/2025-06/egrid2023_data_rev2.xlsx",
+      "title": "EPA eGRID2023 rev 2 plant file",
+      "date": "2025-06-12"
+     }
+    ],
+    "note": "2023 plant averages."
+   },
+   "NOxObserved": {
+    "value": {
+     "McIntosh CC": 0.042,
+     "Jack McDonough": 0.053,
+     "Chattahoochee": 0.064,
+     "Wansley CC 55965": 0.059,
+     "Thomas A. Smith": 0.07
+    },
+    "unit": "lb/MWh",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.epa.gov/system/files/documents/2025-06/egrid2023_data_rev2.xlsx",
+      "title": "EPA eGRID2023 rev 2 plant file",
+      "date": "2025-06-12"
+     }
+    ]
+   },
+   "SO2observed": {
+    "value": 0.004,
+    "unit": "lb/MWh",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.epa.gov/system/files/documents/2025-06/egrid2023_data_rev2.xlsx",
+      "title": "EPA eGRID2023 rev 2 plant file",
+      "date": "2025-06-12"
+     }
+    ]
+   },
+   "permitLimits": {
+    "value": {
+     "NOxGasPpmvd": 2.0,
+     "NOxOilPpmvd": 5.0,
+     "COppmvd": 2.0,
+     "VOCppmvdNoDB": 1.0,
+     "VOCppmvdDB": 2.0,
+     "PMgasLbPerMMBtu": {
+      "McIntosh": 0.0044,
+      "Bowen": 0.0045
+     },
+     "NOxTpyPerUnit": {
+      "McIntosh": 205.8,
+      "Bowen": 203.7
+     },
+     "coolingTowerCircGpm": {
+      "McIntosh": 150000,
+      "Bowen": 125000
+     }
+    },
+    "unit": "mixed",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://epd.georgia.gov/document/document/959863-pd/download",
+      "title": "Georgia EPD PSD Preliminary Determination, Plant McIntosh CC 12-13",
+      "date": "2026-06"
+     },
+     {
+      "url": "https://epd.georgia.gov/document/document/905935-final/download",
+      "title": "Title V permit amendment 4911-015-0011-V-05-1, Plant Bowen CC",
+      "date": "2026-01"
+     },
+     {
+      "url": "https://epd.georgia.gov/document/document/tv-905935-pd/download",
+      "title": "Georgia EPD PSD Preliminary Determination, Plant Bowen CC 7-10",
+      "date": "2025-07-28"
+     }
+    ]
+   },
+   "waterConsumption": {
+    "value": 205,
+    "unit": "gal/MWh",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://openei.org/datasets/files/969/pub/1748-9326_7_4_045802.pdf",
+      "title": "Macknick et al. 2012, Environ. Res. Lett. 7 045802, tables 1-3",
+      "date": "2012"
+     }
+    ],
+    "note": "Recirculating tower median.",
+    "range": [
+     130,
+     300
+    ]
+   },
+   "waterWithdrawal": {
+    "value": 255,
+    "unit": "gal/MWh",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://openei.org/datasets/files/969/pub/1748-9326_7_4_045802.pdf",
+      "title": "Macknick et al. 2012, Environ. Res. Lett. 7 045802, tables 1-3",
+      "date": "2012"
+     }
+    ],
+    "range": [
+     150,
+     283
+    ]
+   },
+   "waterDry": {
+    "value": 2,
+    "unit": "gal/MWh",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://openei.org/datasets/files/969/pub/1748-9326_7_4_045802.pdf",
+      "title": "Macknick et al. 2012, Environ. Res. Lett. 7 045802, tables 1-3",
+      "date": "2012"
+     }
+    ],
+    "range": [
+     0,
+     4
+    ]
+   },
+   "waterConsumptionOnceThrough": {
+    "value": 100,
+    "unit": "gal/MWh",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://openei.org/datasets/files/969/pub/1748-9326_7_4_045802.pdf",
+      "title": "Macknick et al. 2012, Environ. Res. Lett. 7 045802, tables 1-3",
+      "date": "2012"
+     }
+    ],
+    "range": [
+     20,
+     100
+    ],
+    "withdrawal": 11380
+   },
+   "usFleetWithdrawal2021": {
+    "value": 2803,
+    "unit": "gal/MWh",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.eia.gov/todayinenergy/detail.php?id=56820",
+      "title": "EIA Today in Energy, power-sector water withdrawal intensity 2021",
+      "date": "2023"
+     }
+    ],
+    "note": "US average all cooling types."
+   },
+   "thermal": "Tower blowdown and drift only; Georgia standard caps receiving water at 90 F and +5 F over intake."
+  },
+  "solar": {
+   "NOx": {
+    "value": 0,
+    "unit": "lb/MWh",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://openei.org/datasets/files/969/pub/1748-9326_7_4_045802.pdf",
+      "title": "Macknick et al. 2012, Environ. Res. Lett. 7 045802, tables 1-3",
+      "date": "2012"
+     }
+    ],
+    "note": "No combustion."
+   },
+   "SO2": {
+    "value": 0,
+    "unit": "lb/MWh",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://openei.org/datasets/files/969/pub/1748-9326_7_4_045802.pdf",
+      "title": "Macknick et al. 2012, Environ. Res. Lett. 7 045802, tables 1-3",
+      "date": "2012"
+     }
+    ]
+   },
+   "PM25": {
+    "value": 0,
+    "unit": "lb/MWh",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://openei.org/datasets/files/969/pub/1748-9326_7_4_045802.pdf",
+      "title": "Macknick et al. 2012, Environ. Res. Lett. 7 045802, tables 1-3",
+      "date": "2012"
+     }
+    ]
+   },
+   "CO2": {
+    "value": 0,
+    "unit": "lb/MWh",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://openei.org/datasets/files/969/pub/1748-9326_7_4_045802.pdf",
+      "title": "Macknick et al. 2012, Environ. Res. Lett. 7 045802, tables 1-3",
+      "date": "2012"
+     }
+    ],
+    "note": "Operations only; excludes manufacture."
+   },
+   "waterConsumption": {
+    "value": 1,
+    "unit": "gal/MWh",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://openei.org/datasets/files/969/pub/1748-9326_7_4_045802.pdf",
+      "title": "Macknick et al. 2012, Environ. Res. Lett. 7 045802, tables 1-3",
+      "date": "2012"
+     }
+    ],
+    "range": [
+     0,
+     5
+    ]
+   },
+   "waterWithdrawal": {
+    "value": null,
+    "unit": "gal/MWh",
+    "basis": "unknown",
+    "sources": [],
+    "note": "Not tabulated; about equal to consumption."
+   },
+   "thermal": "None.",
+   "construction": [
+    {
+     "value": "Sites disturbing 50 acres or more at once need EPD approval; 400 acres at once is the ceiling without explicit approval; temporary stabilization required before panels go in.",
+     "unit": "text",
+     "basis": "stated",
+     "sources": [
+      {
+       "url": "https://epd.georgia.gov/document/document/official-npdes-construction-stormwater-50-acre-approval-guidance/download",
+       "title": "Georgia EPD guidance for requests to disturb 50 acres or more",
+       "date": "2024-01"
+      }
+     ]
+    },
+    {
+     "value": 0.7,
+     "unit": "fraction of panel area counted impervious",
+     "basis": "stated",
+     "sources": [
+      {
+       "url": "https://epd.georgia.gov/document/document/official-npdes-construction-stormwater-50-acre-approval-guidance/download",
+       "title": "Georgia EPD guidance for requests to disturb 50 acres or more",
+       "date": "2024-01"
+      }
+     ],
+     "note": "From the 2023 general permits, which EPD says are stayed on appeal; EPD cites it as guidance."
+    },
+    {
+     "value": "Lumpkin, Ga. 100 MW / 850 acre site: jury awarded $135.5M (2023-04-28) over sediment in neighbours' wetlands, streams and lake; later outcome not verified.",
+     "unit": "text",
+     "basis": "stated",
+     "sources": [
+      {
+       "url": "https://enr.com/articles/56468-georgia-solar-project-builders-to-appeal-135m-damage-verdict",
+       "title": "ENR, Georgia solar project builders to appeal $135M damage verdict",
+       "date": "2023-05"
+      }
+     ]
+    },
+    {
+     "value": "EPA settled with four solar sites (AL, ID, IL) over construction stormwater, $1.34M total.",
+     "unit": "text",
+     "basis": "stated",
+     "sources": [
+      {
+       "url": "https://www.epa.gov/newsreleases/epa-announces-settlements-resolve-clean-water-act-violations-four-solar-farm",
+       "title": "EPA, settlements at four solar farm construction sites",
+       "date": "2022-11-13"
+      }
+     ]
+    }
+   ]
+  },
+  "battery": {
+   "NOx": {
+    "value": 0,
+    "unit": "lb/MWh",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://www.eia.gov/todayinenergy/detail.php?id=46756",
+      "title": "EIA, battery round-trip efficiency 2019",
+      "date": "2021"
+     }
+    ],
+    "note": "No stack; charging emissions are those of the source generator / efficiency."
+   },
+   "SO2": {
+    "value": 0,
+    "unit": "lb/MWh",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://www.eia.gov/todayinenergy/detail.php?id=46756",
+      "title": "EIA, battery round-trip efficiency 2019",
+      "date": "2021"
+     }
+    ]
+   },
+   "PM25": {
+    "value": 0,
+    "unit": "lb/MWh",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://www.eia.gov/todayinenergy/detail.php?id=46756",
+      "title": "EIA, battery round-trip efficiency 2019",
+      "date": "2021"
+     }
+    ]
+   },
+   "CO2": {
+    "value": 0,
+    "unit": "lb/MWh",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://www.eia.gov/todayinenergy/detail.php?id=46756",
+      "title": "EIA, battery round-trip efficiency 2019",
+      "date": "2021"
+     }
+    ]
+   },
+   "roundTripEfficiency": {
+    "value": 0.82,
+    "unit": "fraction",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.eia.gov/todayinenergy/detail.php?id=46756",
+      "title": "EIA, battery round-trip efficiency 2019",
+      "date": "2021"
+     }
+    ],
+    "note": "US fleet average 2019."
+   },
+   "waterConsumption": {
+    "value": null,
+    "unit": "gal/MWh",
+    "basis": "unknown",
+    "sources": []
+   },
+   "waterWithdrawal": {
+    "value": null,
+    "unit": "gal/MWh",
+    "basis": "unknown",
+    "sources": []
+   },
+   "thermal": "None."
+  },
+  "nuclearUprate": {
+   "NOx": {
+    "value": 0,
+    "unit": "lb/MWh",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://openei.org/datasets/files/969/pub/1748-9326_7_4_045802.pdf",
+      "title": "Macknick et al. 2012, Environ. Res. Lett. 7 045802, tables 1-3",
+      "date": "2012"
+     }
+    ]
+   },
+   "SO2": {
+    "value": 0,
+    "unit": "lb/MWh",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://openei.org/datasets/files/969/pub/1748-9326_7_4_045802.pdf",
+      "title": "Macknick et al. 2012, Environ. Res. Lett. 7 045802, tables 1-3",
+      "date": "2012"
+     }
+    ]
+   },
+   "PM25": {
+    "value": null,
+    "unit": "lb/MWh",
+    "basis": "unknown",
+    "sources": [],
+    "note": "Tower drift only."
+   },
+   "CO2": {
+    "value": 0,
+    "unit": "lb/MWh",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://openei.org/datasets/files/969/pub/1748-9326_7_4_045802.pdf",
+      "title": "Macknick et al. 2012, Environ. Res. Lett. 7 045802, tables 1-3",
+      "date": "2012"
+     }
+    ],
+    "note": "Operations only."
+   },
+   "waterConsumption": {
+    "value": 672,
+    "unit": "gal/MWh",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://openei.org/datasets/files/969/pub/1748-9326_7_4_045802.pdf",
+      "title": "Macknick et al. 2012, Environ. Res. Lett. 7 045802, tables 1-3",
+      "date": "2012"
+     }
+    ],
+    "note": "Wet tower median; applied to added MWh.",
+    "range": [
+     581,
+     845
+    ]
+   },
+   "waterWithdrawal": {
+    "value": 1101,
+    "unit": "gal/MWh",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://openei.org/datasets/files/969/pub/1748-9326_7_4_045802.pdf",
+      "title": "Macknick et al. 2012, Environ. Res. Lett. 7 045802, tables 1-3",
+      "date": "2012"
+     }
+    ],
+    "range": [
+     800,
+     2600
+    ]
+   },
+   "hatch1998Uprate": {
+    "value": {
+     "fromMWt": 2558,
+     "toMWt": 2763,
+     "blowdownChangeGpm": -626,
+     "riverTempRiseF": "<0.1",
+     "withdrawalPerUnitGpm": 22500
+    },
+    "unit": "mixed",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.govinfo.gov/content/pkg/FR-1998-10-05/html/98-26559.htm",
+      "title": "NRC environmental assessment, Hatch extended power uprate, Federal Register",
+      "date": "1998-10-05"
+     }
+    ],
+    "note": "EA: makeup up slightly, blowdown down about 626 gpm."
+   },
+   "hatchCurrent": {
+    "value": {
+     "consumptionMgd": 35,
+     "consumptionCfs": 54,
+     "withdrawal2019_2023AvgMgd": 62.38,
+     "minDailyFlowCfs": 1140,
+     "q90Cfs": 2270,
+     "meanFlowCfs": 11100,
+     "reductionAtQ90Pct": 2.4
+    },
+    "unit": "mixed",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.nrc.gov/docs/ML2606/ML26063A016.pdf",
+      "title": "NRC EA for Subsequent License Renewal of Hatch 1-2 (ML26063A016)",
+      "date": "2026-03"
+     }
+    ]
+   },
+   "thermal": "Closed-loop towers; small blowdown temperature change."
+  },
+  "georgiaSubregion2023": {
+   "value": {
+    "NOx": 0.347,
+    "SO2": 0.162,
+    "CO2": 842.3
+   },
+   "unit": "lb/MWh",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://www.epa.gov/system/files/documents/2025-06/egrid2023_data_rev2.xlsx",
+     "title": "EPA eGRID2023 rev 2 plant file",
+     "date": "2025-06-12"
+    }
+   ],
+   "note": "eGRID SRSO, for displaced-generation comparisons."
+  }
+ },
+ "projection": {
+  "primaryPM25": {
+   "formula": "dC(r) = Q / (2*pi*r*VC) * exp(-r/L) ug/m3 annual, all-direction mean; Q = tpy * 28747 ug/s; r in m, floor 2 km",
+   "constants": {
+    "Q_per_tpy": {
+     "value": 28747,
+     "unit": "ug/s per short ton/yr",
+     "basis": "derived",
+     "sources": [
+      {
+       "url": "https://pubmed.ncbi.nlm.nih.gov/14717160/",
+       "title": "Levy, Wilson, Evans, Spengler 2003, Intake fractions for power plants in Georgia, ES&T 37(24):5528-36",
+       "date": "2003-12-15"
+      }
+     ],
+     "note": "907,184,740,000 ug / 31,557,600 s."
+    },
+    "VC": {
+     "value": 6000,
+     "unit": "m2/s (wind x mixing height)",
+     "basis": "estimated",
+     "sources": [
+      {
+       "url": "https://pubmed.ncbi.nlm.nih.gov/14717160/",
+       "title": "Levy, Wilson, Evans, Spengler 2003, Intake fractions for power plants in Georgia, ES&T 37(24):5528-36",
+       "date": "2003-12-15"
+      }
+     ],
+     "note": "About 5 m/s x 1,200 m. Chosen so the integrated intake fraction at 50 persons/km2 over 500 km is 6.1e-7 vs 6e-7 in Levy 2003 (density assumed)."
+    },
+    "L": {
+     "value": 500000,
+     "unit": "m",
+     "basis": "estimated",
+     "sources": [
+      {
+       "url": "https://pubmed.ncbi.nlm.nih.gov/14717160/",
+       "title": "Levy, Wilson, Evans, Spengler 2003, Intake fractions for power plants in Georgia, ES&T 37(24):5528-36",
+       "date": "2003-12-15"
+      }
+     ],
+     "note": "Removal length, estimated with VC."
+    }
+   },
+   "per100tpyExample": {
+    "value": {
+     "2": 0.038,
+     "10": 0.0075,
+     "50": 0.0014,
+     "100": 0.00062,
+     "200": 0.00026,
+     "300": 0.00014
+    },
+    "unit": "ug/m3 per 100 tpy at km",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://pubmed.ncbi.nlm.nih.gov/14717160/",
+      "title": "Levy, Wilson, Evans, Spengler 2003, Intake fractions for power plants in Georgia, ES&T 37(24):5528-36",
+      "date": "2003-12-15"
+     }
+    ]
+   },
+   "checks": [
+    {
+     "value": {
+      "McIntosh CC 233.6 tpy": 0.101,
+      "Bowen CC 462 tpy": 0.301,
+      "Yates CT 318 tpy": 0.079
+     },
+     "unit": "ug/m3 max annual receptor (AERMOD, full potential to emit)",
+     "basis": "stated",
+     "sources": [
+      {
+       "url": "https://epd.georgia.gov/document/document/959863-pd/download",
+       "title": "Georgia EPD PSD Preliminary Determination, Plant McIntosh CC 12-13",
+       "date": "2026-06"
+      },
+      {
+       "url": "https://epd.georgia.gov/document/document/tv-905935-pd/download",
+       "title": "Georgia EPD PSD Preliminary Determination, Plant Bowen CC 7-10",
+       "date": "2025-07-28"
+      },
+      {
+       "url": "https://epd.georgia.gov/document/document/tv-802465-modeling/download",
+       "title": "Georgia EPD DMU modeling review, Plant Yates",
+       "date": "2024-05-01"
+      }
+     ],
+     "note": "Near-field max per 100 tpy: 0.043, 0.065, 0.025 vs 0.038 from the formula at 2 km. Bowen and McIntosh table values include a small secondary MERP term."
+    },
+    {
+     "value": {
+      "100": 0.0073,
+      "200": 0.0017,
+      "300": 0.00087
+     },
+     "unit": "ug/m3 per 100 tpy at km",
+     "basis": "derived",
+     "sources": [
+      {
+       "url": "https://www.epa.gov/sites/default/files/2020-09/documents/epa-454_r-19-003.pdf",
+       "title": "EPA MERPs guidance EPA-454/R-19-003 with April 30, 2024 clarification memo",
+       "date": "2019-04-30; 2024-04-30"
+      }
+     ],
+     "note": "EPA CAMx highest annual mean among tall-stack sources, normalized from 1,000 tpy (0.0731/0.0175/0.0087). Upper bound: max of sources and directions."
+    }
+   ],
+   "downwindMaxMultiplier": {
+    "value": 3,
+    "unit": "x all-direction mean",
+    "basis": "estimated",
+    "sources": [],
+    "note": "Judgement between 1 and the EPA ceiling ratio (about 6-12)."
+   },
+   "intakeFraction": {
+    "value": {
+     "primaryPM25": 6e-07,
+     "SO2toSulfate": 2e-07,
+     "NOxToNitrate": 6e-08
+    },
+    "unit": "fraction inhaled, 500 km domain",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://pubmed.ncbi.nlm.nih.gov/14717160/",
+      "title": "Levy, Wilson, Evans, Spengler 2003, Intake fractions for power plants in Georgia, ES&T 37(24):5528-36",
+      "date": "2003-12-15"
+     }
+    ],
+    "note": "Roughly doubles with continental US domain. Seven northern Georgia plants, CALPUFF."
+   },
+   "uncertainty": "Factor 2 near 2-50 km, factor 3 or more beyond; not for permitting."
+  },
+  "secondaryPM25": {
+   "formula": "dC_max = NOx_tpy*kN + SO2_tpy*kS (annual max, any receptor); area mean = primary formula x 0.10 (NOx) or x 0.33 (SO2), capped at dC_max",
+   "kN": {
+    "value": 2.7e-06,
+    "unit": "ug/m3 per tpy NOx",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://epd.georgia.gov/document/document/gaepdmerpsguidance02-25-19pdf/download",
+      "title": "Georgia EPD Guidance on the Use of EPA MERPs in Georgia",
+      "date": "2019-02-25"
+     }
+    ],
+    "note": "Allendale SC 1,000 tpy 90 m stack 0.0027; range Tallapoosa AL to Giles TN. Nitrate ion only.",
+    "range": [
+     1.6e-06,
+     5.9e-06
+    ]
+   },
+   "kS": {
+    "value": 1.11e-05,
+    "unit": "ug/m3 per tpy SO2",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://epd.georgia.gov/document/document/gaepdmerpsguidance02-25-19pdf/download",
+      "title": "Georgia EPD Guidance on the Use of EPA MERPs in Georgia",
+      "date": "2019-02-25"
+     }
+    ],
+    "note": "Allendale 1,000 tpy 90 m 0.0111; Tallapoosa 0.0090; Giles 0.0102. Sulfate ion only.",
+    "range": [
+     9e-06,
+     1.11e-05
+    ]
+   },
+   "areaRatioNOx": {
+    "value": 0.1,
+    "unit": "of primary",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://pubmed.ncbi.nlm.nih.gov/14717160/",
+      "title": "Levy, Wilson, Evans, Spengler 2003, Intake fractions for power plants in Georgia, ES&T 37(24):5528-36",
+      "date": "2003-12-15"
+     }
+    ]
+   },
+   "areaRatioSO2": {
+    "value": 0.33,
+    "unit": "of primary",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://pubmed.ncbi.nlm.nih.gov/14717160/",
+      "title": "Levy, Wilson, Evans, Spengler 2003, Intake fractions for power plants in Georgia, ES&T 37(24):5528-36",
+      "date": "2003-12-15"
+     }
+    ]
+   },
+   "daily": {
+    "value": {
+     "NOxPer1000tpyAllendale": 0.051,
+     "SO2Per1000tpyAllendale": 0.273,
+     "NOxPer1000tpyTallapoosa": 0.088,
+     "SO2Per1000tpyTallapoosa": 0.405
+    },
+    "unit": "ug/m3 24-h max",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://epd.georgia.gov/document/document/gaepdmerpsguidance02-25-19pdf/download",
+      "title": "Georgia EPD Guidance on the Use of EPA MERPs in Georgia",
+      "date": "2019-02-25"
+     }
+    ]
+   }
+  },
+  "ozone": {
+   "formula": "dO3 = a * NOx_tpy^b ppb (highest daily max 8-h); below 500 tpy scale linearly from the 500 tpy value",
+   "allendaleSC": {
+    "value": {
+     "a": 0.0254,
+     "b": 0.761
+    },
+    "unit": "ppb, tpy",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://epd.georgia.gov/document/document/gaepdmerpsguidance02-25-19pdf/download",
+      "title": "Georgia EPD Guidance on the Use of EPA MERPs in Georgia",
+      "date": "2019-02-25"
+     }
+    ],
+    "note": "Two-point fit to 2.876 ppb @500 and 11.24 @3,000 (4.990 @1,000); 90 m stack. Nearest to Dublin."
+   },
+   "tallapoosaAL": {
+    "value": {
+     "a": 0.01014,
+     "b": 0.807
+    },
+    "unit": "ppb, tpy",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://epd.georgia.gov/document/document/gaepdmerpsguidance02-25-19pdf/download",
+      "title": "Georgia EPD Guidance on the Use of EPA MERPs in Georgia",
+      "date": "2019-02-25"
+     }
+    ],
+    "note": "1.528 @500, 3.061 @1,000, 6.494 @3,000. With Allendale, brackets Americus."
+   },
+   "gilesTN": {
+    "value": {
+     "500": 3.208,
+     "1000": 5.387,
+     "3000": 10.356
+    },
+    "unit": "ppb at tpy",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://epd.georgia.gov/document/document/gaepdmerpsguidance02-25-19pdf/download",
+      "title": "Georgia EPD Guidance on the Use of EPA MERPs in Georgia",
+      "date": "2019-02-25"
+     }
+    ],
+    "note": "EPD: north Georgia."
+   },
+   "voc": {
+    "value": 3980,
+    "unit": "tpy VOC per 1 ppb (default MERP, conservative)",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://epd.georgia.gov/document/document/gaepdmerpsguidance02-25-19pdf/download",
+      "title": "Georgia EPD Guidance on the Use of EPA MERPs in Georgia",
+      "date": "2019-02-25"
+     }
+    ]
+   },
+   "check": {
+    "value": 2.479,
+    "unit": "ppb",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://epd.georgia.gov/document/document/959863-pd/download",
+      "title": "Georgia EPD PSD Preliminary Determination, Plant McIntosh CC 12-13",
+      "date": "2026-06"
+     }
+    ],
+    "note": "EPD result for McIntosh (429.7 tpy NOx, 327 tpy VOC); Allendale linear 429.7*2.876/500 = 2.47."
+   },
+   "regime": "EPD: the southeast is generally NOx-limited.",
+   "uncertainty": "Highest modeled single-day impact anywhere, usually near the source (EPA Figure 3-10 shows decline past 50 km). Not a design-value change; site-to-site factor about 2. EPA 2024 memo: do not use published MERP tpy thresholds, use impact/emission ratios as here."
+  },
+  "note": "EPA PM2.5 annual SIL 0.13 ug/m3 and ozone SIL 1 ppb appear in the 2026 McIntosh determination.",
+  "sils": {
+   "value": {
+    "pm25Annual": 0.13,
+    "pm25Daily": 1.2,
+    "ozone8hPpb": 1.0
+   },
+   "unit": "ug/m3, ppb",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://epd.georgia.gov/document/document/959863-pd/download",
+     "title": "Georgia EPD PSD Preliminary Determination, Plant McIntosh CC 12-13",
+     "date": "2026-06"
+    }
+   ]
+  },
+  "water": {
+   "formula": "cfs = MW_avg * gal_per_MWh * 24 / 646317; pctOf7Q10 = 100 * consumption_cfs / 7Q10_cfs",
+   "constant": {
+    "value": 646317,
+    "unit": "gal/day per cfs",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://doi.org/10.3133/sir20265021",
+      "title": "USGS SIR 2026-5021 low-flow statistics GA/NC/SC",
+      "date": "2026"
+     }
+    ]
+   },
+   "example": {
+    "value": {
+     "MW": 1000,
+     "galPerMWh": 205,
+     "cfs": 7.6,
+     "pctFlintMontezuma500": 1.5,
+     "pctOconeeDublin397": 1.9
+    },
+    "unit": "mixed",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://openei.org/datasets/files/969/pub/1748-9326_7_4_045802.pdf",
+      "title": "Macknick et al. 2012, Environ. Res. Lett. 7 045802, tables 1-3",
+      "date": "2012"
+     },
+     {
+      "url": "https://doi.org/10.3133/sir20265021",
+      "title": "USGS SIR 2026-5021 low-flow statistics GA/NC/SC",
+      "date": "2026"
+     },
+     {
+      "url": "https://doi.org/10.3133/sir20165037",
+      "title": "USGS SIR 2016-5037 low-flow statistics in Georgia, tables 1-2",
+      "date": "2016"
+     }
+    ]
+   },
+   "thermalLimits": {
+    "value": {
+     "maxF": 90,
+     "maxRiseF": 5,
+     "maxRiseEstuarineF": 1.5
+    },
+    "unit": "deg F",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.law.cornell.edu/regulations/georgia/Ga-Comp-R-Regs-R-391-3-6-.03",
+      "title": "Ga. Rule 391-3-6-.03 water use classifications and standards",
+      "date": "accessed 2026-11-24"
+     }
+    ],
+    "note": "Fishing and other uses; primary trout no rise."
+   },
+   "toxicCriteriaFlow": "Georgia applies chronic toxics criteria at 7Q10 flow or higher.",
+   "caveats": [
+    "Assumes source is the gaged river; plants may use groundwater, ponds or reclaimed water.",
+    "7Q10 is 10-yr recurrence; droughts go lower.",
+    "Excludes other users and upstream regulation of the Oconee.",
+    "Interim instream-flow permit thresholds not collected: null."
+   ]
+  }
+ },
+ "lowFlow": {
+  "flintMontezuma": {
+   "value": 500,
+   "unit": "cfs 7Q10",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://doi.org/10.3133/sir20265021",
+     "title": "USGS SIR 2026-5021 low-flow statistics GA/NC/SC",
+     "date": "2026"
+    },
+    {
+     "url": "https://streamstats.usgs.gov/gagestatsservices/stations/02349605",
+     "title": "USGS StreamStats gage statistics service",
+     "date": "accessed 2026-11-24"
+    }
+   ],
+   "note": "Climatic years 1975-2021 (47). SIR 2016-5037 gave 570 over a longer record; a 1978 USGS report gave 680 at 02349500.",
+   "gage": "02349605",
+   "location": [
+    -84.0436,
+    32.2931
+   ],
+   "alternatives": {
+    "SIR2016-5037": 570,
+    "1Q10_2026": 486,
+    "7Q2_2026": 781,
+    "meanAnnualFlow_2026": 3210
+   }
+  },
+  "flintOakfield": {
+   "value": 577,
+   "unit": "cfs 7Q10",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://doi.org/10.3133/sir20265021",
+     "title": "USGS SIR 2026-5021 low-flow statistics GA/NC/SC",
+     "date": "2026"
+    },
+    {
+     "url": "https://streamstats.usgs.gov/gagestatsservices/stations/02349605",
+     "title": "USGS StreamStats gage statistics service",
+     "date": "accessed 2026-11-24"
+    }
+   ],
+   "gage": "02350512",
+   "location": [
+    -84.0186,
+    31.725
+   ],
+   "alternatives": {
+    "SIR2016-5037": 581,
+    "1Q10_2026": 288,
+    "7Q2_2026": 974,
+    "meanAnnualFlow_2026": 4250
+   }
+  },
+  "oconeeDublin": {
+   "value": 397,
+   "unit": "cfs 7Q10",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://doi.org/10.3133/sir20165037",
+     "title": "USGS SIR 2016-5037 low-flow statistics in Georgia, tables 1-2",
+     "date": "2016"
+    },
+    {
+     "url": "https://streamstats.usgs.gov/gagestatsservices/stations/02349605",
+     "title": "USGS StreamStats gage statistics service",
+     "date": "accessed 2026-11-24"
+    }
+   ],
+   "note": "Regulated record 1955-04-01 to 2013-09-30. SIR 2026-5021 gives 594 for 1898-1951 (unregulated), flagged not preferred; use 397.",
+   "gage": "02223500",
+   "location": [
+    -82.893,
+    32.5439
+   ],
+   "alternatives": {
+    "SIR2016-5037_1Q10": 384,
+    "SIR2026-5021_unregulated1898_1951": 594,
+    "meanAnnualFlow_2016": 4160
+   }
+  }
+ },
+ "water": {
+  "source": {
+   "value": "Georgia EPD 2026 305(b)/303(d) in EPA ATTAINS, status: Organization Final Action - Submittal. EPA approval of the 2026 list was not found.",
+   "unit": "text",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://gispub.epa.gov/arcgis/rest/services/OW/ATTAINS_Assessment/MapServer",
+     "title": "EPA ATTAINS assessments, Georgia EPD 2026 cycle",
+     "date": "accessed 2026-11-24"
+    }
+   ]
+  },
+  "notes": [
+   "IR category 1-2 = good, 3 = notAssessed, 4A/4B/4C/5 = impaired.",
+   "Service returned 5,869 line features for 3,057 AUs; duplicates collapsed, keeping the geometry closest to the AU listed length.",
+   "County miles are geometric intersections (3% under listed total: 17,459 vs 18,001 mi). Counts use >=0.25 mi or >=25% of the AU in the county.",
+   "Streams not in ATTAINS are unassessed and are not counted. notAssessed is category 3 only.",
+   "Border rivers are split by intersection.",
+   "Causes are county intersect miles; one water can have several causes."
+  ]
+ }
+}

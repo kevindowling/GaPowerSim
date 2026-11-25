@@ -1,36 +1,33 @@
-/**
- * Quarter resolution — the heart of the build phase.
- *
- * The player spends a quarter making decisions, then ends it, and everything
- * lands at once: construction advances and burns capital, the developer releases
- * money against milestones, counties drift, and the deadline gets one quarter
- * closer whether or not anything is ready.
- *
- * `endQuarter` returns a NEW state and never mutates its argument, so the UI can
- * keep the previous quarter around to diff against and show the player what
- * changed.
- */
-
 import type { GameState, Plant, Corridor } from '../types.ts'
 import { Rng } from '../rng.ts'
-import { formatQuarter } from '../time.ts'
+import { formatQuarter, quarterInYear } from '../time.ts'
 import { plantType } from '../../data/plants.ts'
-import { capacitySummary, pushLog, countyApproval } from '../state.ts'
-import type { Parcel } from '../parcels/types.ts'
-import { resolveOffer, condemnationAward } from '../parcels/negotiation.ts'
+import { pushLog } from '../state.ts'
+import {
+  resolveOffer, condemnationAward, highestMultiplePaid, negotiationContext,
+} from '../parcels/negotiation.ts'
 import { acquisitionComplete } from './corridor.ts'
+import { firmDeliverableMw, firmFlow } from '../realtime/network.ts'
+import { drawBuildEvent, resolvePendingByDefault } from '../events/events.ts'
+import { checkCancelled, checkEnding } from '../ending.ts'
+import { approvalOf, CANCEL_BELOW, changeApproval, changeRating, ratingOf, STALL_BELOW } from '../approval.ts'
+import { advanceCustomers, checkCustomers, reportOffers, settleCustomers, warnCustomers } from '../customers.ts'
+import { advanceSubstations } from './substations.ts'
+import { CREDIT_PER_MW } from '../../data/customerTerms.ts'
+import { recordCash } from '../cashForecast.ts'
+import { payInstallment } from '../payments.ts'
+import { phasesOn, phasing, settlePhases, turnOnPhases } from '../phases.ts'
+import { advanceEquipment, equipmentSpent } from './equipment.ts'
+import { drawOutsideEvents } from '../events/outside.ts'
 import { lineClass } from '../../data/transmission.ts'
-import { createRealtimeState } from '../realtime/types.ts'
-import { advanceTutorial, type HearingOption } from '../tutorial.ts'
+import { createRealtimeState, QUARTER_TICKS, TICKS_PER_DAY, TICKS_PER_HOUR } from '../realtime/types.ts'
+import { advanceTutorial } from '../tutorial.ts'
+import type { HearingOption } from './hearing.ts'
+import { batteryCapacityMwh } from '../realtime/dispatch.ts'
 
-/** Annualised cost of carrying a negative cash balance. */
+/** Interest per quarter on a negative cash balance. */
 const FINANCING_RATE_PER_QUARTER = 0.0155
 
-/**
- * Construction spending follows an S-curve: slow at first while the site is
- * prepared, heavy through the middle, tapering at commissioning. Straight-line
- * spending would misprice the decision to cancel a project halfway.
- */
 function spendCurve(fractionComplete: number): number {
   // Derivative of a smoothstep, normalised so the whole curve integrates to 1.
   const x = Math.min(1, Math.max(0, fractionComplete))
@@ -41,10 +38,7 @@ function advancePlant(plant: Plant, state: GameState, rng: Rng): void {
   const t = plantType(plant.typeId)
 
   if (plant.status === 'permitting') {
-    // A hostile county does not deny the permit outright — it just takes
-    // longer, every time, which is far harder to plan around.
-    const approval = countyApproval(state, plant.countyFips)
-    const stalls = approval < 35 && rng.chance(approval < 20 ? 0.45 : 0.22)
+    const stalls = (ratingOf(state, plant.countyFips) ?? 100) < STALL_BELOW && rng.chance(0.22)
     if (stalls) {
       pushLog(
         state, 'politics',
@@ -74,19 +68,31 @@ function advancePlant(plant: Plant, state: GameState, rng: Rng): void {
 
     plant.quartersRemaining -= 1
     if (plant.quartersRemaining <= 0) {
-      // Settle any rounding so the books close exactly.
       const remainder = plant.capexTotal - plant.capexSpent
       plant.capexSpent = plant.capexTotal
       state.cash -= remainder
       plant.status = 'online'
       plant.commissionedQuarter = state.quarter
-      pushLog(
-        state, 'build',
-        `${plant.name} is online — ${plant.nameplateMw} MW nameplate, ` +
-        `${Math.round(plant.nameplateMw * t.firmCapacityFraction)} MW firm.`,
-        true,
-      )
+      if (plant.typeId === 'battery') plant.socMwh = batteryCapacityMwh(plant)
     }
+  }
+}
+
+function reportOnline(state: GameState, plants: readonly Plant[]): void {
+  if (plants.length === 0) return
+  const flow = firmFlow(state)
+  for (const p of plants) {
+    const power = flow.plants.get(p.id)
+    if (!power) continue
+    const why = power.limit?.kind === 'no-line' ? ' No line in service connects it.'
+      : power.limit?.kind === 'no-transformer' ? ` There is no ${power.limit.kv} kV transformer in service at the ${power.limit.place}.`
+      : power.limit?.kind === 'lines' ? ' The line is full.' : ''
+    pushLog(
+      state, 'build',
+      `${p.name} is online: ${p.nameplateMw} MW, ${Math.round(power.firmMw)} MW firm. ` +
+      `${Math.round(power.arrivingMw)} MW reaches the campus.${why}`,
+      true,
+    )
   }
 }
 
@@ -94,7 +100,7 @@ function countyName(state: GameState, fips: string): string {
   return state.counties[fips]?.name ?? fips
 }
 
-/** Release developer capital for any milestone whose trigger is now satisfied. */
+/** Pay every installment that has been earned. The triggers other than signed and phase are in older saves. */
 function releaseMilestones(state: GameState): void {
   const c = state.contract
   const anyPermitted = state.plants.some((p) => p.status !== 'permitting')
@@ -108,51 +114,41 @@ function releaseMilestones(state: GameState): void {
     if (m.released) continue
     const met =
       m.trigger === 'signed' ? c.status === 'accepted'
+      : m.trigger === 'phase' ? phasesOn(state) >= (m.phase ?? 1)
       : m.trigger === 'permits-issued' ? anyPermitted
       : m.trigger === 'construction-half' ? halfBuilt
       : state.energizedQuarter !== null
 
     if (!met) continue
-    m.released = true
-    const amount = c.capexAdvance * m.fraction
-    state.cash += amount
+    const { amount, lost } = payInstallment(state, m, c.capexAdvance)
     pushLog(
       state, 'money',
-      `${c.developer} released $${(amount / 1e6).toFixed(0)}M — ${m.label.toLowerCase()}.`,
+      `${c.developer} paid $${(amount / 1e6).toFixed(0)}M: ${m.label}${lost > 0 ? `, ${lost}% less for being late` : ''}.`,
       true,
     )
   }
 }
 
-/**
- * Advance right-of-way acquisition and line construction.
- *
- * Offers made during the quarter resolve here, all at once, which gives the
- * acquisition phase its rhythm: make offers, end the quarter, find out who said
- * no, decide what to do about them.
- */
-function advanceCorridor(
-  corridor: Corridor, state: GameState, rng: Rng, parcels: Map<string, Parcel>,
-): void {
+function advanceCorridor(corridor: Corridor, state: GameState, rng: Rng): void {
   if (corridor.status === 'acquiring') {
     let accepted = 0
     let refused = 0
     let stillInCourt = 0
+    const bestPaid = highestMultiplePaid(corridor)
 
     for (const [parcelId, deal] of Object.entries(corridor.deals)) {
-      const parcel = parcels.get(parcelId)
+      const parcel = corridor.parcels[parcelId]
       const taking = corridor.takings[parcelId]
       if (!parcel || !taking) continue
 
       if (deal.status === 'offered') {
         const result = resolveOffer(
           parcel, taking, deal,
-          countyApproval(state, parcel.countyFips),
-          corridor.condemnations,
-          rng,
+          negotiationContext(state, corridor, parcel.countyFips, bestPaid),
         )
         if (result.accepted) {
           corridor.rowPaid += result.amount
+          state.record.rowPaid += result.amount
           state.cash -= result.amount
           accepted += 1
         } else {
@@ -161,15 +157,15 @@ function advanceCorridor(
       } else if (deal.status === 'condemning') {
         deal.condemnationQuarters -= 1
         if (deal.condemnationQuarters <= 0) {
-          // The court sets the price, and it is not a discount for taking by force.
           const award = condemnationAward(taking, rng)
           deal.status = 'condemned'
           deal.paid = award
           corridor.rowPaid += award
+          state.record.rowPaid += award
           state.cash -= award
           pushLog(
             state, 'politics',
-            `Court awards ${parcel.owner} $${(award / 1e3).toFixed(0)}K for ${taking.takenAcres.toFixed(1)} acres. The land is taken.`,
+            `The court awards ${parcel.owner} $${(award / 1e3).toFixed(0)}K for ${taking.takenAcres.toFixed(1)} acres.`,
             true,
           )
         } else {
@@ -190,6 +186,10 @@ function advanceCorridor(
     if (acquisitionComplete(corridor)) {
       corridor.status = 'building'
       pushLog(state, 'grid', `${corridor.name}: right-of-way complete, construction begins.`, true)
+      if (state.hearing === 'not-called') {
+        state.hearing = 'called'
+        pushLog(state, 'politics', 'The county commission has called a hearing on who pays for the network upgrades.', true)
+      }
     }
     return
   }
@@ -210,79 +210,108 @@ function advanceCorridor(
       corridor.status = 'energized'
       pushLog(
         state, 'grid',
-        `${corridor.name} is energized — ${lineClass(corridor.classId).ratingMw} MW of transfer capability.`,
+        `${corridor.name} is in service, rated ${lineClass(corridor.classId).ratingMw} MW.`,
         true,
       )
     }
   }
 }
 
-/** Transfer capability into the campus from energized corridors. */
-export function deliverableMw(state: GameState): number {
-  return state.corridors
-    .filter((c) => c.status === 'energized')
-    .reduce((sum, c) => sum + lineClass(c.classId).ratingMw, 0)
-}
-
-/**
- * True once the load can actually be served — which takes BOTH firm generation
- * and a wire to carry it. Generation alone is a power plant with nowhere to send
- * its output.
- */
 function checkEnergized(state: GameState): void {
-  if (state.energizedQuarter !== null) return
-  const cap = capacitySummary(state)
-  if (cap.onlineFirmMw + 1e-6 < state.contract.contractedMw) return
-  if (deliverableMw(state) + 1e-6 < state.contract.contractedMw) return
+  if (state.energizedQuarter !== null || state.contract.status !== 'accepted') return
+  if (firmDeliverableMw(state) + 1e-6 < state.contract.contractedMw) return
 
   state.energizedQuarter = state.quarter
   state.contract.status = 'served'
-  // From here the game is no longer about deadlines.
-  state.realtime = createRealtimeState()
+  state.contract.phasesOn = phasing(state).count
+  // Operations start on the first day of the next quarter.
+  const startTick = quarterInYear(state.quarter + 1) === 1
+    ? 0
+    : (quarterInYear(state.quarter + 1) - 1) * QUARTER_TICKS
+  state.realtime = createRealtimeState(startTick)
   state.phase = 'operate'
+  if (state.tutorial) state.tutorial.stormAtTick = tutorialStormTick(startTick)
+
   const late = state.quarter - state.contract.inServiceQuarter
   pushLog(
     state, 'grid',
     late <= 0
-      ? `${state.contract.name} is energized at ${state.contract.contractedMw} MW — ${
+      ? `${state.contract.name} is energized ${
           late === 0 ? 'on the deadline' : `${-late} quarter${late === -1 ? '' : 's'} early`}.`
-      : `${state.contract.name} is energized at ${state.contract.contractedMw} MW, ${late} quarter${late === 1 ? '' : 's'} late.`,
+      : `${state.contract.name} is energized ${late} quarter${late === 1 ? '' : 's'} late.`,
+    true,
+  )
+}
+
+/** First mid-July evening at least three weeks after energization. */
+function tutorialStormTick(startTick: number): number {
+  const target = 195 * TICKS_PER_DAY + 18 * TICKS_PER_HOUR
+  let delta = target - startTick
+  if (delta < 21 * TICKS_PER_DAY) delta += 365 * TICKS_PER_DAY
+  // A start after late June would push this past the end of the year.
+  return Math.min(delta, 340 * TICKS_PER_DAY)
+}
+
+export function advanceProjects(state: GameState, rng: Rng): void {
+  if (state.phase === 'build' && state.contract.status !== 'failed') settlePhases(state)
+  settleCustomers(state)
+  const waiting = new Set(state.plants.filter((p) => p.status !== 'online').map((p) => p.id))
+  for (const plant of state.plants) advancePlant(plant, state, rng)
+  for (const corridor of state.corridors) advanceCorridor(corridor, state, rng)
+  advanceEquipment(state)
+  advanceSubstations(state)
+  reportOnline(state, state.plants.filter((p) => waiting.has(p.id) && p.status === 'online'))
+  checkEnergized(state)
+  if (state.phase === 'build' && state.contract.status === 'accepted') turnOnPhases(state)
+  if (state.contract.status !== 'failed') releaseMilestones(state)
+  advanceCustomers(state)
+
+  for (const c of Object.values(state.counties)) {
+    const rating = ratingOf(state, c.fips)
+    if (rating !== null && rating < 50 && c.grievances.length > 0) {
+      changeRating(state, c.fips, Math.min(0.6, 50 - rating), 'Time passing')
+    }
+  }
+
+  if (state.cash < 0) {
+    const interest = -state.cash * FINANCING_RATE_PER_QUARTER
+    state.financingCost += interest
+    state.cash -= interest
+  }
+}
+
+function warnOfCancelling(state: GameState): void {
+  const a = approvalOf(state)
+  if (a >= STALL_BELOW) return
+  pushLog(
+    state, 'politics',
+    a < CANCEL_BELOW
+      ? `Data center approval is ${Math.round(a)}. Raise it to ${CANCEL_BELOW} this quarter or the data center is cancelled.`
+      : `Data center approval is ${Math.round(a)}. Below ${CANCEL_BELOW} the data center is cancelled.`,
     true,
   )
 }
 
 export interface QuarterResult {
   state: GameState
-  /** What changed, for the end-of-quarter summary card. */
+  /** What changed, for the end-of-quarter summary. */
   headlines: string[]
 }
 
-export interface TurnContext {
-  /** Parcels for any county a corridor touches, keyed by id. */
-  parcels?: Map<string, Parcel>
-}
-
-export function endQuarter(prev: GameState, ctx: TurnContext = {}): QuarterResult {
+export function endQuarter(prev: GameState): QuarterResult {
   const state: GameState = structuredClone(prev)
+  if (state.phase !== 'build') return { state: prev, headlines: [] }
+
+  resolvePendingByDefault(state)
   const rng = new Rng(state.rngState)
   const logStart = state.log.length
-  const parcels = ctx.parcels ?? new Map<string, Parcel>()
 
-  // 1. Construction and permitting advance, burning capital as they go.
-  for (const plant of state.plants) advancePlant(plant, state, rng)
+  advanceProjects(state, rng)
 
-  // 2. Right-of-way offers resolve, condemnations tick, line construction runs.
-  for (const corridor of state.corridors) advanceCorridor(corridor, state, rng, parcels)
-
-  // 3. Is there now both enough firm generation and a wire to carry it?
-  checkEnergized(state)
-
-  // 4. The developer pays against milestones — including, possibly, the one
-  //    that just became true.
-  releaseMilestones(state)
-
-  // 5. Late penalties. These accrue every quarter past the date, not once.
-  if (state.energizedQuarter === null && state.quarter >= state.contract.inServiceQuarter) {
+  // Only in saves from before installments.
+  if (state.contract.latePenaltyPerQuarter > 0
+    && state.energizedQuarter === null && state.contract.status === 'accepted'
+    && state.quarter >= state.contract.inServiceQuarter) {
     const penalty = state.contract.latePenaltyPerQuarter
     state.penaltiesAccrued += penalty
     state.cash -= penalty
@@ -293,62 +322,66 @@ export function endQuarter(prev: GameState, ctx: TurnContext = {}): QuarterResul
     )
   }
 
-  // 6. Carrying a negative balance costs money, which is how overcommitting
-  //    early quietly compounds into a problem later.
-  if (state.cash < 0) {
-    const interest = -state.cash * FINANCING_RATE_PER_QUARTER
-    state.financingCost += interest
-    state.cash -= interest
-  }
-
-  // 7. Time passes.
+  checkCancelled(state)
+  checkCustomers(state)
+  recordCash(state, state.quarter)
   state.quarter += 1
+  if (state.phase === 'build') {
+    if (state.contract.status === 'accepted') drawBuildEvent(state, rng)
+    drawOutsideEvents(state)
+    if (state.contract.status === 'accepted') warnOfCancelling(state)
+    warnCustomers(state)
+    reportOffers(state)
+  }
   state.rngState = rng.state
-
-  // 8. Has the player just finished a tutorial beat?
   advanceTutorial(state)
+  checkEnding(state)
 
   const headlines = state.log.slice(logStart).filter((e) => e.important).map((e) => e.text)
   return { state, headlines }
 }
 
-/**
- * Answer the county commission on who pays for the network upgrades.
- *
- * The cheap option is cheap on the budget and expensive everywhere else, and
- * the county writes it down either way.
- */
+/** Answer the county commission on who pays for the network upgrades. */
 export function resolveHearing(prev: GameState, option: HearingOption): GameState {
+  if (prev.hearing === 'resolved') return prev
   const state: GameState = structuredClone(prev)
-  if (state.tutorial?.hearingResolved) return prev
 
-  state.cash -= option.cost
+  if (state.equipment) {
+    state.ratepayerShare = option.ratepayerShare
+    state.cash += equipmentSpent(state) * option.ratepayerShare
+  } else {
+    state.cash -= option.cost
+  }
   const county = state.counties[state.contract.countyFips]
   if (county) {
-    county.approval = Math.max(0, Math.min(100, county.approval + option.approvalDelta))
+    changeApproval(state, option.approvalDelta, 'Hearing on network upgrades')
     if (option.grievance) county.grievances.push(option.grievance)
   }
 
   pushLog(
     state, 'politics',
     option.ratepayerShare === 0
-      ? `Cost allocation settled: ${state.contract.developer} covers the network upgrades in full.`
+      ? 'You pay for the network upgrades.'
       : option.ratepayerShare === 1
-        ? 'Cost allocation settled: the upgrades go to the rate base. The hearing room did not take it well.'
-        : 'Cost allocation settled: the upgrade cost is split with the rate base.',
+        ? 'The network upgrades go to the rate base. Every customer in the state pays a share.'
+        : 'The network upgrade cost is split between you and the rate base.',
     true,
   )
 
-  if (state.tutorial) state.tutorial.hearingResolved = true
+  state.hearing = 'resolved'
   advanceTutorial(state)
   return state
 }
 
-/** Accept the offered contract. Returns a new state. */
 export function acceptContract(prev: GameState): GameState {
   const state: GameState = structuredClone(prev)
   if (state.contract.status !== 'offered') return state
+  // Dates run from the day it signs.
+  const shift = state.quarter - state.startQuarter
+  state.contract.inServiceQuarter += shift
+  for (const m of state.contract.milestones) if (m.dueQuarter !== undefined) m.dueQuarter += shift
   state.contract.status = 'accepted'
+  if (state.started) state.creditLimit += state.contract.contractedMw * CREDIT_PER_MW
   pushLog(
     state, 'deal',
     `Signed: ${state.contract.contractedMw} MW to ${state.contract.name} by ${formatQuarter(state.contract.inServiceQuarter)}.`,

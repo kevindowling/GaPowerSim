@@ -1,34 +1,13 @@
 /**
  * Scenario definitions.
  *
- * DATA STATUS — read this before adding or editing a project.
+ * `announced` scenarios describe reported projects and carry their sources.
+ * `projection` scenarios use an invented developer.
  *
- * Americus is now a VERIFIED project (M6 pass). Liberty Data Centers has a
- * signed agreement with the Sumter County Development Authority for a four-phase
- * campus in the Frank Meyers Industrial Park, ~100 MW per phase to a maximum of
- * four phases — the 400 MW this scenario was built around. Sources are attached
- * to the scenario itself, not just to this comment, and the briefing card shows
- * them to the player.
- *
- * The rule that produced the earlier fictional developer still stands for
- * anything unverified: a scenario we cannot source stays `basedOn: 'projection'`
- * with an invented developer, because attaching a real company's name to a
- * project we cannot confirm they announced would put a false claim about a real
- * company into a public game.
- *
- * Separating fact from game construct, because the two sit side by side here:
- *
- *   REAL      developer, campus location, county, phase structure and MW,
- *             capital investment range, jobs and wages, tax estimate, the water
- *             and sewer restrictions, the permitting status.
- *   INVENTED  the utility-side deal terms — capexAdvance, milestone schedule,
- *             latePenaltyPerQuarter, takeOrPayMw, inServiceQuarter. No such
- *             contract between Georgia Power and Liberty is public, and these
- *             numbers exist to make a game work. They are not reporting.
- *
- * Note that Liberty's $1–5B is investment in *their own campus*; it is not money
- * handed to the utility. `capexAdvance` is the game's separate, invented
- * grid-side advance. Do not conflate them.
+ * In Americus the developer, site, phases, investment, jobs, tax estimate and
+ * permitting status are reported. The utility deal terms are invented: advance,
+ * milestones, penalties, rates and dates. Liberty's $1-5B is its own campus
+ * investment and is unrelated to `capexAdvance`.
  */
 
 import { quarterOf, type QuarterIndex } from '../engine/time.ts'
@@ -58,15 +37,28 @@ export interface Scenario {
   sourceUrl: string | null
   /** Citations shown on the briefing card. Required when `basedOn` is 'announced'. */
   sources: readonly Source[]
-  /**
-   * How the real project is phased, when that is public. Descriptive only — the
-   * contract still models one lump of contracted load, because the phases are a
-   * fact about the campus rather than a mechanic we simulate yet.
-   */
-  phasing: { count: number; mwEach: number } | null
+  /** Phases of the data center, and the quarter each one's payment is due. Due dates are invented. */
+  phasing: { count: number; mwEach: number; due: readonly QuarterIndex[] }
 
   startQuarter: QuarterIndex
   seed: number
+  /** Guided steps and a scripted storm. */
+  tutorial: boolean
+  /** How far below zero cash may go. */
+  creditLimit: number
+  /** Area with street, stream and building detail: minLon, minLat, maxLon, maxLat. */
+  studyArea: [number, number, number, number]
+  system: {
+    substationName: string
+    site: ScenarioSite
+    servedPopulation: number
+    importLimitMw: number
+    /** Existing 230/115 kV transformers. Invented. */
+    transformerMw: number
+    tieMw: number
+  }
+  /** Shown on the scorecard. */
+  closing: string
 
   contract: {
     name: string
@@ -76,36 +68,15 @@ export interface Scenario {
     contractedMw: number
     inServiceQuarter: QuarterIndex
     capexAdvance: number
-    latePenaltyPerQuarter: number
     takeOrPayMw: number
+    energyRatePerMwh: number
+    shortfallPenaltyPerMwh: number
   }
 
-  /** Starting approval by county FIPS; anything unlisted starts at 55. */
+  /** Starting approval of the data center (its own county) and its neighbours. Invented. */
   countyBaselines: Record<string, number>
 }
 
-/**
- * Scenario 1 — Americus, Sumter County. A real, contested project.
- *
- * Rural southwest Georgia: about 16,000 people in Americus, farmland in every
- * direction, Plains and Andersonville a short drive away. Liberty Data Centers
- * signed an agreement with the Sumter County Development Authority effective
- * 1 July 2026 for a campus in the Frank Meyers Industrial Park, at the end of
- * Swett Avenue, on land the County conveyed to the Authority. Four phases at
- * roughly 100 MW each — 400 MW of firm, round-the-clock load dropped into a
- * county that has never seen anything like it.
- *
- * It is being fought. Over a hundred people filled the Lake Blackshear Regional
- * Library in August 2026; a moratorium petition is circulating so the county can
- * write an ordinance before permitting rather than after. As of that month no
- * permit had been issued. Water is the sharper local worry, not power — this is
- * farm country, and an open-loop cooling system drinks. Liberty is barred under
- * the agreement from drilling its own wells or running its own sewer, so it has
- * to ask the City of Americus for both.
- *
- * That is the game, and it is not a metaphor: the player is the utility on the
- * other side of that room.
- */
 export const AMERICUS: Scenario = {
   id: 'americus-400',
   title: 'Americus',
@@ -128,43 +99,51 @@ export const AMERICUS: Scenario = {
       url: 'https://americustimesrecorder.com/2026/08/05/libertys-data-center-plans-spur-concerned-citizens-meeting/',
     },
     {
-      label: 'Sumter County Citizens 4 Truth — moratorium petition',
-      url: 'https://scc4t.com',
+      label: 'Sumter County Citizens for Transparency, site map and petition',
+      url: 'https://scc4t.com/map/',
     },
     {
       label: 'Eminent domain across 1,000 miles of Georgia grid expansion (Fortune, 26 Jul 2026)',
       url: 'https://fortune.com/2026/07/26/georgia-power-utility-company-eminent-domain-grid-expansion-data-center/',
     },
   ],
-  phasing: { count: 4, mwEach: 100 },
+  phasing: { count: 4, mwEach: 100, due: [quarterOf(2029, 1), quarterOf(2029, 2), quarterOf(2029, 3), quarterOf(2029, 4)] },
   briefing: [
-    'Liberty Data Centers has signed with the Sumter County Development Authority for a campus at the end of Swett Avenue, in the Frank Meyers Industrial Park outside Americus. Four phases, about 100 megawatts each. Built out, it draws 400 megawatts around the clock.',
-    'Liberty puts one to five billion dollars into the campus itself, and promises 150 jobs at an average of eighty thousand dollars and about twenty million a year in city, county and school taxes. Getting the power there is your problem.',
-    'Sumter County has about sixteen thousand people in Americus. They have already filled a library to object, and they are circulating a petition for a moratorium so an ordinance gets written before a permit does. No permit has been issued.',
+    'Liberty Data Centers has signed with the Sumter County Development Authority for a campus at 301 Brady Road, in the Frank Meyers Industrial Park on the south side of Americus. It will be built in four phases of about 100 megawatts and draw 400 megawatts around the clock.',
+    'Liberty puts one to five billion dollars into the campus itself, and projects 150 jobs averaging eighty thousand dollars and about twenty million a year in local taxes. You are the utility. You have to get the power there.',
+    'Sumter County has about sixteen thousand people in Americus. More than a hundred people came to a meeting in August to object, and a petition for a moratorium is circulating. No permit has been issued.',
   ],
-  startQuarter: quarterOf(2026, 1),
+  startQuarter: quarterOf(2026, 3),
   seed: 13261_2026,
+  tutorial: true,
+  creditLimit: 600_000_000,
+  studyArea: [-84.60, 31.85, -83.85, 32.35],
+  system: {
+    // Mapped in OpenStreetMap as a 230/115 kV Georgia Power substation.
+    substationName: 'North Americus Substation',
+    site: { lon: -84.2117, lat: 32.0977 },
+    servedPopulation: 42_000,
+    importLimitMw: 150,
+    transformerMw: 200,
+    tieMw: 120,
+  },
+  closing: 'The campus keeps drawing 400 MW, every hour, from here on.',
 
   contract: {
-    // Real: the developer and the campus. See the DATA STATUS note above for
-    // which terms below are invented.
     name: 'Liberty Americus Campus',
     developer: 'Liberty Data Centers',
     countyFips: '13261',
-    // Frank Meyers Industrial Park, off Swett Avenue. The park is the reported
-    // site; this coordinate is our approximation of it, not a surveyed location.
-    site: { lon: -84.187, lat: 32.113 },
+    // Centre of county parcel 64-17, 301 Brady Road.
+    site: { lon: -84.20729, lat: 32.04854 },
     contractedMw: 400,
-    // Invented deal terms from here down — no utility contract is public.
     inServiceQuarter: quarterOf(2029, 4),
-    capexAdvance: 1_050_000_000,
-    latePenaltyPerQuarter: 18_000_000,
+    capexAdvance: 960_000_000,
     takeOrPayMw: 320,
+    energyRatePerMwh: 74,
+    shortfallPenaltyPerMwh: 8_000,
   },
 
   countyBaselines: {
-    // Rural counties start warmer than metro ones — a tax base this size is
-    // genuinely welcome, right up until people see where the line goes.
     '13261': 62, // Sumter
     '13249': 58, // Schley
     '13193': 56, // Macon
@@ -178,13 +157,63 @@ export const AMERICUS: Scenario = {
   },
 }
 
-export const SCENARIOS: readonly Scenario[] = [AMERICUS]
+export const DUBLIN: Scenario = {
+  id: 'dublin-600',
+  title: 'Dublin',
+  order: 2,
+  subtitle: 'Laurens County · 600 MW',
+  basedOn: 'projection',
+  sourceUrl: null,
+  sources: [],
+  phasing: { count: 3, mwEach: 200, due: [quarterOf(2029, 3), quarterOf(2029, 4), quarterOf(2030, 1)] },
+  briefing: [
+    'A cloud company wants 600 megawatts outside Dublin, in three phases. It picked the site for its price and its distance from Atlanta.',
+    'Dublin is bigger than Americus and better connected. The homes here draw more, so an outage reaches more people.',
+    'The customer wants power by early 2030. There is no guide this time and no scheduled storm.',
+  ],
+  startQuarter: quarterOf(2027, 1),
+  seed: 13175_2027,
+  tutorial: false,
+  creditLimit: 800_000_000,
+  studyArea: [-83.25, 32.25, -82.55, 32.80],
+  system: {
+    substationName: 'Dublin Primary Substation',
+    site: { lon: -82.8946, lat: 32.5406 },
+    servedPopulation: 88_000,
+    importLimitMw: 230,
+    transformerMw: 300,
+    tieMw: 150,
+  },
+  closing: 'Laurens County has its campus, and the next developer has already called.',
+
+  contract: {
+    name: 'Oconee Compute Campus',
+    developer: 'Fall Line Cloud',
+    countyFips: '13175',
+    site: { lon: -82.965, lat: 32.500 },
+    contractedMw: 600,
+    inServiceQuarter: quarterOf(2030, 1),
+    capexAdvance: 1_180_000_000,
+    takeOrPayMw: 480,
+    energyRatePerMwh: 72,
+    shortfallPenaltyPerMwh: 9_000,
+  },
+
+  countyBaselines: {
+    '13175': 54, // Laurens
+    '13167': 57, // Johnson
+    '13283': 55, // Treutlen
+    '13091': 52, // Dodge
+    '13289': 56, // Twiggs
+    '13319': 54, // Wilkinson
+    '13023': 55, // Bleckley
+  },
+}
+
+export const SCENARIOS: readonly Scenario[] = [AMERICUS, DUBLIN]
 
 export function scenario(id: string): Scenario {
   const s = SCENARIOS.find((x) => x.id === id)
   if (!s) throw new Error(`unknown scenario: ${id}`)
   return s
 }
-
-/** Approval a county starts at when the scenario doesn't name it. */
-export const DEFAULT_COUNTY_APPROVAL = 55

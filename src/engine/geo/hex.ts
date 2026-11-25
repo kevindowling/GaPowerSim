@@ -1,16 +1,3 @@
-/**
- * Pointy-top hexagonal grid maths, in projected kilometres.
- *
- * Storage is a dense rectangular array in **odd-r offset** coordinates (col,row),
- * which indexes trivially. Neighbour and distance maths happen in **axial**
- * coordinates (q,r), where they are clean. Conversions between the two live here
- * so nothing else has to think about it.
- *
- * HEX_SIZE_KM is the circumradius, chosen so each cell covers almost exactly
- * 1 km² — that makes the routing cost surface easy to reason about, since a cost
- * per cell is also a cost per square kilometre.
- */
-
 /** Circumradius in km. Area = (3√3/2)·s² ≈ 1.000 km² at this value. */
 export const HEX_SIZE_KM = 0.6204
 
@@ -84,10 +71,6 @@ const AXIAL_DIRS: ReadonlyArray<readonly [number, number]> = [
   [1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1],
 ]
 
-/**
- * Write the six neighbours of an odd-r offset cell into `out` as col,row pairs.
- * Returns the number of neighbours written that fall inside the grid.
- */
 export function neighbors(spec: GridSpec, col: number, row: number, out: number[]): number {
   const [q, r] = offsetToAxial(col, row)
   let n = 0

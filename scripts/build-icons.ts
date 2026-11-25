@@ -1,19 +1,3 @@
-/**
- * build-icons.ts — vendor the handful of icons the map actually draws.
- *
- * Source: Material Design Icons (Pictogrammers), Apache-2.0, taken from the
- * `@iconify-json/mdi` npm package. That package carries 7,638 icons; the game
- * draws eight of them, so this extracts just those into a small TypeScript
- * module of raw SVG path data.
- *
- * Paths rather than image files, because everything on this map is vector: the
- * renderer draws them with Path2D at whatever size and colour the situation
- * calls for, they stay crisp at every zoom, they need no network fetch, and
- * they cost about a kilobyte in total.
- *
- * Run: npm run build:icons
- */
-
 import { writeFileSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -79,12 +63,12 @@ function main(): void {
   }
 
   const file = `/**
- * Vendored icon paths — GENERATED, do not edit by hand.
+ * Vendored icon paths: GENERATED, do not edit by hand.
  * Regenerate with \`npm run build:icons\`.
  *
  * Source: ${info.name} by ${info.author.name}
  *   ${info.author.url}
- * Licence: ${info.license.title} — ${info.license.url}
+ * Licence: ${info.license.title}: ${info.license.url}
  * Taken from @iconify-json/mdi@${pkg.version}; only the icons this game draws
  * are included.
  *
@@ -115,7 +99,7 @@ export const ICON_ATTRIBUTION =
   writeFileSync(path, file)
   console.log(`wrote ${path}`)
   console.log(`  ${Object.keys(WANTED).length} icons, ${(file.length / 1024).toFixed(1)} KiB`)
-  console.log(`  ${info.name} — ${info.license.title}`)
+  console.log(`  ${info.name}: ${info.license.title}`)
 }
 
 main()

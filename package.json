@@ -15,6 +15,7 @@
     "build:geo": "tsx scripts/build-geo.ts",
     "build:hexgrid": "tsx scripts/build-hexgrid.ts",
     "build:parcels": "tsx scripts/build-synthetic-parcels.ts",
+    "build:gis": "tsx scripts/build-gis.ts",
     "build:icons": "tsx scripts/build-icons.ts",
     "fetch:parcels": "tsx scripts/fetch-parcels.ts",
     "verify:data": "tsx scripts/verify-data.ts",
@@ -25,6 +26,7 @@
     "fetch:hydrology": "tsx scripts/fetch-hydrology.ts"
   },
   "dependencies": {
+    "@fontsource-variable/public-sans": "^5.3.0",
     "polygon-clipping": "^0.15.7",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

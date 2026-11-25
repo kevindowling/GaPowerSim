@@ -3,16 +3,6 @@ import {
   overpassQuery, explainStatus, USER_AGENT, OVERPASS_ENDPOINTS,
 } from '../scripts/lib/overpass.ts'
 
-/**
- * The request shape is the thing that broke.
- *
- * A statewide roads pull failed on a GitHub runner with 406 Not Acceptable —
- * not an egress block, which is what the error message wrongly suggested, but
- * Overpass refusing a request posted as bare text with no User-Agent. These
- * tests pin the two properties that fix it, so nobody "simplifies" the call
- * back to `fetch(url, { body: query })`.
- */
-
 const ok = (payload: unknown = { elements: [] }): Response =>
   new Response(JSON.stringify(payload), { status: 200 })
 
@@ -50,7 +40,6 @@ describe('the Overpass client', () => {
     })
 
     expect(headers['User-Agent']).toBe(USER_AGENT)
-    // A contact point, not just a name — that is what the policy asks for.
     expect(USER_AGENT).toMatch(/https?:\/\//)
   })
 
@@ -86,7 +75,7 @@ describe('the Overpass client', () => {
     for (let i = 1; i < waits.length; i++) expect(waits[i]).toBeGreaterThan(waits[i - 1])
   })
 
-  it('does not retry a 406 — the request is wrong, not the timing', async () => {
+  it('does not retry a 406: the request is wrong, not the timing', async () => {
     let calls = 0
     await expect(overpassQuery('out;', {
       endpoints: ['https://example.test/api'],
@@ -128,8 +117,6 @@ describe('the Overpass client', () => {
   })
 
   it('names the real cause instead of blaming the network', () => {
-    // The message that sent me looking in the wrong place claimed every failure
-    // might be an egress block. Only 403/407 actually are.
     expect(explainStatus(403)).toMatch(/egress proxy/)
     expect(explainStatus(406)).toMatch(/form-encoded|User-Agent/)
     expect(explainStatus(406)).not.toMatch(/egress/)

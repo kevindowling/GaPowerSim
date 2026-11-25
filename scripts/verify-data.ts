@@ -1,18 +1,3 @@
-/**
- * verify-data.ts — schema and sanity checks over the vendored datasets.
- *
- * Two jobs. First, catch a broken or half-generated data build before it reaches
- * the game. Second, keep the project honest about what is real and what is
- * still a placeholder: every dataset that carries approximate values reports its
- * unverified count here, so "we have not checked this yet" stays visible instead
- * of quietly becoming "this is true".
- *
- * Exit code is non-zero on a structural failure. Unverified records are reported
- * but do NOT fail the build until the M6 accuracy pass flips STRICT on.
- *
- * Run: npm run verify:data
- */
-
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -38,17 +23,6 @@ function check(condition: boolean, message: string): void {
   if (!condition) problems.push(message)
 }
 
-/**
- * Anything named state.json is fetched once and loaded on the very first paint,
- * so its size is a budget, not a curiosity. This is an embed: a statewide layer
- * that balloons to tens of megabytes would push the initial load past the point
- * where anyone waits for it, and the failure would be invisible in development
- * on a fast connection.
- *
- * 6 MB is generous for simplified vector geometry and still small enough to
- * arrive quickly gzipped. County files are loaded on demand and get a looser
- * bound, since nobody pays for them unless they work that county.
- */
 const STATE_TIER_BUDGET_MB = 6
 const COUNTY_TIER_BUDGET_MB = 25
 
@@ -81,13 +55,11 @@ function describeTiers(files: string[]): string {
 function requireFile(name: string): string {
   const path = resolve(DATA, name)
   if (!existsSync(path)) {
-    problems.push(`missing ${name} — run \`npm run data\``)
+    problems.push(`missing ${name}: run \`npm run data\``)
     return ''
   }
   return path
 }
-
-// --- counties.json -------------------------------------------------------
 
 const countiesPath = requireFile('counties.json')
 if (countiesPath) {
@@ -125,13 +97,11 @@ if (countiesPath) {
     drift < AREA_TOLERANCE,
     `counties.json: total area ${Math.round(totalArea).toLocaleString()} km² drifts ` +
       `${(drift * 100).toFixed(1)}% from Georgia's ${GA_LAND_AREA_KM2.toLocaleString()} km² ` +
-      `— the projection or simplification is wrong`,
+      `the projection or simplification is wrong`,
   )
   console.log(`counties.json  159 counties, ${Math.round(totalArea).toLocaleString()} km² total ` +
     `(${(drift * 100).toFixed(1)}% from Census)`)
 }
-
-// --- hexgrid -------------------------------------------------------------
 
 const manifestPath = requireFile('hexgrid.json')
 const binPath = requireFile('hexgrid.bin')
@@ -175,8 +145,6 @@ if (manifestPath && binPath) {
     `${Math.round(rasterArea).toLocaleString()} km² (${(drift * 100).toFixed(1)}% from Census)`)
 }
 
-// --- curated real-world data --------------------------------------------
-
 const unverifiedCities = CITIES.filter((c) => !c.verified)
 if (unverifiedCities.length > 0) {
   const msg = `cities.ts: ${unverifiedCities.length}/${CITIES.length} records unverified ` +
@@ -190,10 +158,6 @@ for (const f of cityFips) {
   check(/^13\d{3}$/.test(f), `cities.ts: ${f} is not a Georgia FIPS code`)
 }
 
-// A scenario claiming to describe a real project has to be able to prove it.
-// This is a hard failure regardless of STRICT: naming a real company as the
-// developer of a campus we cannot cite is the one data error in this project
-// that would put a false claim about somebody else into a public game.
 for (const s of SCENARIOS) {
   check(/^13\d{3}$/.test(s.contract.countyFips),
     `scenarios.ts: ${s.id} county ${s.contract.countyFips} is not a Georgia FIPS code`)
@@ -222,12 +186,6 @@ for (const s of SCENARIOS) {
 console.log(`scenarios      ${SCENARIOS.length} defined, ` +
   `${SCENARIOS.filter((s) => s.basedOn === 'announced').length} sourced to real projects`)
 
-// --- optional basemap layers ---------------------------------------------
-
-// Absent is a legitimate state, not a failure: the imagery and road pipelines
-// need network access some environments do not have, and the game is fully
-// playable without them. What is NOT acceptable is a manifest that promises
-// images we did not vendor, because the layer would appear and draw nothing.
 const imageryPath = resolve(DATA, 'basemap/imagery.json')
 if (existsSync(imageryPath)) {
   const manifest = JSON.parse(readFileSync(imageryPath, 'utf8')) as {
@@ -250,8 +208,6 @@ if (existsSync(imageryPath)) {
   warnings.push('basemap: no aerial imagery vendored (run `npm run fetch:imagery`)')
 }
 
-// Hydrology is checked the same way as roads: optional, but if it is here it
-// must carry its ODbL attribution, because the game renders it.
 const hydroDir = resolve(DATA, 'hydrology')
 if (existsSync(hydroDir)) {
   const files = readdirSync(hydroDir).filter((f) => f.endsWith('.json'))
@@ -269,14 +225,14 @@ if (existsSync(hydroDir)) {
     ways += file.waterways?.length ?? 0
     bodies += file.bodies?.length ?? 0
     check(!!file.attribution,
-      `hydrology/${f}: no attribution — ODbL requires crediting OpenStreetMap contributors`)
+      `hydrology/${f}: no attribution: ODbL requires crediting OpenStreetMap contributors`)
     reportTier('hydrology', f, count, 'features', bytes)
   }
   console.log(`hydrology      ${describeTiers(files)}, ${ways.toLocaleString()} watercourses, ` +
     `${bodies.toLocaleString()} water bodies`)
 } else {
   warnings.push(
-    'hydrology: none vendored — rivers and wetlands are missing from the map AND ' +
+    'hydrology: none vendored: rivers and wetlands are missing from the map AND ' +
     'from the routing cost surface (run `npm run fetch:hydrology -- --state`)',
   )
 }
@@ -284,9 +240,6 @@ if (existsSync(hydroDir)) {
 const roadsDir = resolve(DATA, 'roads')
 if (existsSync(roadsDir)) {
   const files = readdirSync(roadsDir).filter((f) => f.endsWith('.json'))
-  // The statewide tier is what makes the map legible outside the tutorial
-  // county, so its absence is called out separately rather than hidden in a
-  // count of "some road files exist".
   if (!files.includes('state.json')) {
     warnings.push('roads: no statewide highways (run `npm run fetch:roads -- --state`)')
   }
@@ -299,21 +252,17 @@ if (existsSync(roadsDir)) {
     }
     const count = file.roads?.length ?? 0
     totalRoads += count
-    // OpenStreetMap is ODbL: shipping it without attribution is a licence
-    // breach, not a cosmetic omission, so this is a hard failure.
     check(!!file.attribution,
-      `roads/${f}: no attribution — ODbL requires crediting OpenStreetMap contributors`)
+      `roads/${f}: no attribution: ODbL requires crediting OpenStreetMap contributors`)
     reportTier('roads', f, count, 'ways', bytes)
   }
   console.log(`roads          ${describeTiers(files)}, ${totalRoads.toLocaleString()} ways total`)
 } else {
   warnings.push(
-    'roads: none vendored — run `npm run fetch:roads -- --state` for statewide ' +
+    'roads: none vendored: run `npm run fetch:roads -- --state` for statewide ' +
     'highways, then `-- --county 13261 --name Sumter` for the tutorial county',
   )
 }
-
-// --- report --------------------------------------------------------------
 
 console.log('')
 for (const w of warnings) console.log(`  ! ${w}`)

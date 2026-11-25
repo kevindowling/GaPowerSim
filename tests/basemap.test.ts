@@ -3,14 +3,6 @@ import { skewOf, skewMetresOf } from '../scripts/fetch-imagery.ts'
 import { project } from '../src/engine/geo/projection.ts'
 import { AMERICUS } from '../src/data/scenarios.ts'
 
-/**
- * The imagery pipeline's one real correctness risk.
- *
- * The renderer blits aerial photography as an axis-aligned rectangle in
- * projected space. A lon/lat image is not that rectangle, and shipping one
- * anyway puts the photo off the parcels it exists to explain — worse than no
- * imagery, because it looks authoritative.
- */
 describe('imagery georeferencing', () => {
   const { lon, lat } = AMERICUS.contract.site
   const box = (half: number): [number, number, number, number] =>
@@ -23,11 +15,6 @@ describe('imagery georeferencing', () => {
   })
 
   it('converges to a floor as the extent shrinks, instead of vanishing', () => {
-    // This is why the script warps rather than tiles. Skew is largely an
-    // angular property — the convergence of the meridians at this longitude —
-    // so shrinking the extent 16x only takes the ratio from ~1.05% to ~0.79%,
-    // where it flattens. It never approaches zero, so no tile size makes an
-    // axis-aligned blit correct; it only makes the residual error smaller.
     const coarse = skewOf(box(0.25))
     const fine = skewOf(box(0.25 / 16))
     expect(fine).toBeGreaterThan(coarse * 0.7)

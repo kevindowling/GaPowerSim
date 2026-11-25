@@ -1,41 +1,4 @@
-/**
- * fetch-hydrology.ts — rivers, lakes and wetlands from OpenStreetMap.
- *
- * Water earns its place in this game three times over.
- *
- * It is the objection. In Sumter County the fight over the Liberty campus is
- * about water before it is about power — this is farm country, the agreement
- * bars the developer from drilling its own wells, and an open-loop cooling
- * system drinks. A map that cannot show the player where the water is cannot
- * show them why the room was full.
- *
- * It is a constraint on generation. Thermal plants have to reject heat
- * somewhere, and the plant catalogue already carries consumptive use in gallons
- * per MWh. Siting a combined-cycle plant away from water should be a problem.
- *
- * It is what makes a corridor expensive. Crossing a river is a long span on
- * tall structures and a Section 404 permit; crossing a wetland is matting, a
- * federal permit and a season of schedule. Routing prices both — see
- * PROTECT in mapTypes.ts — so this data feeds the cost surface, not just the
- * picture.
- *
- * TWO TIERS, matching the roads pipeline:
- *
- *   npm run fetch:hydrology -- --state
- *       Major rivers and large lakes for all of Georgia. Loads at startup.
- *
- *   npm run fetch:hydrology -- --county 13261 --name Sumter
- *       Every creek, pond and swamp in one county. Loaded on demand.
- *
- *   ... --file <path.geojson>
- *       A GeoJSON extract fetched elsewhere, for restricted networks.
- *
- * Output: public/data/hydrology/state.json or <fips>.json, committed.
- *
- * LICENSING. OpenStreetMap is ODbL-1.0 and requires attributing
- * "© OpenStreetMap contributors". The attribution travels in the data file and
- * renders on the map; verify-data fails the build if it is missing.
- */
+// OpenStreetMap data is ODbL-1.0. Output files carry the attribution.
 
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
@@ -59,11 +22,6 @@ const COORD_DP = 5
 /** ~15 m. Finer than the game draws, coarse enough to shed most vertices. */
 const TOL_DEG = 0.00015
 
-/**
- * A pond smaller than this is below a hex cell and cannot affect routing, so
- * vendoring it costs bytes and buys nothing. Degrees squared, very roughly
- * 0.04 km² at Georgia's latitude.
- */
 const MIN_BODY_AREA_DEG2 = 3.5e-6
 
 interface Args { county: string; name: string; file: string | null; state: boolean }
@@ -145,13 +103,10 @@ export function ringArea(ring: [number, number][]): number {
 }
 
 async function fromOverpass(fips: string, statewide: boolean): Promise<unknown> {
-  // Statewide keeps only named rivers and sizeable water bodies; a county pull
-  // takes everything. Filtering inside Overpass rather than downloading
-  // Georgia's every drainage ditch and discarding it is both faster and politer.
   const query = statewide
     ? `
 [out:json][timeout:900];
-area["boundary"="administrative"]["admin_level"="4"]["ref:fips"="13"]->.state;
+area["boundary"="administrative"]["admin_level"="4"]["ISO3166-2"="US-GA"]->.state;
 (
   way(area.state)["waterway"="river"];
   way(area.state)["natural"="water"]["water"~"^(lake|reservoir)$"];
@@ -160,7 +115,7 @@ area["boundary"="administrative"]["admin_level"="4"]["ref:fips"="13"]->.state;
 out geom;`
     : `
 [out:json][timeout:300];
-area["boundary"="administrative"]["admin_level"="6"]["ref:fips"="${fips}"]->.county;
+area["boundary"="administrative"]["admin_level"="6"]["nist:fips_code"="${fips}"]->.county;
 (
   way(area.county)["waterway"~"^(river|stream)$"];
   way(area.county)["natural"~"^(water|wetland)$"];
@@ -178,6 +133,32 @@ interface OverpassElement {
   type: string
   tags?: Record<string, string>
   geometry?: { lon: number; lat: number }[]
+  members?: { type: string; role: string; geometry?: { lon: number; lat: number }[] }[]
+}
+
+export function stitchRings(segments: [number, number][][]): [number, number][][] {
+  const key = (p: [number, number]) => `${p[0].toFixed(7)},${p[1].toFixed(7)}`
+  const pool = segments.filter((s) => s.length >= 2).map((s) => [...s])
+  const rings: [number, number][][] = []
+  while (pool.length > 0) {
+    const ring = pool.pop()!
+    let grew = true
+    while (grew && key(ring[0]) !== key(ring[ring.length - 1])) {
+      grew = false
+      const tail = key(ring[ring.length - 1])
+      for (let i = 0; i < pool.length; i++) {
+        const seg = pool[i]
+        if (key(seg[0]) === tail) ring.push(...seg.slice(1))
+        else if (key(seg[seg.length - 1]) === tail) ring.push(...seg.reverse().slice(1))
+        else continue
+        pool.splice(i, 1)
+        grew = true
+        break
+      }
+    }
+    if (ring.length >= 4) rings.push(ring)
+  }
+  return rings
 }
 
 /** Which of our kinds an OSM tag set represents, or null to drop it. */
@@ -192,8 +173,6 @@ export function classify(
   if (tags.natural === 'water' || tags.landuse === 'reservoir') {
     const w = tags.water ?? ''
     if (w === 'reservoir' || tags.landuse === 'reservoir') return { areal: true, kind: 'reservoir' }
-    // Rivers tagged as areas are still linear features to a router; treating
-    // them as lakes would flood the cost surface with a long thin polygon.
     if (w === 'river' || w === 'stream') return null
     return { areal: true, kind: 'lake' }
   }
@@ -232,12 +211,19 @@ function collect(
 
 function fromOverpassJson(json: unknown): Collected {
   const elements = (json as { elements?: OverpassElement[] }).elements ?? []
-  return collect(elements
-    .filter((el) => el.geometry && el.tags)
-    .map((el) => ({
-      tags: el.tags!,
-      points: el.geometry!.map((g) => [g.lon, g.lat] as [number, number]),
-    })))
+  const items: { tags: Record<string, string>; points: [number, number][] }[] = []
+  for (const el of elements) {
+    if (!el.tags) continue
+    if (el.geometry) {
+      items.push({ tags: el.tags, points: el.geometry.map((g) => [g.lon, g.lat]) })
+    } else if (el.members) {
+      const outers = el.members
+        .filter((m) => m.role === 'outer' && m.geometry)
+        .map((m) => m.geometry!.map((g) => [g.lon, g.lat] as [number, number]))
+      for (const points of stitchRings(outers)) items.push({ tags: el.tags, points })
+    }
+  }
+  return collect(items)
 }
 
 interface GeoJsonFeature {
@@ -284,8 +270,6 @@ async function main(): Promise<void> {
     source = `OpenStreetMap via Overpass${OVERPASS_URL ? ` (${OVERPASS_URL})` : ''}`
   }
 
-  // The statewide tier carries rivers and open water only. Creeks and swamps
-  // are sub-pixel at statewide zoom and belong to the county pull.
   if (args.state) {
     data.waterways = data.waterways.filter((w) => w.k === 'river')
     data.bodies = data.bodies.filter((b) => b.k !== 'wetland')
@@ -299,7 +283,6 @@ async function main(): Promise<void> {
     process.exit(1)
   }
 
-  // Deterministic order, so a re-pull is a reviewable diff rather than noise.
   data.waterways.sort((a, b) => a.k.localeCompare(b.k) || a.p[0][0] - b.p[0][0] || a.p[0][1] - b.p[0][1])
   data.bodies.sort((a, b) => a.k.localeCompare(b.k) || a.p[0][0] - b.p[0][0] || a.p[0][1] - b.p[0][1])
 

@@ -1,17 +1,12 @@
 name: Deploy to GitHub Pages
 
-# One-time setup before this can work:
-#   Settings → Pages → Build and deployment → Source: "GitHub Actions"
-# There is nothing to configure beyond that; no branch, no /docs folder.
+# Needs Settings, Pages, Source set to GitHub Actions.
 
 on:
   push:
     branches:
       - main
       - master
-  # Verify pull requests without deploying them. The deploy job is gated on the
-  # push event below, so a PR gets the full typecheck/test/build gauntlet and
-  # nothing reaches the live site until it merges.
   pull_request:
     branches:
       - main
@@ -23,8 +18,6 @@ permissions:
   pages: write
   id-token: write
 
-# Never let two deploys race. `cancel-in-progress: false` because a half-finished
-# Pages deployment is worse than a queued one.
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -47,15 +40,11 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Check the vendored data is intact
-        # Confirms counties/hexgrid/parcels are present and internally consistent
-        # before shipping a build that would fail to load at runtime.
         run: npm run verify:data
 
       - name: Unit tests
         run: npm test
 
-      # Cached separately from node_modules: the browser is ~150 MB and changes
-      # only when the Playwright version does.
       - name: Cache Playwright browsers
         id: playwright-cache
         uses: actions/cache@v4
@@ -75,15 +64,9 @@ jobs:
         run: npm run build
 
       - name: Confirm the build works from a subdirectory
-        # Pages serves at /<repo>/, not the domain root. A build with absolute
-        # asset paths loads fine locally and 404s once deployed, silently — so
-        # this is checked rather than assumed. Runs before the browser tests so
-        # the cheap check fails fast.
         run: npm run check:build
 
       - name: Browser tests
-        # Rebuilds via the Playwright config's webServer, which serves dist/
-        # rather than a dev server, so the tests exercise the shipped output.
         run: npm run test:e2e
 
       - name: Upload failure artifacts
@@ -95,21 +78,10 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
-      # Pages packaging only matters for a real deploy. On a pull request the
-      # job stops after the tests above, which is the point: PRs are verified,
-      # not published.
       - name: Disable Jekyll processing
         if: github.event_name != 'pull_request'
         run: touch dist/.nojekyll
 
-      # Requires Pages to be enabled on the repository first:
-      #   Settings → Pages → Build and deployment → Source → GitHub Actions
-      #
-      # `enablement: true` would ask this action to switch that on by itself,
-      # and it was tried — the default GITHUB_TOKEN is not permitted to create a
-      # Pages site ("Resource not accessible by integration"), and it replaces
-      # this step's clear "Pages is not enabled" message with an opaque one. So
-      # it stays off, and the one-time setting is done by hand.
       - uses: actions/configure-pages@v5
         if: github.event_name != 'pull_request'
 

@@ -1,15 +1,4 @@
-/**
- * Owner names.
- *
- * FICTIONAL BY DESIGN. These are drawn from ordinary southwest Georgia surname
- * and place-name patterns so the map reads as a real place, but they are not,
- * and must never be, the real owners of the parcels they are attached to. See
- * the privacy note in types.ts.
- *
- * Names are derived from the parcel id rather than stored, so they are stable
- * across sessions and across a re-fetch of the underlying geometry, without
- * putting a five-figure cadastre's worth of invented names in the shipped file.
- */
+// FICTIONAL: these names must never be matched to real parcels.
 
 import { Rng, deriveSeed } from '../rng.ts'
 import type { ParcelArchetype } from './types.ts'
@@ -22,8 +11,6 @@ const SURNAMES = [
   'Roquemore', 'Studstill', 'Threlkeld', 'Upshaw', 'Waddell', 'Youmans',
 ]
 
-// Named for real watercourses and landforms in this part of Georgia, which is
-// how timber companies here are usually named.
 const TIMBER_PREFIX = [
   'Flint River', 'Muckalee', 'Kinchafoonee', 'Chokee', 'Pennahatchee',
   'Deep Creek', 'Sandhill', 'Longleaf', 'Piney Woods', 'Cedar Bend',
@@ -47,8 +34,6 @@ export function synthesizeOwnerFor(archetype: ParcelArchetype, rng: Rng): string
     case 'row-crop':
       return `${rng.pick(SURNAMES)} ${rng.pick(FARM_SUFFIX)}`
     case 'homestead':
-      // A household, not a named individual. The game should never look like it
-      // is pointing at a specific person's house.
       return `${rng.pick(SURNAMES)} family`
     case 'church':
       return `${rng.pick(CHURCH_FIRST)} ${rng.pick(CHURCH_KIND)}`

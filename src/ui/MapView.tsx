@@ -1,23 +1,39 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, useCallback, type ReactNode } from 'react'
 import { Camera } from '../render/camera.ts'
 import {
   MapRenderer, type Overlay, type Marker, type SitingPreview,
-  type CorridorDraw, type ParcelTint, type StormDraw, type ImageryDraw,
+  type CorridorDraw, type ParcelTint, type StormDraw, type ImageryDraw, type NodeDraw, type FootprintDraw, type DataCenterDraw, type SubstationDraw,
 } from '../render/mapRenderer.ts'
-import type { Road, Waterway, WaterBody } from '../engine/geo/basemapTypes.ts'
+import type { Gis, Road, Waterway, WaterBody } from '../engine/geo/basemapTypes.ts'
 import type { MapData } from '../engine/geo/mapTypes.ts'
 import type { Parcel } from '../engine/parcels/types.ts'
+import type { RouteDraft } from '../state/gameStore.ts'
 
 interface Props {
   data: MapData
   overlay: Overlay
   showHexes: boolean
   markers?: readonly Marker[]
+  dataCenters?: readonly DataCenterDraw[]
+  substations?: readonly SubstationDraw[]
+  pickedLine?: readonly (readonly [number, number])[] | null
   siting?: SitingPreview | null
   /** True while a placement tool is armed, which changes the cursor. */
   placing?: boolean
   parcels?: readonly Parcel[]
   parcelTints?: Record<string, ParcelTint>
+  extraParcels?: readonly Parcel[]
+  footprints?: readonly FootprintDraw[]
+  tappable?: ReadonlyArray<{ points: readonly (readonly [number, number])[] }>
+  tappableShort?: ReadonlyArray<{ points: readonly (readonly [number, number])[] }>
+  /** True where a click would open something. */
+  hitAt?: (x: number, y: number, cell: number, pxPerKm: number) => boolean
+  /** Live preview while drawing a line; null when not drawing. */
+  probe?: (x: number, y: number, pxPerKm: number) => RouteDraft | null
+  /** Press on a place to begin a line and drag to the other end. */
+  onDrawStart?: (x: number, y: number, pxPerKm: number) => boolean
+  /** Changes when the preview has to be worked out again. */
+  probeKey?: unknown
   corridors?: readonly CorridorDraw[]
   hoverParcel?: string | null
   storms?: readonly StormDraw[]
@@ -28,32 +44,36 @@ interface Props {
   waterways?: readonly Waterway[]
   waterBodies?: readonly WaterBody[]
   showWater?: boolean
-  /**
-   * Where the camera should be looking. Changing this eases the view there;
-   * the player can pan away freely afterwards.
-   */
+  stateGis?: Gis | null
+  gis?: Gis | null
+  showGrid?: boolean
+  nodes?: readonly NodeDraw[]
+  waypoints?: readonly [number, number][]
   focus?: { x: number; y: number; scale: number } | null
-  onHoverCounty: (name: string | null, cell: CellReadout | null, cellIndex: number) => void
-  onClickCell?: (cell: number) => void
+  selectedCounty?: string | null
+  countyFill?: Record<string, string>
+  streams?: ReadonlyArray<{ status: string; paths: ReadonlyArray<ReadonlyArray<readonly [number, number]>> }>
+  /** What to say beside the pointer. */
+  tipAt?: (x: number, y: number, cell: number, pxPerKm: number) => MapTip | null
+  /** Details beside a point on the map. */
+  popover?: { at: [number, number]; content: ReactNode; avoid?: readonly (readonly [number, number])[] } | null
+  onHoverCell: (cellIndex: number) => void
+  onClickMap?: (x: number, y: number, cell: number, pxPerKm: number) => void
   onScaleChange: (scale: number) => void
 }
 
-export interface CellReadout {
-  terrain: number
-  population: number
-  landValue: number
-}
+/** Clear of the ring round a marker. */
+const POPOVER_GAP = 30
+const EDGE = 8
 
-/**
- * The map surface: owns the canvas, the camera, and all pointer interaction.
- * Rendering runs on requestAnimationFrame but only repaints when something has
- * actually changed, so an idle map costs nothing.
- */
+export interface MapTip { title: string; lines: string[]; tone?: 'bad' }
+
 export function MapView({
-  data, overlay, showHexes, markers, siting, placing,
+  data, overlay, showHexes, markers, dataCenters, substations, pickedLine, siting, placing,
   parcels, parcelTints, corridors, hoverParcel, storms, focus,
   imagery, roads, showImagery, showRoads, waterways, waterBodies, showWater,
-  onHoverCounty, onClickCell, onScaleChange,
+  stateGis, gis, showGrid, nodes, waypoints, extraParcels, footprints, hitAt, tappable, tappableShort, probe, onDrawStart, probeKey,
+  selectedCounty, countyFill, streams, tipAt, popover, onHoverCell, onClickMap, onScaleChange,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -62,26 +82,69 @@ export function MapView({
   const dirtyRef = useRef(true)
   const hoverCountyRef = useRef(-1)
   const vpRef = useRef({ width: 1, height: 1 })
+  const draftRef = useRef<RouteDraft | null>(null)
+  const refreshRef = useRef<() => void>(() => {})
+  const pointerRef = useRef<[number, number] | null>(null)
   const [ready, setReady] = useState(false)
+  const [tip, setTip] = useState<MapTip | null>(null)
+  const tipRef = useRef<HTMLDivElement>(null)
+  const popRef = useRef<HTMLDivElement>(null)
+  const popAtRef = useRef<[number, number] | null>(null)
+  popAtRef.current = popover?.at ?? null
+  const avoidRef = useRef<readonly (readonly [number, number])[] | null>(null)
+  avoidRef.current = popover?.avoid ?? null
+  const sideRef = useRef<{ key: string; i: number }>({ key: '', i: 0 })
+  const placeTipRef = useRef<(x: number, y: number) => void>(() => {})
 
   const markDirty = useCallback(() => { dirtyRef.current = true }, [])
 
-  // --- set up renderer and initial framing ------------------------------
+  const placePopover = useCallback(() => {
+    const el = popRef.current
+    const at = popAtRef.current
+    if (!el || !at) return
+    const { width, height } = vpRef.current
+    const [px, py] = camRef.current.toScreen(at[0], at[1], vpRef.current)
+    const w = el.offsetWidth
+    const h = el.offsetHeight
+    if (avoidRef.current) {
+      const spots: Array<[number, number]> = [
+        [px + POPOVER_GAP, py - h / 2], [px + POPOVER_GAP, py + POPOVER_GAP], [px + POPOVER_GAP, py - POPOVER_GAP - h],
+        [px - POPOVER_GAP - w, py - h / 2], [px - POPOVER_GAP - w, py + POPOVER_GAP], [px - POPOVER_GAP - w, py - POPOVER_GAP - h],
+        [px - w / 2, py + POPOVER_GAP], [px - w / 2, py - POPOVER_GAP - h],
+      ].map(([x, y]) => [Math.max(EDGE, Math.min(width - EDGE - w, x)), Math.max(EDGE, Math.min(height - EDGE - h, y))])
+      const covers = ([x, y]: [number, number], qx: number, qy: number): boolean =>
+        qx > x - 14 && qx < x + w + 14 && qy > y - 14 && qy < y + h + 14
+      const key = `${at[0]},${at[1]},${w},${Math.round(h / 60)}`
+      // Keep its side while the map moves, unless that hides the click.
+      if (sideRef.current.key !== key || covers(spots[sideRef.current.i], px, py)) {
+        const points = avoidRef.current.map(([x, y]) => camRef.current.toScreen(x, y, vpRef.current))
+        const score = spots.map((s) => points.reduce((n, [x, y]) => n + (covers(s, x, y) ? 1 : 0), covers(s, px, py) ? 1000 : 0))
+        sideRef.current = { key, i: score.indexOf(Math.min(...score)) }
+      }
+      const [sx, sy] = spots[sideRef.current.i]
+      el.style.transform = `translate(${Math.round(sx)}px, ${Math.round(sy)}px)`
+      return
+    }
+    const right = px + POPOVER_GAP + w <= width - EDGE
+    const left = px - POPOVER_GAP - w >= EDGE
+    const x = right ? px + POPOVER_GAP : left ? px - POPOVER_GAP - w : px - w / 2
+    const y = right || left ? py - Math.min(60, h / 2) : py + POPOVER_GAP
+    const cx = Math.max(EDGE, Math.min(width - EDGE - w, x))
+    const cy = Math.max(EDGE, Math.min(height - EDGE - h, y))
+    el.style.transform = `translate(${Math.round(cx)}px, ${Math.round(cy)}px)`
+  }, [])
+
   useEffect(() => {
     const renderer = new MapRenderer(data)
     rendererRef.current = renderer
     const cam = camRef.current
-    cam.bounds = renderer.stateBounds
-    // 0.9 px/km still fits the whole state on a small embed. 150 px/km puts a
-    // 1 km hex at 150 px and a typical parcel frontage at a readable size, which
-    // is as deep as the game ever needs to go.
-    cam.minScale = 0.9
+    cam.bounds = renderer.mapBounds
+    cam.minScale = 0.6
     cam.maxScale = 150
     setReady(true)
     markDirty()
   }, [data, markDirty])
 
-  // --- size to container, with device pixel ratio ------------------------
   useEffect(() => {
     const wrap = wrapRef.current
     const canvas = canvasRef.current
@@ -112,7 +175,6 @@ export function MapView({
     return () => ro.disconnect()
   }, [ready, markDirty, onScaleChange])
 
-  // --- render loop -------------------------------------------------------
   useEffect(() => {
     let raf = 0
     const tick = () => {
@@ -131,6 +193,9 @@ export function MapView({
         hoverCounty: hoverCountyRef.current,
         showHexes,
         markers,
+        dataCenters,
+        substations,
+        pickedLine,
         siting,
         parcels,
         parcelTints,
@@ -144,23 +209,35 @@ export function MapView({
         waterways,
         waterBodies,
         showWater,
+        stateGis,
+        gis,
+        showGrid,
+        nodes,
+        waypoints,
+        extraParcels,
+        footprints,
+        tappable,
+        tappableShort,
+        draft: draftRef.current,
+        selectedCounty,
+        countyFill,
+        streams,
       })
+      placePopover()
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [overlay, showHexes, markers, siting, parcels, parcelTints, corridors, hoverParcel, storms,
-      imagery, roads, showImagery, showRoads, waterways, waterBodies, showWater])
+  }, [overlay, showHexes, markers, dataCenters, substations, pickedLine, siting, parcels, parcelTints, corridors, hoverParcel, storms,
+      imagery, roads, showImagery, showRoads, waterways, waterBodies, showWater,
+      stateGis, gis, showGrid, nodes, waypoints, extraParcels, footprints, tappable, tappableShort, selectedCounty, countyFill, streams])
 
   // Repaint when anything the renderer reads changes.
   useEffect(markDirty, [
-    overlay, showHexes, markers, siting, parcels, parcelTints, corridors, hoverParcel, storms,
+    overlay, showHexes, markers, dataCenters, substations, pickedLine, siting, parcels, parcelTints, corridors, hoverParcel, storms,
     imagery, roads, showImagery, showRoads, waterways, waterBodies, showWater,
-    markDirty,
+    stateGis, gis, showGrid, nodes, waypoints, extraParcels, footprints, tappable, tappableShort, selectedCounty, countyFill, streams, markDirty,
   ])
 
-  // --- camera focus ------------------------------------------------------
-  // Ease rather than jump: a cut leaves the player with no idea where they
-  // just went, whereas a short glide keeps the state visible on the way in.
   useEffect(() => {
     if (!focus || !ready) return
     const cam = camRef.current
@@ -186,12 +263,12 @@ export function MapView({
     return () => cancelAnimationFrame(raf)
   }, [focus, ready, markDirty, onScaleChange])
 
-  // --- interaction -------------------------------------------------------
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
 
     let dragging = false
+    let drawing = false
     let lastX = 0
     let lastY = 0
     let moved = 0
@@ -203,9 +280,20 @@ export function MapView({
       return [e.clientX - r.left, e.clientY - r.top]
     }
 
+    const updateDraft = (sx: number, sy: number) => {
+      const [wx, wy] = camRef.current.toWorld(sx, sy, vpRef.current)
+      const draft = probe?.(wx, wy, camRef.current.scale) ?? null
+      if (draft || draftRef.current) markDirty()
+      draftRef.current = draft
+      canvas.classList.toggle('valid', draft?.state === 'valid')
+      canvas.classList.toggle('invalid', draft?.state === 'invalid')
+    }
+
     const updateHover = (sx: number, sy: number) => {
       const renderer = rendererRef.current
       if (!renderer) return
+      pointerRef.current = [sx, sy]
+      updateDraft(sx, sy)
       const [wx, wy] = camRef.current.toWorld(sx, sy, vpRef.current)
       const ci = renderer.countyAt(wx, wy)
       if (ci !== hoverCountyRef.current) {
@@ -213,19 +301,25 @@ export function MapView({
         markDirty()
       }
       const cell = renderer.cellAt(wx, wy)
-      if (ci < 0) {
-        onHoverCounty(null, null, cell)
-        return
-      }
-      const g = data.grid
-      onHoverCounty(
-        data.counties.counties[ci]?.name ?? null,
-        cell >= 0
-          ? { terrain: g.terrain[cell], population: g.population[cell], landValue: g.landValue[cell] }
-          : null,
-        cell,
-      )
+      canvas.classList.toggle('over', hitAt?.(wx, wy, cell, camRef.current.scale) ?? false)
+      onHoverCell(cell)
+      showTip(tipAt?.(wx, wy, cell, camRef.current.scale) ?? null, sx, sy)
     }
+
+    const showTip = (next: MapTip | null, sx: number, sy: number) => {
+      setTip((old) => (JSON.stringify(old) === JSON.stringify(next) ? old : next))
+      placeTip(sx, sy)
+    }
+
+    const placeTip = (sx: number, sy: number) => {
+      const el = tipRef.current
+      if (!el) return
+      const { width, height } = vpRef.current
+      const left = sx + 16 + el.offsetWidth > width - 6 ? sx - 14 - el.offsetWidth : sx + 16
+      const top = sy + 18 + el.offsetHeight > height - 6 ? sy - 12 - el.offsetHeight : sy + 18
+      el.style.transform = `translate(${Math.max(4, left)}px, ${Math.max(4, top)}px)`
+    }
+    placeTipRef.current = placeTip
 
     const onPointerDown = (e: PointerEvent) => {
       canvas.setPointerCapture(e.pointerId)
@@ -233,11 +327,17 @@ export function MapView({
       if (pointers.size === 1) {
         dragging = true
         moved = 0
+        setTip(null)
         const [x, y] = localPoint(e)
         lastX = x
         lastY = y
+        const [wx, wy] = camRef.current.toWorld(x, y, vpRef.current)
+        drawing = onDrawStart?.(wx, wy, camRef.current.scale) ?? false
+        if (drawing) updateDraft(x, y)
+        wrapRef.current?.classList.toggle('drawing', drawing)
       } else if (pointers.size === 2) {
         dragging = false
+        drawing = false
         const [a, b] = [...pointers.values()]
         pinchDist = Math.hypot(a.x - b.x, a.y - b.y)
       }
@@ -270,9 +370,14 @@ export function MapView({
         const dx = x - lastX
         const dy = y - lastY
         moved += Math.abs(dx) + Math.abs(dy)
-        camRef.current.panByPixels(dx, dy)
         lastX = x
         lastY = y
+        if (drawing) {
+          pointerRef.current = [x, y]
+          updateDraft(x, y)
+          return
+        }
+        camRef.current.panByPixels(dx, dy)
         markDirty()
       } else {
         updateHover(x, y)
@@ -281,26 +386,28 @@ export function MapView({
 
     const endPointer = (e: PointerEvent) => {
       const wasDragging = dragging
+      const wasDrawing = drawing
+      if (pointers.size <= 1) drawing = false
+      if (!drawing) wrapRef.current?.classList.remove('drawing')
       pointers.delete(e.pointerId)
       if (pointers.size < 2) pinchDist = 0
       if (pointers.size === 0) dragging = false
       if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId)
 
-      // A click is a pointer-up that didn't travel. Anything more was a pan,
-      // and panning must never place a several-hundred-million-dollar plant.
-      if (e.type === 'pointerup' && wasDragging && moved < 5 && onClickCell) {
+      // A press that began a line finishes it only if it was dragged somewhere.
+      const finish = wasDrawing ? moved >= 12 : moved < 5
+      if (e.type === 'pointerup' && wasDragging && finish && onClickMap) {
         const renderer = rendererRef.current
         if (!renderer) return
         const [x, y] = localPoint(e)
         const [wx, wy] = camRef.current.toWorld(x, y, vpRef.current)
         const cell = renderer.cellAt(wx, wy)
-        if (cell >= 0) onClickCell(cell)
+        if (cell >= 0) onClickMap(wx, wy, cell, camRef.current.scale)
       }
+      if (e.type === 'pointerup' && e.pointerType === 'mouse') updateHover(...localPoint(e))
     }
 
     const onWheel = (e: WheelEvent) => {
-      // The map owns the wheel while the pointer is over it. Without this the
-      // host page scrolls out from under the embed as soon as you try to zoom.
       e.preventDefault()
       const [x, y] = localPoint(e)
       // Normalise line/page deltas so trackpads and mice feel similar.
@@ -312,12 +419,28 @@ export function MapView({
     }
 
     const onLeave = () => {
+      pointerRef.current = null
+      if (draftRef.current) {
+        draftRef.current = null
+        markDirty()
+      }
       if (hoverCountyRef.current !== -1) {
         hoverCountyRef.current = -1
         markDirty()
       }
-      onHoverCounty(null, null, -1)
+      onHoverCell(-1)
+      setTip(null)
     }
+
+    refreshRef.current = () => {
+      if (probe && pointerRef.current) updateDraft(...pointerRef.current)
+      else if (draftRef.current) {
+        draftRef.current = null
+        canvas.classList.remove('valid', 'invalid')
+        markDirty()
+      }
+    }
+    refreshRef.current()
 
     canvas.addEventListener('pointerdown', onPointerDown)
     canvas.addEventListener('pointermove', onPointerMove)
@@ -333,9 +456,11 @@ export function MapView({
       canvas.removeEventListener('pointerleave', onLeave)
       canvas.removeEventListener('wheel', onWheel)
     }
-  }, [data, markDirty, onHoverCounty, onClickCell, onScaleChange])
+  }, [data, markDirty, tipAt, onHoverCell, onClickMap, onScaleChange, hitAt, probe, onDrawStart])
 
-  // --- keyboard ----------------------------------------------------------
+  // The preview can change without the pointer moving.
+  useEffect(() => refreshRef.current(), [probeKey])
+
   const onKeyDown = useCallback((e: React.KeyboardEvent) => {
     const cam = camRef.current
     const step = 60
@@ -358,6 +483,22 @@ export function MapView({
     markDirty()
   }, [markDirty, onScaleChange])
 
+  // Its size is only known once drawn.
+  useLayoutEffect(() => {
+    if (tip && pointerRef.current) placeTipRef.current(...pointerRef.current)
+  }, [tip])
+
+  const popKey = popover ? `${popover.at[0]},${popover.at[1]}` : ''
+  useLayoutEffect(() => {
+    const el = popRef.current
+    if (!el) return
+    el.scrollTop = 0
+    placePopover()
+    const ro = new ResizeObserver(placePopover)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [popKey, placePopover])
+
   return (
     <div ref={wrapRef} className="map-wrap">
       <canvas
@@ -368,6 +509,13 @@ export function MapView({
         aria-label="Map of Georgia. Drag to pan, scroll to zoom, arrow keys to move."
         role="application"
       />
+      {popover && <div ref={popRef} className="map-popover">{popover.content}</div>}
+      {tip && (
+        <div ref={tipRef} className={tip.tone === 'bad' ? 'map-tip bad' : 'map-tip'} role="status">
+          <strong>{tip.title}</strong>
+          {tip.lines.map((l) => <span key={l}>{l}</span>)}
+        </div>
+      )}
     </div>
   )
 }

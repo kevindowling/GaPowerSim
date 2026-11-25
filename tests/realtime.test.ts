@@ -1,352 +1,361 @@
 import { describe, it, expect } from 'vitest'
-import { fixtures, cellAtLonLat } from './helpers/loadFixtures.ts'
-import { AMERICUS } from '../src/data/scenarios.ts'
-import { createGame, resetPlantCounter } from '../src/engine/state.ts'
-import { acceptContract } from '../src/engine/turn/resolve.ts'
-import { sitePlant } from '../src/engine/turn/siting.ts'
-import { createRealtimeState, TICKS_PER_DAY, type RealtimeState } from '../src/engine/realtime/types.ts'
+import { signed, site, plan, build, operate, BOUNDS } from './helpers/play.ts'
+import { commitCorridor } from '../src/engine/turn/corridor.ts'
+import { createRealtimeState, TICKS_PER_DAY, OPERATING_YEAR_TICKS } from '../src/engine/realtime/types.ts'
 import {
-  customerShape, solarFraction, ambientC, loadAt, hourOfDay, dayOfYear,
-  customerLoadForPopulation,
+  customerShape, solarFraction, ambientC, loadAt, hourOfDay, dayOfYear, rampFraction,
 } from '../src/engine/realtime/load.ts'
 import {
-  dispatch, availableMw, deliverableMw, marketPrice,
+  dispatch, availableMw, marketPrice, importLimitMw, batteryCapacityMwh, BATTERY_HOURS,
 } from '../src/engine/realtime/dispatch.ts'
+import { tripProbability, distanceToCenterline, stormDamageChance } from '../src/engine/realtime/reliability.ts'
 import {
-  tripProbability, distanceToCenterline, stormDamageChance, capacityDerates, outAssets,
-} from '../src/engine/realtime/reliability.ts'
-import { stepRealtime, reliabilityIndices } from '../src/engine/realtime/operate.ts'
-import { lineClass, type LineClassId } from '../src/data/transmission.ts'
-import type { GameState, Corridor } from '../src/engine/types.ts'
-import { Rng } from '../src/engine/rng.ts'
+  stepRealtime, reliabilityIndices, standingCosts, setCrews, togglePriority,
+} from '../src/engine/realtime/operate.ts'
+import type { GameState } from '../src/engine/types.ts'
+import type { PlantKind } from '../src/data/plants.ts'
+import type { LineClassId } from '../src/data/transmission.ts'
+import type { SheddingPolicy } from '../src/engine/realtime/types.ts'
 
-const PLANT_SITE = () => cellAtLonLat(-84.36, 32.02)
-const CAMPUS = () => cellAtLonLat(-84.187, 32.113)
-const BOUNDS = { minX: -100, minY: -80, maxX: -30, maxY: -20 }
+const JULY_EVENING = 200 * TICKS_PER_DAY + 74
 
-/** A game with generation online and a corridor energized, ready to operate. */
-function operatingGame(classId: LineClassId = '230', turbines = 3): GameState {
-  const { counties, grid } = fixtures()
-  resetPlantCounter()
-  let g = acceptContract(createGame(AMERICUS, CAMPUS(), counties))
-  for (let i = 0; i < turbines; i++) g = sitePlant(g, 'gas-ct', PLANT_SITE(), grid)
+/** Everything built and connected, at full load. */
+function operating(classId: LineClassId = '230d', plants: Array<[PlantKind, number]> = [['gas-ct', 3]]): GameState {
+  let g = signed()
+  for (const [t, n] of plants) g = site(g, t, n)
+  g = commitCorridor(g, plan(g, classId))
+  g.corridors[0].status = 'energized'
   for (const p of g.plants) {
     p.status = 'online'
-    p.quartersRemaining = 0
-    p.commissionedQuarter = 0
     p.capexSpent = p.capexTotal
+    if (p.typeId === 'battery') p.socMwh = batteryCapacityMwh(p)
   }
-
-  const corridor: Corridor = {
-    id: 'corridor-1',
-    name: 'test corridor',
-    classId,
-    cells: [],
-    centerline: [[-70, -50], [-50, -45]],
-    lengthKm: 21,
-    status: 'energized',
-    deals: {},
-    takings: {},
-    condemnations: 0,
-    legalCosts: 0,
-    rowPaid: 0,
-    capexTotal: 0,
-    capexSpent: 0,
-    buildQuartersRemaining: 0,
-    delayQuarters: 0,
-  }
-  g.corridors.push(corridor)
-  g.energizedQuarter = 0
+  g.energizedQuarter = g.quarter
   g.phase = 'operate'
   g.realtime = createRealtimeState()
+  g.tutorial = null
   return g
 }
 
-describe('load shape', () => {
-  it('runs the clock and calendar correctly', () => {
-    expect(hourOfDay(0)).toBe(0)
+const PEAK = loadAt(JULY_EVENING, 400, 58.8)
+const none = new Set<string>()
+const line = (g: GameState): string => g.corridors[0].id
+
+describe('load', () => {
+  it('keeps a calendar', () => {
     expect(hourOfDay(4)).toBe(1)
-    expect(hourOfDay(TICKS_PER_DAY)).toBe(0)
     expect(dayOfYear(TICKS_PER_DAY * 3)).toBe(3)
   })
 
-  it('peaks in the evening and troughs overnight', () => {
-    const at = (h: number) => customerShape(Math.round(h * 4))
-    expect(at(18.5)).toBeGreaterThan(at(3))
-    expect(at(18.5)).toBeGreaterThan(at(12))
-    expect(at(3)).toBeLessThan(1)
-  })
-
-  it('peaks in summer, because south Georgia is air conditioning', () => {
-    const summerEvening = customerShape(200 * TICKS_PER_DAY + 74)
-    const springEvening = customerShape(100 * TICKS_PER_DAY + 74)
-    expect(summerEvening).toBeGreaterThan(springEvening)
-  })
-
-  it('produces no solar at night and a midday peak', () => {
-    expect(solarFraction(0)).toBe(0)          // midnight
-    expect(solarFraction(4 * 3)).toBe(0)      // 3am
-    expect(solarFraction(4 * 12)).toBeGreaterThan(0.5)
-    expect(solarFraction(4 * 23)).toBe(0)
-  })
-
-  it('is hotter in August than January, and warmer at 3pm than 5am', () => {
+  it('peaks on summer evenings', () => {
+    expect(customerShape(74)).toBeGreaterThan(customerShape(12))
+    expect(customerShape(JULY_EVENING)).toBeGreaterThan(customerShape(100 * TICKS_PER_DAY + 74))
     expect(ambientC(200 * TICKS_PER_DAY + 60)).toBeGreaterThan(ambientC(10 * TICKS_PER_DAY + 60))
-    expect(ambientC(4 * 15)).toBeGreaterThan(ambientC(4 * 5))
   })
 
-  it('keeps the data centre flat while customers swing', () => {
-    const customerAvg = customerLoadForPopulation(42_000)
-    const night = loadAt(4 * 3, 400, customerAvg)
-    const evening = loadAt(4 * 19, 400, customerAvg)
-
-    // The campus barely moves...
-    expect(Math.abs(evening.contractMw - night.contractMw) / night.contractMw).toBeLessThan(0.15)
-    // ...while the neighbourhood nearly doubles.
-    expect(evening.customerMw).toBeGreaterThan(night.customerMw * 1.3)
-  })
-})
-
-describe('dispatch', () => {
-  it('derates thermal plants as the air warms', () => {
-    const g = operatingGame()
-    const plant = g.plants[0]
-    const cool = availableMw(plant, 0, 15, false)
-    const hot = availableMw(plant, 0, 38, false)
-    expect(cool).toBe(plant.nameplateMw)
-    expect(hot).toBeLessThan(cool)
+  it('has no sun at night', () => {
+    expect(solarFraction(0)).toBe(0)
+    expect(solarFraction(48)).toBeGreaterThan(0.5)
   })
 
-  it('gives nothing from a unit that is out', () => {
-    const g = operatingGame()
-    expect(availableMw(g.plants[0], 0, 20, true)).toBe(0)
+  it('opens the campus in phases', () => {
+    expect(rampFraction(0, 4)).toBe(0.25)
+    expect(rampFraction(50 * TICKS_PER_DAY, 4)).toBe(0.5)
+    expect(rampFraction(300 * TICKS_PER_DAY, 4)).toBe(1)
   })
 
-  it('runs the cheapest generation first', () => {
-    const g = operatingGame()
-    const customerAvg = customerLoadForPopulation(42_000)
-    const load = loadAt(4 * 12, 400, customerAvg)
-    const result = dispatch(g, load, 4 * 12, new Set(), 'proportional')
-    // Three turbines at 200 MW cover 400 MW of campus plus the town.
-    expect(result.generationMw).toBeGreaterThan(400)
-    expect(result.marketMw).toBeLessThan(1)
-    expect(result.fuelCost).toBeGreaterThan(0)
-  })
-
-  it('buys from the market when generation is short, and pays for it', () => {
-    const g = operatingGame('230', 1) // only 200 MW of plant against 400 MW of load
-    const customerAvg = customerLoadForPopulation(42_000)
-    const load = loadAt(4 * 19, 400, customerAvg)
-    const result = dispatch(g, load, 4 * 19, new Set(), 'proportional')
-    expect(result.marketMw).toBeGreaterThan(100)
-    expect(result.marketCost).toBeGreaterThan(0)
-    // Scarcity shows up in the price.
-    expect(result.priceMwh).toBeGreaterThan(marketPrice(4 * 19, load.ambientC, 0))
-  })
-
-  it('cannot deliver more than the wire carries', () => {
-    const g = operatingGame('230') // 400 MW rating
-    const customerAvg = customerLoadForPopulation(42_000)
-    const load = loadAt(0, 600, customerAvg) // ask for 600 MW
-    const result = dispatch(g, load, 0, new Set(), 'proportional')
-    expect(result.corridorLimited).toBe(true)
-    expect(result.unservedContractMw).toBeGreaterThan(100)
-  })
-
-  it('honours the shedding policy when there is not enough to go round', () => {
-    const g = operatingGame('115', 3) // 150 MW wire against a 400 MW campus
-    const customerAvg = customerLoadForPopulation(42_000)
-    const load = loadAt(4 * 19, 400, customerAvg)
-
-    const homes = dispatch(g, load, 4 * 19, new Set(), 'protect-homes')
-    const contract = dispatch(g, load, 4 * 19, new Set(), 'protect-contract')
-
-    // Protecting homes costs the contract more; protecting the contract costs
-    // the neighbourhood more. The choice is real in both directions.
-    expect(homes.unservedCustomerMw).toBeLessThanOrEqual(contract.unservedCustomerMw)
-    expect(homes.unservedContractMw).toBeGreaterThanOrEqual(contract.unservedContractMw)
+  it('adds demand in a heat wave', () => {
+    expect(loadAt(JULY_EVENING, 400, 58.8, 1, 5).customerMw).toBeGreaterThan(PEAK.customerMw)
   })
 })
 
-describe('reliability', () => {
-  it('turns a forced-outage rate into a sane per-tick hazard', () => {
-    const p = tripProbability(0.05, 18, false)
+describe('supply', () => {
+  it('derates thermal plants in heat', () => {
+    const p = operating().plants[0]
+    expect(availableMw(p, 0, 38, false)).toBeLessThan(availableMw(p, 0, 15, false))
+    expect(availableMw(p, 0, 15, true)).toBe(0)
+  })
+
+  it('limits imports, more so in heat', () => {
+    const g = operating()
+    expect(importLimitMw(g, 20)).toBe(g.system.importLimitMw)
+    expect(importLimitMw(g, 38)).toBeLessThan(g.system.importLimitMw * 0.7)
+    expect(marketPrice(0, 38)).toBeGreaterThan(marketPrice(0, 20) * 2)
+  })
+
+  it('goes short when every plant is out, because imports are limited', () => {
+    const g = operating()
+    const r = dispatch(g, PEAK, JULY_EVENING, new Set(g.plants.map((p) => p.id)), 'proportional')
+    expect(r.marketMw).toBeLessThanOrEqual(g.system.importLimitMw)
+    expect(r.unservedContractMw + r.unservedCustomerMw).toBeGreaterThan(250)
+  })
+
+  it('buys cheap power before running turbines', () => {
+    const g = operating()
+    const spring = loadAt(100 * TICKS_PER_DAY, 400, 58.8)
+    const r = dispatch(g, spring, 100 * TICKS_PER_DAY, none, 'proportional')
+    expect(r.priceMwh).toBeLessThan(62)
+    expect(r.marketMw).toBeCloseTo(r.importLimitMw, 0)
+  })
+
+  it('runs turbines first when the market is dearer', () => {
+    const g = operating()
+    const r = dispatch(g, PEAK, JULY_EVENING, none, 'proportional')
+    expect(r.priceMwh).toBeGreaterThan(62)
+    expect(r.generationMw).toBeGreaterThan(r.marketMw)
+  })
+
+  it('balances what is made with what is used', () => {
+    const g = operating('230', [['gas-ct', 2], ['battery', 1]])
+    for (const t of [0, 4000, JULY_EVENING]) {
+      const load = loadAt(t, 400, 58.8)
+      const r = dispatch(g, load, t, none, 'proportional')
+      expect(r.generationMw + r.marketMw).toBeCloseTo(r.servedMw + r.chargeMw, 3)
+    }
+  })
+
+  it('never puts more on a line than its rating', () => {
+    const g = operating('115')
+    const r = dispatch(g, PEAK, JULY_EVENING, none, 'proportional')
+    expect(r.lineFlowMw[line(g)]).toBeLessThanOrEqual(150 + 1e-6)
+    expect(r.lineFlowMw.tie).toBeLessThanOrEqual(g.system.tieMw + 1e-6)
+    expect(r.unservedContractMw).toBeGreaterThan(50)
+  })
+})
+
+describe('batteries', () => {
+  it('run out after about four hours', () => {
+    const g = operating('230d', [['battery', 4]])
+    const heavy = { ...PEAK, contractMw: 600, totalMw: 600 + PEAK.customerMw }
+    let hours = 0
+    for (let i = 0; i < 96; i++) {
+      const r = dispatch(g, heavy, JULY_EVENING, none, 'proportional')
+      if (r.generationMw > 350) hours += 0.25
+    }
+    expect(hours).toBeGreaterThan(BATTERY_HOURS - 0.6)
+    expect(hours).toBeLessThan(BATTERY_HOURS + 0.6)
+    expect(g.plants.every((p) => p.socMwh < 1)).toBe(true)
+  })
+
+  it('recharge from spare cheap power, with losses', () => {
+    const g = operating('230d', [['gas-ct', 3], ['battery', 1]])
+    const b = g.plants.find((p) => p.typeId === 'battery')!
+    b.socMwh = 0
+    const spring = loadAt(100 * TICKS_PER_DAY, 200, 58.8)
+    const r = dispatch(g, spring, 100 * TICKS_PER_DAY, none, 'proportional')
+    expect(r.chargeMw).toBeGreaterThan(50)
+    expect(b.socMwh).toBeLessThan(r.chargeMw * 0.25)
+  })
+
+  it('cannot carry a contract alone', () => {
+    const g = build({ plants: [['battery', 7]] })
+    expect(g.energizedQuarter).toBeNull()
+  })
+})
+
+describe('who goes without', () => {
+  const short = (policy: SheddingPolicy) => {
+    const g = operating()
+    return dispatch(g, PEAK, JULY_EVENING, new Set(g.plants.slice(0, 2).map((p) => p.id)), policy)
+  }
+
+  it('depends on the policy', () => {
+    const homes = short('protect-homes')
+    const share = short('proportional')
+    const campus = short('protect-contract')
+    expect(homes.unservedCustomerMw).toBeCloseTo(0, 1)
+    expect(campus.unservedCustomerMw).toBeGreaterThan(share.unservedCustomerMw + 1)
+    expect(share.unservedCustomerMw).toBeGreaterThan(homes.unservedCustomerMw + 1)
+    expect(campus.unservedContractMw).toBeLessThan(share.unservedContractMw)
+    expect(share.unservedContractMw).toBeLessThan(homes.unservedContractMw)
+  })
+
+  it('delivers the same total either way', () => {
+    expect(short('protect-homes').servedMw).toBeCloseTo(short('protect-contract').servedMw, 0)
+  })
+
+  it('shares evenly when the lines allow it', () => {
+    const r = short('proportional')
+    expect(r.unservedContractMw / PEAK.contractMw).toBeCloseTo(r.unservedCustomerMw / PEAK.customerMw, 1)
+  })
+
+  it('costs county approval when it is homes', () => {
+    const g = operating()
+    g.realtime!.policy = 'protect-contract'
+    g.realtime!.startTick = 200 * TICKS_PER_DAY
+    g.realtime!.tick = 200 * TICKS_PER_DAY
+    g.realtime!.startTick = 0
+    g.realtime!.nextEventTick = Infinity
+    g.contract.inServiceQuarter = 99
+    for (const p of g.plants) {
+      g.realtime!.outages.push({ assetId: p.id, kind: 'plant', cause: 'test', ticksRemaining: 9999, capacityFraction: 0, crews: 0, startedTick: 0 })
+    }
+    const before = g.contract.approval!
+    for (let i = 0; i < 96; i++) stepRealtime(g, BOUNDS)
+    expect(g.contract.approval!).toBeLessThan(before - 3)
+    expect(g.penaltiesAccrued).toBeGreaterThan(0)
+  })
+})
+
+describe('redundancy', () => {
+  it('keeps the campus up on one of two circuits', () => {
+    const g = operating('230d')
+    const r = dispatch(g, PEAK, JULY_EVENING, none, 'proportional', new Map([[line(g), 0.5]]))
+    expect(r.unservedContractMw).toBeLessThan(1)
+  })
+
+  it('loses most of the campus when a single line is down', () => {
+    const g = operating('230')
+    const r = dispatch(g, PEAK, JULY_EVENING, none, 'protect-homes', new Map([[line(g), 0]]))
+    expect(r.unservedContractMw).toBeGreaterThan(250)
+    expect(r.generationMw).toBeLessThan(1)
+  })
+
+  it('pays for itself over a year', () => {
+    const total = (classId: LineClassId) => [1, 2, 4, 5].reduce((n, seed) =>
+      n + operate(build({ seed, classId, style: 'property' })).realtime!.unservedContractMwh, 0)
+    expect(total('230d')).toBeLessThan(total('230'))
+  }, 60_000)
+})
+
+describe('faults', () => {
+  it('turns outage rates into sane hazards', () => {
+    const p = tripProbability(0.05, 60, false)
     expect(p).toBeGreaterThan(0)
     expect(p).toBeLessThan(0.01)
-    // Deferring maintenance makes failure meaningfully more likely.
-    expect(tripProbability(0.05, 18, true)).toBeGreaterThan(p)
+    expect(tripProbability(0.05, 60, true)).toBeGreaterThan(p * 2)
   })
 
-  it('measures distance from a storm to a line', () => {
-    const line: Array<[number, number]> = [[0, 0], [10, 0]]
-    expect(distanceToCenterline(5, 3, line)).toBeCloseTo(3, 6)
-    expect(distanceToCenterline(5, 0, line)).toBeCloseTo(0, 6)
-    // Past the end, distance is to the endpoint, not the infinite line.
-    expect(distanceToCenterline(14, 0, line)).toBeCloseTo(4, 6)
+  it('measures distance to a line', () => {
+    expect(distanceToCenterline(5, 3, [[0, 0], [10, 0]])).toBeCloseTo(3, 6)
+    expect(distanceToCenterline(14, 0, [[0, 0], [10, 0]])).toBeCloseTo(4, 6)
   })
 
-  it('rewards vegetation management', () => {
-    const storm = {
-      id: 's', x: 0, y: 0, vx: 1, vy: 0, radiusKm: 20,
-      severity: 0.8, ticksRemaining: 10, name: 'test',
-    }
+  it('does less storm damage to a cleared line', () => {
+    const storm = { id: 's', x: 0, y: 0, vx: 1, vy: 0, radiusKm: 20, severity: 0.8, ticksRemaining: 10, name: 't' }
     expect(stormDamageChance(storm, 1, false)).toBeLessThan(stormDamageChance(storm, 0, false))
-    expect(stormDamageChance(storm, 0.5, true)).toBeGreaterThan(stormDamageChance(storm, 0.5, false))
   })
 
-  it('treats a half-lost double circuit as derated, not dead', () => {
-    const rt: RealtimeState = createRealtimeState()
-    rt.outages.push({
-      assetId: 'corridor-1', kind: 'corridor', cause: 'structure down',
-      ticksRemaining: 20, capacityFraction: 0.5, crews: 0, startedTick: 0,
+  it('sends crews to the fault the player picked', () => {
+    const g = operating()
+    const rt = g.realtime!
+    rt.crewsTotal = 2
+    rt.nextEventTick = Infinity
+    const fault = (assetId: string, kind: 'plant' | 'corridor') => ({
+      assetId, kind, cause: 't', ticksRemaining: 400, capacityFraction: 0, crews: 0, startedTick: 0,
     })
-    // Half capacity is not an outage — the line is still carrying.
-    expect(outAssets(rt).has('corridor-1')).toBe(false)
-    expect(capacityDerates(rt).get('corridor-1')).toBe(0.5)
+    rt.outages.push(fault(line(g), 'corridor'), fault(g.plants[0].id, 'plant'))
+    stepRealtime(g, BOUNDS)
+    expect(rt.outages.find((o) => o.kind === 'corridor')!.crews).toBe(2)
+    togglePriority(g, g.plants[0].id)
+    stepRealtime(g, BOUNDS)
+    expect(rt.outages.find((o) => o.assetId === g.plants[0].id)!.crews).toBe(2)
   })
 
-  it('takes the worst of two concurrent faults on one asset', () => {
-    const rt = createRealtimeState()
-    rt.outages.push(
-      { assetId: 'c', kind: 'corridor', cause: 'a', ticksRemaining: 5, capacityFraction: 0.5, crews: 0, startedTick: 0 },
-      { assetId: 'c', kind: 'corridor', cause: 'b', ticksRemaining: 5, capacityFraction: 0, crews: 0, startedTick: 0 },
-    )
-    expect(capacityDerates(rt).get('c')).toBe(0)
-  })
-})
-
-describe('redundancy is what the extra money bought', () => {
-  it('keeps the campus up on a double circuit that a single circuit would lose', () => {
-    const single = operatingGame('230')
-    const double = operatingGame('230d')
-    const customerAvg = customerLoadForPopulation(42_000)
-    const load = loadAt(0, 400, customerAvg)
-
-    // Same storm, same damage: one circuit down.
-    const singleDown = new Map([['corridor-1', 0]])       // 1 of 1 circuits
-    const doubleHalf = new Map([['corridor-1', 0.5]])     // 1 of 2 circuits
-
-    const singleResult = dispatch(single, load, 0, new Set(['corridor-1']), 'proportional', singleDown)
-    const doubleResult = dispatch(double, load, 0, new Set(), 'proportional', doubleHalf)
-
-    // The single-circuit campus goes dark.
-    expect(singleResult.unservedContractMw).toBeGreaterThan(300)
-    // The double-circuit campus rides it out: 800 MW rating, half of it is 400.
-    expect(doubleResult.unservedContractMw).toBeLessThan(1)
-  })
-
-  it('rates a double circuit at twice a single one', () => {
-    const single = deliverableMw(operatingGame('230').corridors, new Map())
-    const double = deliverableMw(operatingGame('230d').corridors, new Map())
-    expect(double).toBe(single * 2)
-    expect(single).toBe(lineClass('230').ratingMw)
-  })
-})
-
-describe('the operate loop', () => {
-  it('serves the load, bills the fuel, and logs the intervals', () => {
-    const g = operatingGame()
-    const cashBefore = g.cash
-    for (let i = 0; i < 96; i++) stepRealtime(g, BOUNDS)
-
-    const rt = g.realtime!
-    expect(rt.tick).toBe(96)
-    expect(rt.servedMwh).toBeGreaterThan(0)
-    expect(rt.fuelCost).toBeGreaterThan(0)
-    expect(g.cash).toBeLessThan(cashBefore)
-    expect(rt.history.length).toBe(96)
-    expect(rt.history[0].loadMw).toBeGreaterThan(0)
-  })
-
-  it('caps the history window rather than growing without bound', () => {
-    const g = operatingGame()
-    for (let i = 0; i < 400; i++) stepRealtime(g, BOUNDS)
-    expect(g.realtime!.history.length).toBe(192)
-  })
-
-  it('never produces NaN over a long run', () => {
-    const g = operatingGame('230', 2)
-    for (let i = 0; i < 2_000; i++) stepRealtime(g, BOUNDS)
-    const rt = g.realtime!
-    for (const v of [rt.servedMwh, rt.fuelCost, rt.marketCost, rt.unservedContractMwh, g.cash]) {
-      expect(Number.isFinite(v)).toBe(true)
-    }
-    for (const r of rt.history) {
-      expect(Number.isFinite(r.loadMw)).toBe(true)
-      expect(Number.isFinite(r.priceMwh)).toBe(true)
-    }
-  })
-
-  it('breaks things, and fixes them again', () => {
-    const g = operatingGame()
-    g.realtime!.maintenanceDeferred = true
-    g.realtime!.vegetationSpend = 0
-
-    let sawOutage = false
-    let sawRestore = false
-    for (let i = 0; i < 4_000; i++) {
-      const { events } = stepRealtime(g, BOUNDS)
-      if (events.some((e) => /tripped offline|line down|circuit lost/.test(e))) sawOutage = true
-      if (events.some((e) => /restored to service/.test(e))) sawRestore = true
-      if (sawOutage && sawRestore) break
-    }
-    expect(sawOutage).toBe(true)
-    expect(sawRestore).toBe(true)
-  })
-
-  it('fails more often with maintenance deferred than without', () => {
-    const count = (deferred: boolean): number => {
-      const g = operatingGame()
+  it('trips more often with maintenance deferred', () => {
+    const trips = (deferred: boolean): number => {
+      const g = operating()
       g.rngState = 4242
       g.realtime!.maintenanceDeferred = deferred
-      g.realtime!.vegetationSpend = 0.5
-      let outages = 0
-      for (let i = 0; i < 3_000; i++) {
-        outages += stepRealtime(g, BOUNDS).events.filter((e) => /tripped offline/.test(e)).length
+      g.realtime!.nextEventTick = Infinity
+      g.creditLimit = Infinity
+      let n = 0
+      for (let i = 0; i < 12_000; i++) {
+        n += stepRealtime(g, BOUNDS).events.filter((e) => /tripped offline/.test(e)).length
       }
-      return outages
+      return n
     }
-    expect(count(true)).toBeGreaterThan(count(false))
-  })
-
-  it('reports reliability the way a utility would', () => {
-    const g = operatingGame()
-    for (let i = 0; i < TICKS_PER_DAY * 30; i++) stepRealtime(g, BOUNDS)
-    const idx = reliabilityIndices(g.realtime!)
-    expect(idx.daysOperated).toBeCloseTo(30, 0)
-    expect(idx.contractAvailability).toBeGreaterThan(0)
-    expect(idx.contractAvailability).toBeLessThanOrEqual(1)
-    expect(idx.saidiMinutes).toBeGreaterThanOrEqual(0)
-  })
-
-  it('stays deterministic across identical runs', () => {
-    const play = (): string => {
-      const g = operatingGame()
-      g.rngState = 99
-      for (let i = 0; i < 500; i++) stepRealtime(g, BOUNDS)
-      return JSON.stringify(g.realtime)
-    }
-    expect(play()).toEqual(play())
+    expect(trips(true)).toBeGreaterThan(trips(false))
   })
 })
 
-describe('rng plumbing', () => {
-  it('advances the cursor as the operate loop runs', () => {
-    const g = operatingGame()
-    const before = g.rngState
-    for (let i = 0; i < 20; i++) stepRealtime(g, BOUNDS)
-    expect(g.rngState).not.toBe(before)
+describe('upkeep has a price', () => {
+  it('charges for clearing, maintenance and crews', () => {
+    const g = operating()
+    const base = standingCosts(g)
+    g.realtime!.vegetationSpend = 1
+    expect(standingCosts(g).vegetation).toBeGreaterThan(base.vegetation)
+    g.realtime!.maintenanceDeferred = true
+    expect(standingCosts(g).maintenance).toBe(0)
+    expect(base.maintenance).toBeGreaterThan(1_000_000)
+    setCrews(g, 6)
+    expect(standingCosts(g).crews).toBeGreaterThan(base.crews)
+    setCrews(g, 50)
+    expect(g.realtime!.crewsTotal).toBe(8)
   })
 
-  it('spawns storms only inside the bounds it is given', () => {
-    const rng = new Rng(7)
-    // Exercised indirectly; the guard is that a storm never starts east of the map.
-    const g = operatingGame()
-    for (let i = 0; i < 1_500; i++) stepRealtime(g, BOUNDS)
-    for (const s of g.realtime!.storms) {
-      expect(s.y).toBeGreaterThanOrEqual(BOUNDS.minY - 1)
-      expect(s.y).toBeLessThanOrEqual(BOUNDS.maxY + 1)
+  it('shows up in cash', () => {
+    const spent = (veg: number): number => {
+      const g = operating()
+      g.realtime!.vegetationSpend = veg
+      const before = g.cash
+      stepRealtime(g, BOUNDS)
+      return before - g.cash
     }
-    expect(rng.next()).toBeGreaterThanOrEqual(0)
+    expect(spent(1)).toBeGreaterThan(spent(0))
+  })
+})
+
+describe('the operating year', () => {
+  it('earns revenue and ends after one year', () => {
+    const g = operate(build({ classId: '230d', style: 'property' }))
+    expect(g.ending).toBe('completed')
+    expect(g.realtime!.tick).toBe(OPERATING_YEAR_TICKS)
+    expect(g.revenue).toBeGreaterThan(200_000_000)
+    expect(g.revenue).toBeGreaterThan(g.realtime!.fuelCost + g.realtime!.marketCost + g.operatingCost)
+    expect(g.outcome).not.toBeNull()
+  })
+
+  it('moves the quarter along with the clock', () => {
+    const g = build({ classId: '230d' })
+    const q = g.quarter
+    operate(g, { ticks: 92 * TICKS_PER_DAY })
+    expect(g.quarter).toBe(q + 1)
+  })
+
+  it('reaches summer', () => {
+    const days = new Set<number>()
+    const g = build({ classId: '230d' })
+    operate(g, { onTick: (s) => days.add(dayOfYear(s.realtime!.startTick + s.realtime!.tick)) })
+    expect(days.has(200)).toBe(true)
+  })
+
+  it('stops for a decision until it is answered', () => {
+    const g = operating()
+    g.pendingEvent = { id: 'import-offer' }
+    stepRealtime(g, BOUNDS)
+    expect(g.realtime!.tick).toBe(0)
+  })
+
+  it('sounds the alarm once per shortfall', () => {
+    const g = operating('230')
+    g.realtime!.nextEventTick = Infinity
+    g.realtime!.startTick = 0
+    g.realtime!.tick = 200 * TICKS_PER_DAY
+    g.realtime!.outages.push({ assetId: line(g), kind: 'corridor', cause: 't', ticksRemaining: 4000, capacityFraction: 0, crews: 0, startedTick: 0 })
+    let severe = 0
+    for (let i = 0; i < 60; i++) if (stepRealtime(g, BOUNDS).severe) severe++
+    expect(severe).toBe(1)
+  })
+
+  it('keeps finite books over a year', () => {
+    const g = operate(build({ classId: '230' }))
+    for (const v of [g.cash, g.revenue, g.operatingCost, g.realtime!.servedMwh, g.penaltiesAccrued]) {
+      expect(Number.isFinite(v)).toBe(true)
+    }
+  })
+
+  it('reports availability for the campus alone', () => {
+    const rt = createRealtimeState()
+    rt.tick = 9600
+    rt.servedContractMwh = 90
+    rt.unservedContractMwh = 10
+    rt.servedCustomerMwh = 100_000
+    expect(reliabilityIndices(rt, 42_000).contractAvailability).toBeCloseTo(0.9, 6)
+  })
+
+  it('replays the same from the same state', () => {
+    const play = (): string => JSON.stringify(operate(build({ seed: 5 }), { ticks: 3000 }).realtime)
+    expect(play()).toBe(play())
   })
 })

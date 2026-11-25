@@ -1,17 +1,4 @@
-/**
- * Georgia population centres, used to derive the population-density and
- * land-value fields on the hex cost surface.
- *
- * DATA STATUS: coordinates and populations here are hand-authored approximations
- * entered from general knowledge, not yet reconciled against Census figures.
- * They are accurate enough to shape a cost surface (which is what they are for)
- * but every record carries `verified: false` until the M6 accuracy pass checks it
- * against a citable source. `scripts/verify-data.ts` reports the unverified count.
- *
- * The southwest Georgia entries matter most — they sit under the Americus
- * scenario and drive its routing costs — so they are listed at finer grain than
- * the rest of the state.
- */
+// DATA STATUS: coordinates and populations are approximate and unchecked.
 
 export interface City {
   name: string
@@ -27,7 +14,6 @@ export interface City {
 }
 
 export const CITIES: readonly City[] = [
-  // --- Metro Atlanta and north Georgia ---
   { name: 'Atlanta', lon: -84.388, lat: 33.749, population: 499_000, countyFips: '13121', verified: false },
   { name: 'Sandy Springs', lon: -84.378, lat: 33.924, population: 108_000, countyFips: '13121', verified: false },
   { name: 'Roswell', lon: -84.362, lat: 34.023, population: 92_000, countyFips: '13121', verified: false },
@@ -45,7 +31,6 @@ export const CITIES: readonly City[] = [
   { name: 'Cartersville', lon: -84.800, lat: 34.165, population: 23_000, countyFips: '13015', verified: false },
   { name: 'LaGrange', lon: -85.031, lat: 33.039, population: 31_000, countyFips: '13285', verified: false },
 
-  // --- Fall Line cities ---
   { name: 'Columbus', lon: -84.988, lat: 32.461, population: 206_000, countyFips: '13215', verified: false },
   { name: 'Macon', lon: -83.632, lat: 32.841, population: 157_000, countyFips: '13021', verified: false },
   { name: 'Augusta', lon: -82.010, lat: 33.471, population: 202_000, countyFips: '13245', verified: false },
@@ -53,7 +38,6 @@ export const CITIES: readonly City[] = [
   { name: 'Warner Robins', lon: -83.624, lat: 32.617, population: 82_000, countyFips: '13153', verified: false },
   { name: 'Perry', lon: -83.732, lat: 32.458, population: 22_000, countyFips: '13153', verified: false },
 
-  // --- Southwest Georgia: the Americus scenario's neighbourhood ---
   { name: 'Americus', lon: -84.233, lat: 32.072, population: 16_000, countyFips: '13261', verified: false },
   { name: 'Plains', lon: -84.394, lat: 32.034, population: 550, countyFips: '13261', verified: false },
   { name: 'Andersonville', lon: -84.143, lat: 32.196, population: 240, countyFips: '13261', verified: false },
@@ -76,7 +60,6 @@ export const CITIES: readonly City[] = [
   { name: 'Tifton', lon: -83.509, lat: 31.450, population: 17_000, countyFips: '13277', verified: false },
   { name: 'Thomasville', lon: -83.979, lat: 30.837, population: 18_000, countyFips: '13275', verified: false },
 
-  // --- South and coastal Georgia ---
   { name: 'Valdosta', lon: -83.279, lat: 30.833, population: 55_000, countyFips: '13185', verified: false },
   { name: 'Douglas', lon: -82.850, lat: 31.509, population: 11_000, countyFips: '13069', verified: false },
   { name: 'Waycross', lon: -82.354, lat: 31.214, population: 13_000, countyFips: '13299', verified: false },
