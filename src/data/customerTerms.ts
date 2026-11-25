@@ -26,6 +26,8 @@ export const STARTING_CREDIT = 2_000_000_000
 /** Contracts open at the start, and quarters over which the rest come up. Invented. */
 export const OFFERS_AT_START = 3
 export const OFFER_SPAN = 16
+/** Quarters the first data center's contract stays open. Invented. */
+export const MAIN_OPEN = 8
 /** Quarters a contract stays open. Invented. */
 export const OFFER_OPEN: [number, number] = [5, 9]
 

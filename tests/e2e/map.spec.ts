@@ -23,14 +23,14 @@ export async function signContract(page: Page): Promise<void> {
   await onlyLiberty(page)
 }
 
-test('loads the vendored map and paints Georgia', async ({ page }) => {
+test('loads the vendored map and paints Georgia', { tag: '@smoke' }, async ({ page }) => {
   const consoleErrors: string[] = []
   page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()) })
   page.on('pageerror', (e) => consoleErrors.push(String(e)))
 
   await page.goto('/?seed=7')
   await expect(page.locator('canvas.map-canvas')).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'You are Georgia Power' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Georgia Power, August 2026' })).toBeVisible()
 
   await signContract(page)
   await page.waitForTimeout(700)
@@ -42,7 +42,7 @@ test('loads the vendored map and paints Georgia', async ({ page }) => {
   await page.screenshot({ path: 'tests/.artifacts/statewide.png' })
 })
 
-test('makes no requests to external hosts', async ({ page }) => {
+test('makes no requests to external hosts', { tag: '@smoke' }, async ({ page }) => {
   const external: string[] = []
   page.on('request', (r) => {
     const url = new URL(r.url())
@@ -90,7 +90,7 @@ test('hovering a county reports it', async ({ page }) => {
   await expect(page.locator('.map-tip')).toContainText('County')
 })
 
-test('embed variant drops the host-page chrome', async ({ page }) => {
+test('embed variant drops the host-page chrome', { tag: '@smoke' }, async ({ page }) => {
   await page.goto('/embed.html')
   await expect(page.locator('canvas.map-canvas')).toBeVisible()
   await expect(page.locator('.brand')).toHaveCount(0)

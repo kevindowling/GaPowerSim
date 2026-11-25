@@ -4,7 +4,7 @@ import { start, tab, clickAt, sitePlants, endQuarter, state } from './helpers.ts
 test('opens as the company, and Liberty shows its terms and sources before it is signed', async ({ page }) => {
   await page.goto('/?seed=7')
   const d = page.locator('dialog.briefing')
-  await expect(d).toContainText('2034 Q4')
+  await expect(d).toContainText('The game ends in 2034 Q4')
   await expect(d).toContainText('invented')
   await expect(d).not.toContainText('Liberty')
   await expect(page.locator('.hud')).toContainText('$2.51B')
@@ -13,7 +13,8 @@ test('opens as the company, and Liberty shows its terms and sources before it is
   await page.locator('.panel').getByRole('button', { name: 'Liberty Americus Campus' }).click()
   const card = page.locator('.inspector')
   await expect(card).toContainText('400 MW')
-  await expect(card).toContainText('These terms are invented')
+  await expect(card).toContainText('Sign by2028 Q3, 8 quarters left')
+  await expect(card).not.toContainText('Late payments')
   await expect(card.locator('.sources a').first()).toHaveAttribute('href', /americustimesrecorder\.com/)
 })
 
@@ -50,7 +51,7 @@ test('withdraws a plant and returns part of the land cost', async ({ page }) => 
   expect(after.cash).toBeLessThan(before.cash + before.plants[0].landCost)
 })
 
-test('ends quarters without a dialog for every one', async ({ page }) => {
+test('ends quarters without a dialog for every one', { tag: '@smoke' }, async ({ page }) => {
   await start(page)
   await endQuarter(page)
   await expect(page.locator('.hud')).toContainText('2026 Q4')
@@ -63,7 +64,7 @@ test('groups units on one site', async ({ page }) => {
   expect(cells.size).toBe(1)
 })
 
-test('keeps the game across a reload', async ({ page }) => {
+test('keeps the game across a reload', { tag: '@smoke' }, async ({ page }) => {
   await start(page)
   await sitePlants(page, 2)
   await page.reload()
@@ -71,14 +72,14 @@ test('keeps the game across a reload', async ({ page }) => {
   await expect(page.locator('.sited')).toHaveCount(2)
 })
 
-test('the menu starts a new game without a choice of contract', async ({ page }) => {
+test('the menu starts a new game without a choice of contract', { tag: '@smoke' }, async ({ page }) => {
   await start(page)
   await sitePlants(page, 1)
   await page.getByRole('button', { name: 'Menu' }).click()
   const menu = page.locator('dialog.menu')
   await expect(menu).not.toContainText(/Dublin|Americus/)
   await menu.getByRole('button', { name: 'New game' }).click()
-  await expect(page.locator('dialog.briefing')).toContainText('You are Georgia Power')
+  await expect(page.locator('dialog.briefing')).toContainText('Georgia Power, August 2026')
   await page.getByRole('button', { name: 'Start', exact: true }).click()
   await expect(page.locator('.hud')).toContainText('$2.51B')
   expect((await state(page)).plants.length).toBe(0)

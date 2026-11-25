@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import type { Customer, GameState } from '../../engine/types.ts'
-import { openOffers, signBlocked, waitsUntil } from '../../engine/customers.ts'
+import { leaving } from '../../engine/leaving.ts'
+import { mainOpen, openOffers, signBlocked, waitsUntil } from '../../engine/customers.ts'
 import { approvalOf } from '../../engine/approval.ts'
 import { phasesOn, phasing } from '../../engine/phases.ts'
 import { firmFlow } from '../../engine/realtime/network.ts'
 import { formatQuarter } from '../../engine/time.ts'
 import { byGeorgiaPower, bySister, inServiceArea, isActive, type DataCenter } from '../../data/dataCenters.ts'
 import { STATUS_TEXT } from '../DataCenterCard.tsx'
-import { mw, plural } from '../format.ts'
+import { mw, plural, quarters } from '../format.ts'
 
 type Scope = 'all' | 'gp' | 'un' | 'sis'
 
@@ -28,6 +29,11 @@ function byNextDue(a: Customer, b: Customer): number {
 function nextDue(c: Customer): string {
   const m = c.milestones.find((x) => !x.released && x.dueQuarter !== undefined)
   return m ? ` Next ${mw((m.phase ?? 1) * c.phaseMw)} due ${formatQuarter(m.dueQuarter!)}.` : ''
+}
+
+function signBy(game: GameState, closes: number): string {
+  const left = closes - game.quarter
+  return `Sign by ${formatQuarter(closes)}, ${left === 0 ? 'this quarter' : `${quarters(left)} left`}.`
 }
 
 function comesUp(game: GameState, id: string): string {
@@ -73,6 +79,7 @@ export function CustomersPanel({ game, focusId, list, onShow }: {
                 <button className="sited-name" onClick={() => onShow(c.id)}>{c.name}</button>
                 <span className="num">{c.status === 'cancelled' ? 'Cancelled' : `${mw(flow.loads.get(c.id) ?? 0)} of ${mw(c.contractedMw)}`}</span>
               </div>
+              {leaving(game, c.id) && <div className="note tone-bad">{leaving(game, c.id)}</div>}
               {c.status !== 'cancelled' && (
                 <div className="note">
                   {c.phasesOn} of {c.phaseCount} phases on. Approval {Math.round(c.approval ?? 0)}.{nextDue(c)}
@@ -83,17 +90,17 @@ export function CustomersPanel({ game, focusId, list, onShow }: {
         })}
       </ul>
 
-      {(offers.length > 0 || game.contract.status === 'offered') && (
+      {(offers.length > 0 || mainOpen(game)) && (
         <>
           <h2>Contracts you can sign</h2>
           <ul className="lines">
-            {game.contract.status === 'offered' && (
+            {mainOpen(game) && (
               <li className={focusId === 'main' ? 'line on' : 'line'}>
                 <div className="line-head">
                   <button className="sited-name" onClick={() => onShow('main')}>{game.contract.name}</button>
                   <span className="num">{mw(game.contract.contractedMw)}</span>
                 </div>
-                <div className="note">No closing date.</div>
+                {game.mainCloses !== undefined && <div className="note">{signBy(game, game.mainCloses)}</div>}
               </li>
             )}
             {offers.map((o) => (
@@ -102,7 +109,7 @@ export function CustomersPanel({ game, focusId, list, onShow }: {
                   <button className="sited-name" onClick={() => onShow(o.id)}>{o.name}</button>
                   <span className="num">{mw(o.mw)}</span>
                 </div>
-                <div className="note">Open until {formatQuarter(o.closes)}.</div>
+                <div className="note">{signBy(game, o.closes)}</div>
               </li>
             ))}
           </ul>
@@ -133,7 +140,7 @@ export function CustomersPanel({ game, focusId, list, onShow }: {
             </div>
             <div className="note">
               {d.county?.replace(/ County$/, '')}, {d.state}. {STATUS_TEXT[d.status] ?? d.status}.
-              {signed.has(d.id) ? ' Signed.' : signBlocked(game, d) === null ? ` Looking until ${formatQuarter(waitsUntil(game, d))}.` : comesUp(game, d.id)}
+              {signed.has(d.id) ? ' Signed.' : signBlocked(game, d) === null ? ` Sign by ${formatQuarter(waitsUntil(game, d))}.` : comesUp(game, d.id)}
             </div>
           </li>
         ))}

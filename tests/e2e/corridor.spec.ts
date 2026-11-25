@@ -83,7 +83,7 @@ test('takes more land at a higher voltage', async ({ page }) => {
   expect(await acres()).toBeGreaterThan(before)
 })
 
-test('negotiates by group, then shows only the problems', async ({ page }) => {
+test('negotiates by group, then shows only the problems', { tag: '@smoke' }, async ({ page }) => {
   await start(page)
   await sitePlants(page, 3)
   await drawRoute(page)
@@ -128,7 +128,7 @@ test('a group can be offered to again, in the same quarter and the next', async 
   }
 })
 
-test('plays the build phase through to operations', async ({ page }) => {
+test('plays the build phase through to operations', { tag: '@smoke' }, async ({ page }) => {
   test.setTimeout(120_000)
   await start(page)
   await sitePlants(page, 3)

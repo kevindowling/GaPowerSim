@@ -18,6 +18,7 @@ import type { HexGrid } from '../engine/geo/mapTypes.ts'
 import type { EnvData } from '../data/loadEnv.ts'
 import type { DataCenter } from '../data/dataCenters.ts'
 import { MainOffer, OfferCard } from './CustomerCard.tsx'
+import { mainOpen, signBlocked } from '../engine/customers.ts'
 import { GearBuild, GearCard } from './GearBuild.tsx'
 import { lineGear } from '../engine/turn/reach.ts'
 import { Progress } from './Progress.tsx'
@@ -199,7 +200,10 @@ function dcBody(props: Props, id: string) {
   if (c) return { title: c.name, content: progress(props, id) }
   return dc ? {
     title: dc.name,
-    content: <DataCenterCard dc={dc}><OfferCard game={game} dc={dc} onSign={props.onSign} /></DataCenterCard>,
+    // What can be signed comes before the background.
+    content: signBlocked(game, dc) === null
+      ? <><OfferCard game={game} dc={dc} onSign={props.onSign} /><h3>About it</h3><DataCenterCard dc={dc} sized={false} /></>
+      : <DataCenterCard dc={dc}><OfferCard game={game} dc={dc} onSign={props.onSign} /></DataCenterCard>,
   } : null
 }
 
@@ -272,6 +276,9 @@ function lineBody({ game, land, onOpenLine, onOrder, onCancelOrder }: Props, id:
 }
 
 function campusBody(props: Props) {
+  if (props.game.contract.status === 'offered' && !mainOpen(props.game)) {
+    return { title: props.game.contract.name, content: <p className="note">It went to another supplier.</p> }
+  }
   if (props.game.contract.status === 'offered') {
     return { title: props.game.contract.name, content: <MainOffer game={props.game} onSign={props.onSignMain} /> }
   }

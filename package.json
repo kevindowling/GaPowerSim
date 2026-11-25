@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:smoke": "playwright test --grep @smoke",
     "typecheck": "tsc --noEmit",
     "build:geo": "tsx scripts/build-geo.ts",
     "build:hexgrid": "tsx scripts/build-hexgrid.ts",

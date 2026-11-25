@@ -14,6 +14,7 @@ const WANTED: Record<string, string> = {
   battery: 'home-battery',
   nuclear: 'atom',
   dataCenter: 'server-network',
+  contract: 'file-sign',
   tower: 'transmission-tower',
   fault: 'flash-alert',
 }

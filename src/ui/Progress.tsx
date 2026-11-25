@@ -7,6 +7,7 @@ import { CAMPUS_TX } from '../engine/realtime/network.ts'
 import { transformerName } from '../engine/realtime/reliability.ts'
 import { CANCEL_BELOW } from '../engine/approval.ts'
 import { TERMINATION_QUARTERS_LATE } from '../engine/ending.ts'
+import { leaving } from '../engine/leaving.ts'
 import { LATE_LIMIT, MINIMUM_SHARE } from '../data/customerTerms.ts'
 import { ledger } from '../engine/ledger.ts'
 import { formatQuarter } from '../engine/time.ts'
@@ -75,11 +76,13 @@ export function Progress({ game, focus, onRun, onSetSpare, onOrder, onCancelOrde
   const site = main ? undefined : focus.node
   if (focus.cancelled) return <p className="note tone-bad">It was cancelled. You no longer supply it.</p>
 
+  const trouble = leaving(game, focus.id)
   return (
     <>
+      {trouble && <p className="note tone-bad">{trouble}</p>}
       <dl className="rows">
         <div><dt>Customer</dt><dd>{focus.developer}</dd></div>
-        <div><dt>Contracted</dt><dd>{mw(focus.needMw)}</dd></div>
+        <div><dt>Contracted</dt><dd>{mw(focus.needMw)}{focus.customer?.assumed && ', assumed'}</dd></div>
         {live ? (
           <>
             <div><dt>Drawing</dt><dd>{mw(live.contractMw)}</dd></div>
@@ -95,7 +98,7 @@ export function Progress({ game, focus, onRun, onSetSpare, onOrder, onCancelOrde
           </>
         )}
       </dl>
-      {focus.customer?.assumed && <p className="note">Its size is assumed. {focus.customer.assumed}</p>}
+      {focus.customer?.assumed && <p className="note">{focus.customer.assumed}</p>}
       {!linked && short && <p className="note tone-warn">No line reaches it. Plan one to a substation or an existing line nearby, then order a transformer here.</p>}
       {held.map((h) => <p key={h} className="note tone-warn">{h}</p>)}
       {game.phase !== 'ended' && <button className="btn small" onClick={() => onPlanLine(focus.node)}>Plan a line from here</button>}

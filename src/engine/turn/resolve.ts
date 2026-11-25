@@ -11,7 +11,7 @@ import { firmDeliverableMw, firmFlow } from '../realtime/network.ts'
 import { drawBuildEvent, resolvePendingByDefault } from '../events/events.ts'
 import { checkCancelled, checkEnding } from '../ending.ts'
 import { approvalOf, CANCEL_BELOW, changeApproval, changeRating, ratingOf, STALL_BELOW } from '../approval.ts'
-import { advanceCustomers, checkCustomers, reportOffers, settleCustomers, warnCustomers } from '../customers.ts'
+import { advanceCustomers, checkCustomers, mainOpen, reportOffers, settleCustomers, warnCustomers } from '../customers.ts'
 import { advanceSubstations } from './substations.ts'
 import { CREDIT_PER_MW } from '../../data/customerTerms.ts'
 import { recordCash } from '../cashForecast.ts'
@@ -375,7 +375,7 @@ export function resolveHearing(prev: GameState, option: HearingOption): GameStat
 
 export function acceptContract(prev: GameState): GameState {
   const state: GameState = structuredClone(prev)
-  if (state.contract.status !== 'offered') return state
+  if (!mainOpen(state)) return state
   // Dates run from the day it signs.
   const shift = state.quarter - state.startQuarter
   state.contract.inServiceQuarter += shift

@@ -13,11 +13,11 @@ const PRECISION: Record<string, string> = {
 }
 
 /** A reported data center. */
-export function DataCenterCard({ dc, children }: { dc: DataCenter; children?: ReactNode }) {
+export function DataCenterCard({ dc, sized = true, children }: { dc: DataCenter; sized?: boolean; children?: ReactNode }) {
   return (
     <>
       <dl className="rows">
-        <div><dt>Asking for</dt><dd>{dc.mw === null ? 'Not published' : mw(dc.mw)}</dd></div>
+        {sized && <div><dt>Asking for</dt><dd>{dc.mw === null ? 'Not published' : mw(dc.mw)}</dd></div>}
         <div><dt>Status</dt><dd>{STATUS_TEXT[dc.status] ?? dc.status}</dd></div>
         <div><dt>Developer</dt><dd>{dc.developer ?? 'Not published'}</dd></div>
         <div><dt>County</dt><dd>{dc.county ? `${dc.county.replace(/ County$/, '')}, ${dc.state}` : dc.state}</dd></div>

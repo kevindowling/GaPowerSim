@@ -16,7 +16,7 @@ test('another data center can be signed, and shares the budget and the spare pow
   await expect(page.locator('.hud')).toContainText('Project Sail')
   await expect(page.locator('.hud')).toContainText('of 900 MW')
   await expect(page.locator('.hud')).toContainText('Not signed')
-  await expect(card(page)).toContainText('If you supply it')
+  await expect(card(page)).toContainText('Paid on signing')
   await expect(card(page)).toContainText('5 of 180 MW')
   await page.screenshot({ path: 'tests/.artifacts/offer.png' })
   await card(page).getByRole('button', { name: /^Sign Project Sail/ }).click()

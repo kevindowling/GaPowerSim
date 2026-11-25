@@ -44,6 +44,7 @@ export type Overlay = 'none' | 'population' | 'landValue' | 'approval' | 'air' |
 export type MarkerKind =
   | 'datacenter'
   | 'datacenter-offer'
+  | 'datacenter-leaving'
   | 'substation'
   | 'substation-building'
   | 'plant-permitting'
@@ -1024,17 +1025,32 @@ export class MapRenderer {
       const [px, py] = cam.toScreen(wx, wy, vp)
 
       const offer = m.kind === 'datacenter-offer'
-      const center = offer || m.kind === 'datacenter'
+      const trouble = m.kind === 'datacenter-leaving'
+      const center = offer || trouble || m.kind === 'datacenter'
       if (center || m.kind === 'substation' || m.kind === 'substation-building') {
-        const s = center ? (cam.scale < 3 ? 9 : 12) : 10
+        const s = offer ? (cam.scale < 3 ? 11 : 13) : center ? (cam.scale < 3 ? 9 : 12) : 10
         ctx.beginPath()
         ctx.roundRect(px - s, py - s, s * 2, s * 2, 3)
-        ctx.fillStyle = offer ? '#ffffff' : center ? PALETTE.dataCenter : m.kind === 'substation' ? PALETTE.substation : PALETTE.inkSoft
+        ctx.fillStyle = offer ? '#ffffff' : trouble ? PALETTE.fault : center ? PALETTE.dataCenter : m.kind === 'substation' ? PALETTE.substation : PALETTE.inkSoft
         ctx.fill()
         ctx.lineWidth = 2
         ctx.strokeStyle = offer ? PALETTE.dataCenter : PALETTE.halo
         ctx.stroke()
-        if (m.icon) drawIcon(ctx, m.icon, px, py, s * 1.45, offer ? PALETTE.dataCenter : '#ffffff')
+        if (m.icon) drawIcon(ctx, m.icon, px, py, s * (offer ? 1.7 : 1.45), offer ? PALETTE.dataCenter : '#ffffff')
+        if (trouble) {
+          ctx.beginPath()
+          ctx.arc(px + s, py - s, 6.5, 0, Math.PI * 2)
+          ctx.fillStyle = '#ffffff'
+          ctx.fill()
+          ctx.lineWidth = 1.5
+          ctx.strokeStyle = PALETTE.fault
+          ctx.stroke()
+          ctx.font = '800 10px "Public Sans Variable", sans-serif'
+          ctx.textAlign = 'center'
+          ctx.fillStyle = PALETTE.fault
+          ctx.fillText('!', px + s, py - s + 0.5)
+          ctx.textAlign = 'left'
+        }
       } else {
         const online = m.kind === 'plant-online'
         const out = m.kind === 'plant-out'

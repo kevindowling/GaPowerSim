@@ -3,7 +3,8 @@ import { HEARING_OPTIONS, UPGRADE_COST, type HearingOption } from '../engine/tur
 import { HORIZON_YEAR, STARTING_BUDGET, STARTING_CREDIT } from '../data/customerTerms.ts'
 import { poolAt } from '../data/sparePower.ts'
 import type { DataCenter } from '../data/dataCenters.ts'
-import { openingMoney } from '../engine/customers.ts'
+import { firstDue, openingMoney } from '../engine/customers.ts'
+import { formatQuarter } from '../engine/time.ts'
 import { equipmentTotal } from '../engine/turn/equipment.ts'
 import { eventById } from '../engine/events/events.ts'
 import { approvalBand, approvalOf } from '../engine/approval.ts'
@@ -16,28 +17,24 @@ export function BriefingDialog({ game, existing, onStart }: {
   existing: readonly DataCenter[]
   onStart: () => void
 }) {
-  const opening = openingMoney(existing, game.quarter)
+  const { mw: signed, connected, paid, spent } = openingMoney(existing, game.quarter)
+  const first = firstDue(game)?.milestones.find((m) => !m.released && m.dueQuarter !== undefined)?.dueQuarter
   return (
     <Dialog label="Opening" className="briefing">
-      <h1>You are Georgia Power</h1>
+      <h1>Georgia Power, August 2026</h1>
       <p>
-        It is August 2026. You have signed {plural(existing.length, 'data center')} that want {mw(opening.mw)} in all. Some are running and some are
-        being built. More contracts come up through 2030, and each one closes if you do not sign it.
+        {plural(existing.length, 'data center')} have signed for {mw(signed)}. {mw(connected)} is connected.
+        {first !== undefined && ` The next phase is due in ${formatQuarter(first)}.`} Late phases pay less.
       </p>
+      <p>New contracts come up through 2030. The game ends in {HORIZON_YEAR} Q4.</p>
       <dl className="terms">
-        <div><dt>Your own money</dt><dd>{money(STARTING_BUDGET)}</dd></div>
-        <div><dt>Data centers have paid</dt><dd>{money(opening.paid)}</dd></div>
-        <div><dt>Spent connecting them</dt><dd>-{money(opening.spent)}</dd></div>
-        <div><dt>Cash</dt><dd>{money(STARTING_BUDGET + opening.paid - opening.spent)}</dd></div>
+        <div><dt>Cash</dt><dd>{money(STARTING_BUDGET + paid - spent)}</dd></div>
         <div><dt>Lenders allow</dt><dd>{money(STARTING_CREDIT)}</dd></div>
-        <div><dt>Spare power</dt><dd>{mw(poolAt(game.quarter))}</dd></div>
-        <div><dt>The game ends</dt><dd>{HORIZON_YEAR} Q4</dd></div>
+        <div><dt>Spare power on the grid</dt><dd>{mw(poolAt(game.quarter))}</dd></div>
+        <div><dt>Still to connect</dt><dd>{mw(signed - connected)}</dd></div>
       </dl>
-      <p>Your balance at the end is your score.</p>
-
       <p className="fine">
-        Data centers and sites are reported. Sizes are too, except where a card says assumed. Your money, credit and every contract are
-        invented. Land parcels and owners are generated.
+        Data center sites come from public reports. Money, contracts and land owners are invented.
       </p>
       <button className="btn primary wide" onClick={onStart} autoFocus>Start</button>
     </Dialog>

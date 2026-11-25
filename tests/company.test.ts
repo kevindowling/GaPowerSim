@@ -2,10 +2,11 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { bareGame, run } from './helpers/play.ts'
 import { fixtures } from './helpers/loadFixtures.ts'
-import { beginCompany, customerQuarter, dueDates, isExisting, openingMoney, openOffers, reportOffers, signBlocked, signCustomer, spareAssigned } from '../src/engine/customers.ts'
+import { beginCompany, customerQuarter, dueDates, isExisting, mainOpen, openingMoney, openOffers, reportOffers, signBlocked, signCustomer, spareAssigned } from '../src/engine/customers.ts'
 import { acceptContract, advanceProjects, endQuarter } from '../src/engine/turn/resolve.ts'
 import { firmFlow, loadsOf } from '../src/engine/realtime/network.ts'
 import { lastQuarter } from '../src/engine/cashForecast.ts'
+import { leaving } from '../src/engine/leaving.ts'
 import { ledger } from '../src/engine/ledger.ts'
 import { focusOf } from '../src/engine/focus.ts'
 import { allUnpaid } from '../src/engine/payments.ts'
@@ -156,6 +157,51 @@ describe('contracts that come up', () => {
     expect(openOffers(g)).toEqual([])
     expect(signBlocked(g, list.find((d) => d.name.includes('Project Camellia'))!)).toBeNull()
     expect(endQuarter(g).state.quarter).toBe(g.quarter + 1)
+  })
+})
+
+describe('a data center in trouble', () => {
+  const at = (change: (g: GameState, c: any) => void) => {
+    const g = begin()
+    const c = g.customers!.find((x) => x.name.startsWith('T5'))!
+    change(g, c)
+    return leaving(g, c.id)
+  }
+  it('is one near losing approval, or near the end of waiting', () => {
+    expect(at(() => {})).toBeNull()
+    expect(at((_, c) => { c.approval = 30 })).toBe('Approval is 30. It leaves below 25.')
+    const due = (c: any) => c.milestones.find((m: any) => !m.released).dueQuarter
+    expect(at((g, c) => { g.quarter = due(c) + 4 })).toBeNull()
+    expect(at((g, c) => { g.quarter = due(c) + 5 })).toBe('It leaves in 4 quarters without power.')
+    expect(at((g, c) => { g.quarter = due(c) + 9 })).toBe('It leaves this quarter without power.')
+    expect(at((_, c) => { c.approval = 30; c.status = 'served' })).toBeNull()
+  })
+
+  it('can be the first one, once signed', () => {
+    const g = begin()
+    g.contract.approval = 30
+    expect(leaving(g, 'main')).toBeNull()
+    const s = acceptContract(g)
+    expect(leaving(s, 'main')).toMatch(/Approval is 30/)
+    s.contract.approval = 60
+    s.quarter = s.contract.inServiceQuarter + 6
+    expect(leaving(s, 'main')).toBe('It leaves in 3 quarters without power.')
+  })
+})
+
+describe('the limit on the first contract', () => {
+  it('is eight quarters, then it goes and the guide with it', () => {
+    const g = begin()
+    expect(g.mainCloses).toBe(g.quarter + 8)
+    expect(acceptContract({ ...g, quarter: g.mainCloses! }).contract.status).toBe('accepted')
+    expect(acceptContract({ ...g, quarter: g.mainCloses! + 1 }).contract.status).toBe('offered')
+    let s = g
+    for (let i = 0; i < 9; i++) s = endQuarter(s).state
+    expect(mainOpen(s)).toBe(false)
+    expect(s.tutorial).toBeNull()
+    expect(s.log.some((e) => e.text === `${s.contract.name} went to another supplier.`)).toBe(true)
+    delete g.mainCloses
+    expect(mainOpen({ ...g, quarter: 30 })).toBe(true)
   })
 })
 

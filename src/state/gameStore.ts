@@ -38,7 +38,7 @@ import { canJoin, sitesTouch } from '../engine/realtime/network.ts'
 import { linePower, roomAt, suggestSpare } from '../engine/turn/reach.ts'
 import { runProgramme as engineRunProgramme } from '../engine/turn/community.ts'
 import { dropOwnedDeals, ownedCells, refreshSiteLinks } from '../engine/turn/ownedLand.ts'
-import { assignSpare, beginCompany, firstDue, signCustomer } from '../engine/customers.ts'
+import { assignSpare, beginCompany, firstDue, mainOpen, signCustomer } from '../engine/customers.ts'
 import { continueGame } from '../engine/ending.ts'
 import { assessSubstation, buildSubstation } from '../engine/turn/substations.ts'
 import { cancelEquipment, orderEquipment } from '../engine/turn/equipment.ts'
@@ -732,7 +732,7 @@ export const useGame = create<Store>((set, get) => {
       const dataCenters = get().dataCenters.filter(inServiceArea)
       if (!showCenters) return []
       // The campus marker stands for the scenario's own data center.
-      return sc?.id === 'americus-400' ? dataCenters.filter((d) => !d.id.startsWith('liberty-data-centers-americus')) : dataCenters
+      return sc?.id === 'americus-400' && !(get().game?.contract.status === 'offered' && !mainOpen(get().game!)) ? dataCenters.filter((d) => !d.id.startsWith('liberty-data-centers-americus')) : dataCenters
     },
 
     currentAssessment: () => {

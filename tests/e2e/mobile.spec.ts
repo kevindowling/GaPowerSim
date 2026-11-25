@@ -19,7 +19,7 @@ test('gives the map the whole screen', async ({ page }) => {
   await expect(page.locator('.sidebar')).toHaveCount(0)
 })
 
-test('never scrolls sideways', async ({ page }) => {
+test('never scrolls sideways', { tag: '@smoke' }, async ({ page }) => {
   await page.goto('/?seed=7')
   await sign(page)
   const { scrollW, innerW } = await page.evaluate(() => ({
@@ -115,7 +115,7 @@ test('has thumb-sized controls', async ({ page }) => {
   expect(tooSmall).toEqual([])
 })
 
-test('can site a plant by tapping the map', async ({ page }) => {
+test('can site a plant by tapping the map', { tag: '@smoke' }, async ({ page }) => {
   await page.goto('/?seed=7')
   await sign(page)
 
@@ -139,6 +139,6 @@ test('shows modals full-screen', async ({ page }) => {
   const vw = page.viewportSize()!.width
   const box = (await briefing.boundingBox())!
   expect(box.width).toBeGreaterThan(vw * 0.95)
-  await expect(briefing).toContainText('You have signed')
+  await expect(briefing).toContainText('have signed for')
   await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeVisible()
 })
