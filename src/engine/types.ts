@@ -269,6 +269,8 @@ export interface GameState {
   /** Cash at the end of each quarter, and what moved it. */
   cashHistory?: CashQuarter[]
   customers?: Customer[]
+  /** Last quarter the first data center can be signed. Absent in older saves. */
+  mainCloses?: QuarterIndex
   /** Contracts that come up over the game. Absent in older saves, where all are open at once. */
   offers?: ContractOffer[]
   builtSubs?: BuiltSubstation[]

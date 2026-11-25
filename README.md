@@ -1,13 +1,12 @@
 # GaPowerSim
 
-You are Georgia Power. You start with your own money and the data centers it
-already supplies. Build plants, lines and substations to reach the ones that are
-waiting, and sign new ones. Liberty, outside Americus, comes with a guide and an
-hour-by-hour operating year. Your balance at the end of 2034 is your score.
+GaPowerSim is a browser game about getting power to data centers in Georgia. You
+run Georgia Power from August 2026 to the end of 2034. Your score is your cash at
+the end.
 
-The map is real: county lines, rivers, streets, rail, buildings, parks and the
-existing transmission grid. Land parcels, owners and the contract terms are
-generated.
+The map uses public data for roads, rivers, parks, buildings and the existing
+grid. Data center sites come from public reports. Land parcels, owners and
+contract terms are invented.
 
 ## Run it
 
@@ -18,7 +17,8 @@ npm run dev        # http://localhost:5173
 
 ```bash
 npm test           # engine tests
-npm run test:e2e   # browser tests
+npm run test:smoke # the essential browser tests, also run on pull requests
+npm run test:e2e   # every browser test
 npm run build      # typecheck and build to dist/
 ```
 

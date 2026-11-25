@@ -27,7 +27,7 @@ async function pixels(page: Page): Promise<string> {
   return page.evaluate(() => (document.querySelector('canvas.map-canvas') as HTMLCanvasElement).toDataURL().slice(-60_000))
 }
 
-test('says what to do at each step, on the map', async ({ page }) => {
+test('says what to do at each step, on the map', { tag: '@smoke' }, async ({ page }) => {
   await arm(page)
   await expect(banner(page)).toContainText('Click either end')
   await clickAt(page, ...PLANT)
@@ -255,7 +255,7 @@ test('the card says when a phase is too big for the line', async ({ page }) => {
   await expect(page.getByTestId('plan-why')).toContainText('The most this can bring is 240 MW, and a phase takes 300 MW')
 })
 
-test('a missing transformer is marked on the line, and the mark builds it', async ({ page }) => {
+test('a missing transformer is marked on the line, and the mark builds it', { tag: '@smoke' }, async ({ page }) => {
   await start(page, false)
   await sitePlants(page, 1)
   await tab(page, 'Grid')

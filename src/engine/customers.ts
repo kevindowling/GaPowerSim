@@ -7,7 +7,7 @@ import { deriveSeed, Rng } from './rng.ts'
 import { formatQuarter, quarterOf, yearOf, type QuarterIndex } from './time.ts'
 import { byGeorgiaPower, inGeorgia, isActive, utilityNamed, type DataCenter } from '../data/dataCenters.ts'
 import {
-  ADVANCE_PER_MW, BUY_LIMIT_MW, CREDIT_PER_MW, CUSTOMER_RATE, DRAW, DUE_STEP, FIRST_DUE, HORIZON_YEAR, LATE_LIMIT, MINIMUM_SHARE,
+  ADVANCE_PER_MW, BUY_LIMIT_MW, CREDIT_PER_MW, CUSTOMER_RATE, DRAW, DUE_STEP, FIRST_DUE, HORIZON_YEAR, LATE_LIMIT, MAIN_OPEN, MINIMUM_SHARE,
   OFFER_OPEN, OFFER_SPAN, OFFERS_AT_START, phasesFor, SPARE_ENERGY, SPARE_PER_MW_QUARTER, STARTING_BUDGET, STARTING_CREDIT,
 } from '../data/customerTerms.ts'
 import { assumedMw } from '../data/assumedMw.ts'
@@ -50,13 +50,14 @@ function phasesBefore(d: DataCenter, count: number, start: QuarterIndex): number
 }
 
 /** What the contracts signed before the game paid, and what was spent on the phases that are on. */
-export function openingMoney(list: readonly DataCenter[], start: QuarterIndex): { mw: number; paid: number; spent: number } {
-  const out = { mw: 0, paid: 0, spent: 0 }
+export function openingMoney(list: readonly DataCenter[], start: QuarterIndex): { mw: number; connected: number; paid: number; spent: number } {
+  const out = { mw: 0, connected: 0, paid: 0, spent: 0 }
   for (const d of list.filter(isExisting)) {
     const mw = startedMw(d)!
     const { count } = phasesFor(mw)
     const on = phasesBefore(d, count, start) / count
     out.mw += mw
+    out.connected += mw * on
     out.paid += mw * ADVANCE_PER_MW * (SIGNING_SHARE + (1 - SIGNING_SHARE) * on)
     out.spent += mw * ADVANCE_PER_MW * on
   }
@@ -156,6 +157,7 @@ export function beginCompany(
     out.push(c)
   }
   state.offers = makeOffers(state, list)
+  state.mainCloses = state.quarter + MAIN_OPEN
   recordCash(state, state.quarter - 1)
   return state
 }
@@ -185,6 +187,10 @@ export function firstDue(state: GameState): Customer | null {
   return activeCustomers(state).filter((c) => c.status === 'signed').sort((a, b) => due(a) - due(b) || b.contractedMw - a.contractedMw)[0] ?? null
 }
 
+/** Whether the first data center can still be signed. */
+export const mainOpen = (state: GameState): boolean =>
+  state.contract.status === 'offered' && (state.mainCloses === undefined || state.quarter <= state.mainCloses)
+
 /** Contracts that can be signed now. */
 export function openOffers(state: GameState): ContractOffer[] {
   const signed = new Set((state.customers ?? []).map((c) => c.id))
@@ -194,10 +200,15 @@ export function openOffers(state: GameState): ContractOffer[] {
 /** Report contracts that came up or went elsewhere this quarter. Mutates. */
 export function reportOffers(state: GameState): void {
   const signed = new Set((state.customers ?? []).map((c) => c.id))
+  if (state.contract.status === 'offered' && state.mainCloses !== undefined && state.quarter === state.mainCloses + 1) {
+    pushLog(state, 'deal', `${state.contract.name} went to another supplier.`, true)
+    // The guide is about it.
+    state.tutorial = null
+  }
   for (const o of state.offers ?? []) {
     if (signed.has(o.id)) continue
     if (o.opens === state.quarter) {
-      pushLog(state, 'deal', `${o.name} offers a contract for ${Math.round(o.mw).toLocaleString()} MW. It is open until ${formatQuarter(o.closes)}.`, true)
+      pushLog(state, 'deal', `${o.name} offers a contract for ${Math.round(o.mw).toLocaleString()} MW. Sign by ${formatQuarter(o.closes)}.`, true)
     } else if (o.closes + 1 === state.quarter) {
       pushLog(state, 'deal', `${o.name} went to another supplier.`)
     }

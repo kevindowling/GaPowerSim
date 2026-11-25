@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test'
 import { start, tab, endQuarter } from './helpers.ts'
 
-test('the game opens as Georgia Power, with customers that pay', async ({ page }) => {
+test('the game opens as Georgia Power, with customers that pay', { tag: '@smoke' }, async ({ page }) => {
   await page.goto('/?seed=7')
-  await expect(page.locator('dialog.briefing')).toContainText('You are Georgia Power')
-  await expect(page.locator('dialog.briefing')).toContainText('You have signed')
+  await expect(page.locator('dialog.briefing')).toContainText('Georgia Power, August 2026')
+  await expect(page.locator('dialog.briefing')).toContainText('have signed for')
   await start(page, false, true)
   await expect(page.locator('.hud')).toContainText('$2.51B')
   await tab(page, 'Customers')
@@ -70,7 +70,7 @@ test('a reload keeps a signed contract in the header', async ({ page }) => {
   await expect(page.locator('.hud')).toContainText('phases on')
 })
 
-test('a data center in the cash list opens it on the map', async ({ page }) => {
+test('a data center in the cash list opens it on the map', { tag: '@smoke' }, async ({ page }) => {
   await start(page, false, true)
   await page.getByRole('button', { name: /^Cash/ }).click()
   const card = page.locator('.power-card')

@@ -15,9 +15,11 @@ export default defineConfig({
   fullyParallel: true,
   reporter: process.env.CI ? 'line' : 'list',
   timeout: 60_000,
+  retries: process.env.CI ? 1 : 0,
   use: {
     baseURL: 'http://127.0.0.1:4173',
-    trace: 'retain-on-failure',
+    // Recording every test slows all of them.
+    trace: process.env.CI ? 'on-first-retry' : 'retain-on-failure',
   },
   projects: [
     {
@@ -32,7 +34,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run build && npx vite preview --port 4173 --strictPort --host 127.0.0.1',
+    // CI typechecks in its own job.
+    command: `${process.env.CI ? 'npx vite build' : 'npm run build'} && npx vite preview --port 4173 --strictPort --host 127.0.0.1`,
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,

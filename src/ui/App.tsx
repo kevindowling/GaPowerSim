@@ -19,7 +19,8 @@ import { CustomersPanel } from './panels/CustomersPanel.tsx'
 import { STOPPED, type DataCenter } from '../data/dataCenters.ts'
 import { Inspector, LINE_STATUS, PLANT_STATUS } from './Inspector.tsx'
 import { countyAt, isMain, mapHit, selectionPoint, subFrom, type MapThings, type Selection } from './mapHit.ts'
-import { activeCustomers, beginCompany, firstDue, isExisting, openOffers } from '../engine/customers.ts'
+import { activeCustomers, beginCompany, firstDue, isExisting, mainOpen, openOffers } from '../engine/customers.ts'
+import { leaving } from '../engine/leaving.ts'
 import { focusOf } from '../engine/focus.ts'
 import { approvalBand, ratingOf } from '../engine/approval.ts'
 import type { GameState } from '../engine/types.ts'
@@ -153,9 +154,13 @@ export function App({ embedded = false }: { embedded?: boolean }) {
     if (!game) return []
     const out: Marker[] = [
       { cell: game.system.substationCell, kind: 'substation', label: game.system.substationName, icon: 'tower' },
-      ...openOffers(game).map((o): Marker => ({ cell: -1, at: [o.x, o.y], kind: 'datacenter-offer', label: o.name, icon: 'dataCenter' })),
-      ...activeCustomers(game).map((c): Marker => ({ cell: c.cell, at: [c.x, c.y], kind: 'datacenter', label: c.name, icon: 'dataCenter' })),
-      { cell: game.contract.siteCell, kind: game.contract.status === 'offered' ? 'datacenter-offer' : 'datacenter', label: game.contract.name, icon: 'dataCenter' },
+      ...activeCustomers(game).map((c): Marker => ({ cell: c.cell, at: [c.x, c.y], kind: leaving(game, c.id) ? 'datacenter-leaving' : 'datacenter', label: c.name, icon: 'dataCenter' })),
+      ...openOffers(game).map((o): Marker => ({ cell: -1, at: [o.x, o.y], kind: 'datacenter-offer', label: o.name, icon: 'contract' })),
+      ...(game.contract.status === 'offered' && !mainOpen(game) ? [] : [{
+        cell: game.contract.siteCell, label: game.contract.name,
+        kind: mainOpen(game) ? 'datacenter-offer' : leaving(game, 'main') ? 'datacenter-leaving' : 'datacenter',
+        icon: mainOpen(game) ? 'contract' : 'dataCenter',
+      } satisfies Marker]),
     ]
     for (const b of game.builtSubs ?? []) {
       out.push({ cell: b.cell, kind: b.status === 'in-service' ? 'substation' : 'substation-building', label: b.name, icon: 'tower' })
@@ -182,7 +187,7 @@ export function App({ embedded = false }: { embedded?: boolean }) {
     }
     return out
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plants, game?.customers, game?.offers, game?.quarter, game?.contract.status, game?.builtSubs, game?.contract.siteCell, game?.system.substationCell, outages])
+  }, [plants, game?.customers, game?.offers, game?.quarter, game?.contract.status, game?.contract.approval, game?.ending, game?.builtSubs, game?.contract.siteCell, game?.system.substationCell, outages])
 
   // The header behind the opening shows how the game will start.
   const opened = useMemo(() => (g.showBriefing && game && mapData && g.dataCenters.length > 0
@@ -595,7 +600,7 @@ export function App({ embedded = false }: { embedded?: boolean }) {
                     </label>
                   )}
                   {layerBox('hexes', 'Grid cells')}
-                  <p className="fine">Filled data center icon: you have a contract. Outlined icon: a contract you can sign. Dot: no contract.</p>
+                  <p className="fine">Filled icon: signed. Red: may leave. Paper: a contract you can sign. Dot: no contract.</p>
                 </div>
               </div>
             )}
@@ -661,7 +666,7 @@ export function App({ embedded = false }: { embedded?: boolean }) {
       {g.showMenu ? (
         <MenuDialog game={game} onStart={() => g.startScenario('americus-400')} onClose={() => g.setShowMenu(false)} />
       ) : g.showBriefing ? (
-        <BriefingDialog game={game} existing={g.dataCenters.filter(isExisting)} onStart={() => void g.begin()} />
+        <BriefingDialog game={opened ?? game} existing={g.dataCenters.filter(isExisting)} onStart={() => void g.begin()} />
       ) : game.outcome && !g.debriefClosed ? (
         <ScoreDialog game={game} outcome={game.outcome} closing={scenario.closing} onContinue={g.finishDebrief} onCarryOn={g.carryOn} />
       ) : game.hearing === 'called' ? (
@@ -735,14 +740,14 @@ function hitTip(game: GameState, s: Selection, centers: readonly DataCenter[], t
       const d = centers.find((x) => x.id === s.id)
       const c = activeCustomers(game).find((x) => x.id === s.id)
       const o = openOffers(game).find((x) => x.id === s.id)
-      const note = c ? [`Contract, ${c.phasesOn} of ${c.phaseCount} phases on`] : o ? [`Contract open until ${formatQuarter(o.closes)}`] : []
+      const note = c ? [`Contract, ${c.phasesOn} of ${c.phaseCount} phases on`, ...(leaving(game, c.id) ? [leaving(game, c.id)!] : [])] : o ? [`Sign by ${formatQuarter(o.closes)}`] : []
       return d ? { title: d.name, lines: [d.mw === null ? 'MW not published' : mw(d.mw), STATUS_TEXT[d.status] ?? d.status, ...note] } : null
     }
     case 'gear': {
       const t = game.corridors.flatMap((c) => (lineClass(c.classId).kv === s.kv ? lineGear(game, c) : [])).find((x) => x.id === s.id)
       return { title: `${s.kv} kV transformer`, lines: [t?.state === 'missing' ? 'Not built. Click to build it.' : t?.state === 'ordered' ? 'Being built' : 'In service'] }
     }
-    case 'campus': return { title: game.contract.name, lines: [`${game.contract.contractedMw} MW ${game.contract.status === 'offered' ? 'contract you can sign' : 'contracted'}`, ratingText(game, game.contract.countyFips)] }
+    case 'campus': return { title: game.contract.name, lines: [`${game.contract.contractedMw} MW ${mainOpen(game) ? game.mainCloses === undefined ? 'contract you can sign' : `contract, sign by ${formatQuarter(game.mainCloses)}` : 'contracted'}`, ...(leaving(game, 'main') ? [leaving(game, 'main')!] : []), ratingText(game, game.contract.countyFips)] }
     case 'substation': return { title: game.system.substationName, lines: ['Homes and imports connect here'] }
     case 'line': {
       const c = game.corridors.find((x) => x.id === s.id)

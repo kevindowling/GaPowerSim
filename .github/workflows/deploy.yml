@@ -15,59 +15,100 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
+# A new push to a pull request replaces its run. Deploys wait for each other.
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: ${{ github.event_name == 'pull_request' && github.ref || 'pages' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  verify:
-    name: Typecheck, test, build
+  plan:
+    name: Already tested?
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    outputs:
+      test: ${{ steps.check.outputs.test }}
+    steps:
+      # Skip the tests when a pull request with these exact files has passed them.
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          test=true
+          if [ "$EVENT" != pull_request ]; then
+            tree=$(gh api "repos/$REPO/commits/$SHA" -q .commit.tree.sha)
+            for head in $(gh api "repos/$REPO/commits/$SHA/pulls" -q '.[].head.sha'); do
+              same=$(gh api "repos/$REPO/commits/$head" -q .commit.tree.sha)
+              passed=$(gh api "repos/$REPO/actions/workflows/deploy.yml/runs?head_sha=$head&event=pull_request&status=success" -q .total_count)
+              if [ "$same" = "$tree" ] && [ "$passed" -gt 0 ]; then test=false; fi
+            done
+          fi
+          echo "test=$test" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Typecheck and build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-
       - run: npm ci
-
-      - name: Typecheck
-        run: npx tsc --noEmit
 
       - name: Check the vendored data is intact
         run: npm run verify:data
 
-      - name: Unit tests
-        run: npm test
-
-      - name: Cache Playwright browsers
-        id: playwright-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-
-      - name: Install Chromium
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
-
-      - name: Install Chromium system deps
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
-
-      - name: Build
+      - name: Typecheck and build
         run: npm run build
 
       - name: Confirm the build works from a subdirectory
         run: npm run check:build
 
-      - name: Browser tests
-        run: npm run test:e2e
+      - name: Disable Jekyll processing
+        if: github.event_name != 'pull_request'
+        run: touch dist/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
+        with:
+          path: dist
+
+  unit:
+    name: Unit tests
+    needs: plan
+    if: needs.plan.outputs.test == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  browser:
+    name: Browser tests
+    needs: plan
+    if: needs.plan.outputs.test == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      # The essential ones, in the Chrome already on the runner. Run the rest with npm run test:e2e.
+      - run: npm run test:smoke
 
       - name: Upload failure artifacts
         if: failure()
@@ -78,26 +119,23 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
-      - name: Disable Jekyll processing
-        if: github.event_name != 'pull_request'
-        run: touch dist/.nojekyll
-
-      - uses: actions/configure-pages@v5
-        if: github.event_name != 'pull_request'
-
-      - uses: actions/upload-pages-artifact@v3
-        if: github.event_name != 'pull_request'
-        with:
-          path: dist
-
   deploy:
     name: Deploy
-    needs: verify
-    if: github.event_name != 'pull_request'
+    needs: [plan, build, unit, browser]
+    # Skipped tests are fine only when the plan said they had passed.
+    if: >-
+      !cancelled() && github.event_name != 'pull_request'
+      && needs.plan.result == 'success' && needs.build.result == 'success'
+      && (needs.plan.outputs.test == 'false'
+      || (needs.unit.result == 'success' && needs.browser.result == 'success'))
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - uses: actions/configure-pages@v5
       - id: deployment
         uses: actions/deploy-pages@v4

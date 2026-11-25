@@ -110,7 +110,7 @@ export const AMERICUS: Scenario = {
   phasing: { count: 4, mwEach: 100, due: [quarterOf(2029, 1), quarterOf(2029, 2), quarterOf(2029, 3), quarterOf(2029, 4)] },
   briefing: [
     'Liberty Data Centers has signed with the Sumter County Development Authority for a campus at 301 Brady Road, in the Frank Meyers Industrial Park on the south side of Americus. It will be built in four phases of about 100 megawatts and draw 400 megawatts around the clock.',
-    'Liberty puts one to five billion dollars into the campus itself, and projects 150 jobs averaging eighty thousand dollars and about twenty million a year in local taxes. You are the utility. You have to get the power there.',
+    'Liberty puts one to five billion dollars into the campus itself, and projects 150 jobs averaging eighty thousand dollars and about twenty million a year in local taxes.',
     'Sumter County has about sixteen thousand people in Americus. More than a hundred people came to a meeting in August to object, and a petition for a moratorium is circulating. No permit has been issued.',
   ],
   startQuarter: quarterOf(2026, 3),

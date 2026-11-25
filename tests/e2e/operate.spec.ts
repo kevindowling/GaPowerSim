@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { energize, breakAsset, runClock, state } from './helpers.ts'
 
-test('the clock runs, and stops', async ({ page }) => {
+test('the clock runs, and stops', { tag: '@smoke' }, async ({ page }) => {
   await energize(page)
   const clock = page.locator('.clock')
   const before = await clock.innerText()
