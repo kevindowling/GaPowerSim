@@ -1,13 +1,3 @@
-/**
- * Turning a parcel's shape and land-use code into an owner archetype.
- *
- * Shared by the real fetch pipeline and the synthetic-cadastre generator so both
- * produce records the game treats identically.
- *
- * Owner *names* are not assigned here — they are derived from the parcel id at
- * load time by src/engine/parcels/owners.ts, so they never have to be stored.
- */
-
 import type { Rng } from '../../src/engine/rng.ts'
 import type { ParcelArchetype } from '../../src/engine/parcels/types.ts'
 

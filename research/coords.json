@@ -1,0 +1,3385 @@
+[
+ {
+  "name": "Kingston Technology Hub",
+  "state": "GA",
+  "county": "Bartow",
+  "oldLat": 34.25055,
+  "oldLon": -84.9101,
+  "lat": 34.25055,
+  "lon": -84.9101,
+  "precision": "parcel",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4835",
+   "title": "Georgia DCA DRI #4835 initial form (location field)"
+  },
+  "note": "DRI parcel 0037-0197-001, 579 ac; centroid from Bartow GIS.",
+  "countyOk": true
+ },
+ {
+  "name": "Project Bunkhouse",
+  "state": "GA",
+  "county": "Bartow",
+  "oldLat": 34.09653,
+  "oldLon": -84.91195,
+  "lat": 34.09653,
+  "lon": -84.91195,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4433",
+   "title": "Georgia DCA DRI #4433 initial form (location field)"
+  },
+  "note": "DRI gives coordinates; point lies in parcel 0032-1184-001 (774 ac).",
+  "countyOk": true
+ },
+ {
+  "name": "Project Indo",
+  "state": "GA",
+  "county": "Bartow",
+  "oldLat": 34.23541,
+  "oldLon": -84.79746,
+  "lat": 34.23541,
+  "lon": -84.79746,
+  "precision": "parcel",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4761",
+   "title": "Georgia DCA DRI #4761 initial form (location field)"
+  },
+  "note": "218 Industrial Park Rd, parcel C059-0001-001.",
+  "countyOk": true
+ },
+ {
+  "name": "Project Springbank",
+  "state": "GA",
+  "county": "Bartow",
+  "oldLat": 34.30926,
+  "oldLon": -84.96325,
+  "lat": 34.30926,
+  "lon": -84.96325,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4403",
+   "title": "Georgia DCA DRI #4403 initial form (location field)"
+  },
+  "note": "DRI coordinates; inside parcel 0024-0083-001 (466 ac).",
+  "countyOk": true
+ },
+ {
+  "name": "Switch KEEP 2.0 Atlanta North Campus",
+  "state": "GA",
+  "county": "Bartow",
+  "oldLat": 34.11487,
+  "oldLon": -84.79383,
+  "lat": 34.11249,
+  "lon": -84.79682,
+  "precision": "parcel",
+  "movedKm": 0.38,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4061",
+   "title": "Georgia DCA DRI #4061 initial form (location field)"
+  },
+  "note": "Cartersville-city parcel C106-0001-001 (64 of 126 ac) south of Old Alabama Rd at Bates Rd, matching the DRI description. Parcel match inferred.",
+  "countyOk": true
+ },
+ {
+  "name": "Brown Farm Road data center",
+  "state": "GA",
+  "county": "Bartow",
+  "oldLat": 34.11821,
+  "oldLon": -84.86936,
+  "lat": 34.11821,
+  "lon": -84.86936,
+  "precision": "road",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://services.arcgis.com/0tQ9yX5b2VG5RHei/arcgis/rest/services/Parcels/FeatureServer/12",
+   "title": "Bartow County tax parcels"
+  },
+  "note": "West end of Brown Farm Rd SW; exact 111-ac parcel not identified.",
+  "countyOk": true
+ },
+ {
+  "name": "Stiles Road / Euharlee Road data center",
+  "state": "GA",
+  "county": "Bartow",
+  "oldLat": 34.135,
+  "oldLon": -84.89,
+  "lat": 34.13543,
+  "lon": -84.89001,
+  "precision": "address",
+  "movedKm": 0.05,
+  "coordSource": {
+   "url": "https://www.compute-atlas.com/facilities/atlas-stiles-road-cartersville-ga",
+   "title": "Compute Atlas: 208 and 329 Stiles Road SW"
+  },
+  "note": "Mean of Census geocodes for 208 and 329 Stiles Rd SW.",
+  "countyOk": true
+ },
+ {
+  "name": "AWS Butts County campus (River Park)",
+  "state": "GA",
+  "county": "Butts",
+  "oldLat": 33.26716,
+  "oldLon": -84.08401,
+  "lat": 33.27429,
+  "lon": -84.07095,
+  "precision": "parcel",
+  "movedKm": 1.45,
+  "coordSource": {
+   "url": "https://services.arcgis.com/ISpzx3B5ZsVA6e1Z/arcgis/rest/services/Butts_Web_Map_2025_WFL1/FeatureServer/7",
+   "title": "Butts County parcel GIS layer"
+  },
+  "note": "Parcel 00110003, 550 ac, Development Authority of Butts County, 400 Enterprise Connector; CoStar reports Amazon leases 543 ac from that authority. Baxtel building pins (33.271 to 33.276, -84.067 to -84.073) fall on it.",
+  "countyOk": true
+ },
+ {
+  "name": "Highway 16 Interstate Health Development",
+  "state": "GA",
+  "county": "Butts",
+  "oldLat": 33.26342,
+  "oldLon": -84.0854,
+  "lat": 33.26227,
+  "lon": -84.08311,
+  "precision": "parcel",
+  "movedKm": 0.25,
+  "coordSource": {
+   "url": "https://services.arcgis.com/ISpzx3B5ZsVA6e1Z/arcgis/rest/services/Butts_Web_Map_2025_WFL1/FeatureServer/7",
+   "title": "Butts County parcel GIS layer"
+  },
+  "note": "Area-weighted centroid of Interstate Health Systems LLC parcels (442 ac); DRI 4560 point 33.26342,-84.0854 agrees.",
+  "countyOk": true
+ },
+ {
+  "name": "Amazon Lamar County site (High Falls Park Road)",
+  "state": "GA",
+  "county": "Lamar",
+  "oldLat": 33.07444,
+  "oldLon": -84.14669,
+  "lat": 33.1801,
+  "lon": -84.05777,
+  "precision": "site",
+  "movedKm": 14.37,
+  "coordSource": {
+   "url": "https://baxtel.com/data-center/amazon-lamar-county",
+   "title": "Baxtel: Amazon Lamar County"
+  },
+  "note": "Former Legacy 75 / High Falls 75 LLC land west of I-75. Baxtel pin; FracTracker 33.1795,-84.0563 and DRI 4272 (33.18865,-84.05818) agree within 1 km.",
+  "countyOk": true
+ },
+ {
+  "name": "Google Monroe County campus (former Rumble Technology Campus)",
+  "state": "GA",
+  "county": "Monroe",
+  "oldLat": 32.99143,
+  "oldLon": -83.8443,
+  "lat": 32.98286,
+  "lon": -83.82412,
+  "precision": "parcel",
+  "movedKm": 2.11,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4515",
+   "title": "Georgia DCA DRI #4515 initial form (location field)"
+  },
+  "note": "Centroid of DRI 4515 parcels 091 005, 006, 007B, 008, 013 and 092 018 (Monroe GIS); 4308 lists 013, 015, 006. DRI list truncated. Exact Google 950-ac purchase not confirmed parcel by parcel.",
+  "countyOk": true
+ },
+ {
+  "name": "Forsyth Technology Campus",
+  "state": "GA",
+  "county": "Monroe",
+  "oldLat": 33.05981,
+  "oldLon": -83.98032,
+  "lat": 33.11557,
+  "lon": -84.01192,
+  "precision": "parcel",
+  "movedKm": 6.86,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4585",
+   "title": "Georgia DCA DRI #4585 initial form (location field)"
+  },
+  "note": "Centroid of DRI parcels 026 020 and 015 005A-K (Monroe GIS). DRI parcel list truncated (about 520 of 1,632 ac). Baxtel 33.1072,-84.0176 agrees.",
+  "countyOk": true
+ },
+ {
+  "name": "Bolingbroke Technology Campus",
+  "state": "GA",
+  "county": "Monroe",
+  "oldLat": 32.94356,
+  "oldLon": -83.82489,
+  "lat": 32.94356,
+  "lon": -83.82489,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4446",
+   "title": "Georgia DCA DRI #4446 initial form (location field)"
+  },
+  "note": "DRI coordinates.",
+  "countyOk": true
+ },
+ {
+  "name": "Crooked Creek Technology Park",
+  "state": "GA",
+  "county": "Jones",
+  "oldLat": 33.02166,
+  "oldLon": -83.5622,
+  "lat": 32.93783,
+  "lon": -83.39697,
+  "precision": "road",
+  "movedKm": 18.01,
+  "coordSource": {
+   "url": "https://services2.arcgis.com/V2PQwgZMTFfgM0Xu/arcgis/rest/services/Data_Centers_in_Georgia/FeatureServer/2",
+   "title": "FracTracker data centers layer: Crooked Creek, near Hwy 18 and Hwy 49"
+  },
+  "note": "Hwy 18 at Bethlehem Church Rd area; Baxtel 32.9367,-83.3988 agrees. 634-ac parcel set not identified.",
+  "countyOk": true
+ },
+ {
+  "name": "Pine Ridge Tech Park",
+  "state": "GA",
+  "county": "Twiggs",
+  "oldLat": 32.6475,
+  "oldLon": -83.435,
+  "lat": 32.5701,
+  "lon": -83.5015,
+  "precision": "parcel",
+  "movedKm": 10.62,
+  "coordSource": {
+   "url": "https://services5.arcgis.com/Qgy791PwCQvVznG0/arcgis/rest/services/Parcels_merge_OcmulgeeCounties_over20acres/FeatureServer/0",
+   "title": "Ocmulgee counties parcels over 20 ac: T047 001, Plum Creek Timberlands"
+  },
+  "note": "Site is 7015 Adams Park Rd, Dry Branch, Weyerhaeuser (owns Plum Creek) land per WGXA and others. Parcel T047 001 inferred: it lies between mapped house numbers 4277 and 8376. Baxtel 32.561,-83.509 and GaTech layer 32.563,-83.500 agree within 1.2 km. Rezoned area is 292 ac of it.",
+  "countyOk": true
+ },
+ {
+  "name": "Wallace Jackson Data Center Campus",
+  "state": "GA",
+  "county": "Spalding",
+  "oldLat": 33.26783,
+  "oldLon": -84.11288,
+  "lat": 33.27338,
+  "lon": -84.11732,
+  "precision": "parcel",
+  "movedKm": 0.74,
+  "coordSource": {
+   "url": "https://services5.arcgis.com/IBG8fFojdkoiHAvQ/arcgis/rest/services/Parcels_Public_View/FeatureServer/1",
+   "title": "Spalding County parcel GIS layer"
+  },
+  "note": "Parcels 216 01004 and 01004A (194 ac vs 189.64 ac in DRI 4599), 5745/5841 Jackson Rd at Wallace Rd. Match inferred from acreage and road.",
+  "countyOk": true
+ },
+ {
+  "name": "Project Spalding (High Falls Road / Alicia Drive)",
+  "state": "GA",
+  "county": "Spalding",
+  "oldLat": 33.24774,
+  "oldLon": -84.2309,
+  "lat": 33.24774,
+  "lon": -84.2309,
+  "precision": "parcel",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4425",
+   "title": "Georgia DCA DRI #4425 initial form (location field)"
+  },
+  "note": "DRI parcel 120 02016 (Spalding GIS).",
+  "countyOk": true
+ },
+ {
+  "name": "Spalding Investments Data Center Campus",
+  "state": "GA",
+  "county": "Spalding",
+  "oldLat": 33.241,
+  "oldLon": -84.18213,
+  "lat": 33.24116,
+  "lon": -84.19473,
+  "precision": "parcel",
+  "movedKm": 1.17,
+  "coordSource": {
+   "url": "https://services5.arcgis.com/IBG8fFojdkoiHAvQ/arcgis/rest/services/Parcels_Public_View/FeatureServer/1",
+   "title": "Spalding County parcel GIS layer"
+  },
+  "note": "Parcel 219 06001, 50 S McDonough Rd, 128 ac vs 127.45 ac reported; bounded by High Falls Rd, S McDonough Rd and Hwy 16. FracTracker 33.2421,-84.1951 agrees.",
+  "countyOk": true
+ },
+ {
+  "name": "75 South Data Center Campus",
+  "state": "GA",
+  "county": "Spalding",
+  "oldLat": 33.25738,
+  "oldLon": -84.14923,
+  "lat": 33.25738,
+  "lon": -84.14923,
+  "precision": "parcel",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4607",
+   "title": "Georgia DCA DRI #4607 initial form (location field)"
+  },
+  "note": "DRI parcel 214 01016B, 296 ac.",
+  "countyOk": true
+ },
+ {
+  "name": "Project Sail",
+  "state": "GA",
+  "county": "Coweta",
+  "oldLat": 33.434,
+  "oldLon": -84.87683,
+  "lat": 33.434,
+  "lon": -84.87683,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4361",
+   "title": "Georgia DCA DRI #4361 initial form (location field)"
+  },
+  "note": "DRI coordinates; inside 505-ac parcel 034 4024 001.",
+  "countyOk": true
+ },
+ {
+  "name": "Project Peach",
+  "state": "GA",
+  "county": "Coweta",
+  "oldLat": 33.50227,
+  "oldLon": -84.66711,
+  "lat": 33.50275,
+  "lon": -84.66448,
+  "precision": "parcel",
+  "movedKm": 0.25,
+  "coordSource": {
+   "url": "https://services1.arcgis.com/AaPyNbrJpNGryRqh/arcgis/rest/services/WeeklyUpdate_WinGapParcels/FeatureServer/0",
+   "title": "Coweta County parcel GIS layer"
+  },
+  "note": "Centroid of C1 Atlanta LLC (CyrusOne) parcels, 307 ac, 200-393 Johnston Circle; DRI 4301 address 300 Johnston Circle.",
+  "countyOk": true
+ },
+ {
+  "name": "Project Oak",
+  "state": "GA",
+  "county": "Coweta",
+  "oldLat": 33.3529,
+  "oldLon": -84.76214,
+  "lat": 33.42514,
+  "lon": -84.73486,
+  "precision": "parcel",
+  "movedKm": 8.42,
+  "coordSource": {
+   "url": "https://services1.arcgis.com/AaPyNbrJpNGryRqh/arcgis/rest/services/WeeklyUpdate_WinGapParcels/FeatureServer/0",
+   "title": "Coweta County parcel GIS layer"
+  },
+  "note": "Parcel 096 5115 001, 254.99 ac, Walt Sanders Rd (reported: 255 ac off Walt Sanders Rd between Coweta Industrial and Amlajack). Same parcel appears in DRI 4374.",
+  "countyOk": true
+ },
+ {
+  "name": "Bridgeport (Revised)",
+  "state": "GA",
+  "county": "Coweta",
+  "oldLat": 33.31764,
+  "oldLon": -84.77839,
+  "lat": 33.30058,
+  "lon": -84.77992,
+  "precision": "parcel",
+  "movedKm": 1.9,
+  "coordSource": {
+   "url": "https://services1.arcgis.com/AaPyNbrJpNGryRqh/arcgis/rest/services/WeeklyUpdate_WinGapParcels/FeatureServer/0",
+   "title": "Coweta County parcel GIS layer"
+  },
+  "note": "Centroid of undeveloped Bridgeport ATL / P&L Bridgeport parcels (548 ac) in land lots 103-104, 120-122, 134-137 named by DRI 2449; DRI 4727 says only 0 Bridgeport Parkway. Building layout within the 1,064-ac park not confirmed.",
+  "countyOk": true
+ },
+ {
+  "name": "Central Coweta Industrial Phase II",
+  "state": "GA",
+  "county": "Coweta",
+  "oldLat": 33.43341,
+  "oldLon": -84.73608,
+  "lat": 33.42913,
+  "lon": -84.73543,
+  "precision": "parcel",
+  "movedKm": 0.48,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4374",
+   "title": "Georgia DCA DRI #4374 initial form (location field)"
+  },
+  "note": "Centroid of DRI parcels 0965142001 and 0965115001 (457 ac).",
+  "countyOk": true
+ },
+ {
+  "name": "T5 ATL IV Coweta (Project Pegasus)",
+  "state": "GA",
+  "county": "Coweta",
+  "oldLat": 33.4927,
+  "oldLon": -84.66132,
+  "lat": 33.4927,
+  "lon": -84.66132,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4079",
+   "title": "Georgia DCA DRI #4079 initial form (location field)"
+  },
+  "note": "DRI coordinates.",
+  "countyOk": true
+ },
+ {
+  "name": "Avemore Technology and Data Park",
+  "state": "GA",
+  "county": "Carroll",
+  "oldLat": 33.68066,
+  "oldLon": -84.94851,
+  "lat": 33.70397,
+  "lon": -84.93949,
+  "precision": "address",
+  "movedKm": 2.72,
+  "coordSource": {
+   "url": "https://geocoding.geo.census.gov/geocoder/",
+   "title": "Census geocoder: 55 Goldworth Rd, Villa Rica"
+  },
+  "note": "55-63 Goldworth Rd; DRI 4451 lists Hwy 61, Hickory Level and South Van Wert. Baxtel 33.7076,-84.9429 and FracTracker 33.7046,-84.94 agree. Carroll parcel layer not reachable.",
+  "countyOk": true
+ },
+ {
+  "name": "Project Bus (Temple)",
+  "state": "GA",
+  "county": "Carroll",
+  "oldLat": 33.73324,
+  "oldLon": -85.0273,
+  "lat": 33.70477,
+  "lon": -85.06418,
+  "precision": "road",
+  "movedKm": 4.65,
+  "coordSource": {
+   "url": "https://services2.arcgis.com/vHeD2bHG1G3sW5YZ/arcgis/rest/services/Planned_Data_Centers_in_GA_GIS_as_of_04_Aug_2025/FeatureServer/0",
+   "title": "GaTech planned data centers layer: Project Bus, parcels 102 0044/0040/0048/0005"
+  },
+  "note": "Vaughn Rd near Center Point Rd; FracTracker 33.7091,-85.0648 agrees, Baxtel 33.7247,-85.0387 differs. Carroll parcels could not be queried.",
+  "countyOk": true
+ },
+ {
+  "name": "Hickman Property (East Village Dothan)",
+  "state": "GA",
+  "county": "Douglas",
+  "oldLat": 33.70984,
+  "oldLon": -84.8777,
+  "lat": 33.70984,
+  "lon": -84.8777,
+  "precision": "parcel",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4422",
+   "title": "Georgia DCA DRI #4422 initial form (location field)"
+  },
+  "note": "Centroid of DRI parcels 0116-025-0001 and -0002 (211 of 700 ac).",
+  "countyOk": true
+ },
+ {
+  "name": "Stream Data Centers Winston campus (SDC ATLA)",
+  "state": "GA",
+  "county": "Douglas",
+  "oldLat": 33.73366,
+  "oldLon": -84.80946,
+  "lat": 33.73721,
+  "lon": -84.81034,
+  "precision": "parcel",
+  "movedKm": 0.4,
+  "coordSource": {
+   "url": "https://maps.douglascountyga.gov/arcgis/rest/services/Layers/MapServer/57",
+   "title": "Douglas County parcel GIS layer"
+  },
+  "note": "Three Agnes trust parcels, 241 ac (243 reported), including DRI 4334 parcel 01660250005.",
+  "countyOk": true
+ },
+ {
+  "name": "Winston Data Center (Waldrop Farms)",
+  "state": "GA",
+  "county": "Douglas",
+  "oldLat": 33.72706,
+  "oldLon": -84.82448,
+  "lat": 33.72447,
+  "lon": -84.82236,
+  "precision": "parcel",
+  "movedKm": 0.35,
+  "coordSource": {
+   "url": "https://maps.douglascountyga.gov/arcgis/rest/services/Layers/MapServer/57",
+   "title": "Douglas County parcel GIS layer"
+  },
+  "note": "Parcel 01540250022, Waldrop Farms, 2912 Post Rd (DRI 4192 address).",
+  "countyOk": true
+ },
+ {
+  "name": "Stack ATL02 Lithia Springs",
+  "state": "GA",
+  "county": "Douglas",
+  "oldLat": 33.76356,
+  "oldLon": -84.59728,
+  "lat": 33.76248,
+  "lon": -84.60178,
+  "precision": "parcel",
+  "movedKm": 0.43,
+  "coordSource": {
+   "url": "https://maps.douglascountyga.gov/arcgis/rest/services/Layers/MapServer/57",
+   "title": "Douglas County parcel GIS layer"
+  },
+  "note": "Stack parcels 07721820004 and 07951820006 at 792-808 Factory Shoals Rd; OSM building footprints agree.",
+  "countyOk": true
+ },
+ {
+  "name": "Vantage Douglasville campus",
+  "state": "GA",
+  "county": "Douglas",
+  "oldLat": 33.7089,
+  "oldLon": -84.62425,
+  "lat": 33.7089,
+  "lon": -84.62425,
+  "precision": "parcel",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4051",
+   "title": "Georgia DCA DRI #4051 initial form (location field)"
+  },
+  "note": "DRI parcel 01690150004 (Roberts Rd).",
+  "countyOk": true
+ },
+ {
+  "name": "DC BLOX Atlanta West (ATL1)",
+  "state": "GA",
+  "county": "Douglas",
+  "oldLat": 33.73397,
+  "oldLon": -84.61524,
+  "lat": 33.73397,
+  "lon": -84.61524,
+  "precision": "parcel",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://maps.douglascountyga.gov/arcgis/rest/services/Layers/MapServer/57",
+   "title": "Douglas County parcel GIS layer"
+  },
+  "note": "Parcel 01730150012, 1701 N River Rd (DRI 4112).",
+  "countyOk": true
+ },
+ {
+  "name": "DC BLOX ATL1-C",
+  "state": "GA",
+  "county": "Douglas",
+  "oldLat": 33.73432,
+  "oldLon": -84.61077,
+  "lat": 33.73446,
+  "lon": -84.61068,
+  "precision": "parcel",
+  "movedKm": 0.02,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4882",
+   "title": "Georgia DCA DRI #4882 initial form (location field)"
+  },
+  "note": "DRI parcel 01730150014, 1800 N River Rd.",
+  "countyOk": true
+ },
+ {
+  "name": "AWS Echo Road / Lithia Springs",
+  "state": "GA",
+  "county": "Douglas",
+  "oldLat": 33.74327,
+  "oldLon": -84.59935,
+  "lat": 33.74247,
+  "lon": -84.60511,
+  "precision": "parcel",
+  "movedKm": 0.54,
+  "coordSource": {
+   "url": "https://maps.douglascountyga.gov/arcgis/rest/services/Layers/MapServer/57",
+   "title": "Douglas County parcel GIS layer"
+  },
+  "note": "Parcel 09921820007, Amazon Data Services, 118.77 ac, 2401 Echo Rd.",
+  "countyOk": true
+ },
+ {
+  "name": "Rock House Road Data Center Site",
+  "state": "GA",
+  "county": "Douglas",
+  "oldLat": 33.75045,
+  "oldLon": -84.60782,
+  "lat": 33.74672,
+  "lon": -84.61061,
+  "precision": "parcel",
+  "movedKm": 0.49,
+  "coordSource": {
+   "url": "https://maps.douglascountyga.gov/arcgis/rest/services/Layers/MapServer/57",
+   "title": "Douglas County parcel GIS layer"
+  },
+  "note": "Rockhill LLC parcels (78 ac) including DRI 4078 address 1971 Rock House Rd.",
+  "countyOk": true
+ },
+ {
+  "name": "T5 ATL III",
+  "state": "GA",
+  "county": "Douglas",
+  "oldLat": 33.7608,
+  "oldLon": -84.6048,
+  "lat": 33.75998,
+  "lon": -84.60577,
+  "precision": "parcel",
+  "movedKm": 0.13,
+  "coordSource": {
+   "url": "https://maps.douglascountyga.gov/arcgis/rest/services/Layers/MapServer/57",
+   "title": "Douglas County parcel GIS layer"
+  },
+  "note": "Parcel 07961820010, 824 Factory Shoals Rd; DRI 3747 coordinates and OSM buildings agree.",
+  "countyOk": true
+ },
+ {
+  "name": "Microsoft Douglasville campus (FTY101)",
+  "state": "GA",
+  "county": "Douglas",
+  "oldLat": 33.7345,
+  "oldLon": -84.617,
+  "lat": 33.73112,
+  "lon": -84.62229,
+  "precision": "parcel",
+  "movedKm": 0.62,
+  "coordSource": {
+   "url": "https://maps.douglascountyga.gov/arcgis/rest/services/Layers/MapServer/57",
+   "title": "Douglas County parcel GIS layer"
+  },
+  "note": "Parcels 01660150010 and 01660150009, 1601/1651 N River Rd, 159 ac (DRI 3426: 160 ac).",
+  "countyOk": true
+ },
+ {
+  "name": "Google Douglas County campus",
+  "state": "GA",
+  "county": "Douglas",
+  "oldLat": 33.7516,
+  "oldLon": -84.585,
+  "lat": 33.75042,
+  "lon": -84.58569,
+  "precision": "parcel",
+  "movedKm": 0.15,
+  "coordSource": {
+   "url": "https://maps.douglascountyga.gov/arcgis/rest/services/Layers/MapServer/57",
+   "title": "Douglas County parcel GIS layer"
+  },
+  "note": "Parcel 08741820001, 300 Riverside Pkwy; OSM way 578435601.",
+  "countyOk": true
+ },
+ {
+  "name": "Switch The KEEP (Lithia Springs)",
+  "state": "GA",
+  "county": "Douglas",
+  "oldLat": 33.755,
+  "oldLon": -84.587,
+  "lat": 33.75888,
+  "lon": -84.59103,
+  "precision": "parcel",
+  "movedKm": 0.57,
+  "coordSource": {
+   "url": "https://maps.douglascountyga.gov/arcgis/rest/services/Layers/MapServer/57",
+   "title": "Douglas County parcel GIS layer"
+  },
+  "note": "Switch campus parcels on Switch Way; OSM way 1012912171.",
+  "countyOk": true
+ },
+ {
+  "name": "Georgia-Tallapoosa LLC land (possible data center)",
+  "state": "GA",
+  "county": "Haralson",
+  "oldLat": 33.73666,
+  "oldLon": -85.28736,
+  "lat": 33.73666,
+  "lon": -85.28736,
+  "precision": "city",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://www.fox5atlanta.com/news/tallapoosa-rezoning-neighbors-fight-1600-acre-industrial-project",
+   "title": "FOX 5: Tallapoosa rezoning, 1,600 acres"
+  },
+  "note": "Only \"City of Tallapoosa, 1,600 acres\" is published; city point.",
+  "countyOk": true
+ },
+ {
+  "name": "Fort Gillem campus (ATL15/ATL16)",
+  "state": "GA",
+  "county": "Clayton",
+  "oldLat": 33.62053,
+  "oldLon": -84.35825,
+  "lat": 33.61783,
+  "lon": -84.33414,
+  "precision": "road",
+  "movedKm": 2.25,
+  "coordSource": {
+   "url": "https://newprojectmedia.com/?p=13612",
+   "title": "New Project Media: Digital Realty Fort Gillem, Metcalf Road"
+  },
+  "note": "Metcalf Rd in the former Fort Gillem (Nominatim); FracTracker 33.6197,-84.3290 within 0.6 km. 97-ac parcel not identified.",
+  "countyOk": true
+ },
+ {
+  "name": "TA Realty East Tanners Church Road",
+  "state": "GA",
+  "county": "Clayton",
+  "oldLat": 33.63748,
+  "oldLon": -84.30944,
+  "lat": 33.63697,
+  "lon": -84.30334,
+  "precision": "parcel",
+  "movedKm": 0.57,
+  "coordSource": {
+   "url": "https://services1.arcgis.com/9lDFdeC4JIBgML6L/arcgis/rest/services/Clayton_County_Parcels_2023/FeatureServer/5",
+   "title": "Clayton County parcel GIS layer"
+  },
+  "note": "Three Anvil Block parcels on Williamson Rd, 36 ac (about 35 ac between Dunn and Williamson Rds reported). Match inferred; FracTracker 33.6353,-84.3040.",
+  "countyOk": true
+ },
+ {
+  "name": "Stillwater Technology Park",
+  "state": "GA",
+  "county": "Clayton",
+  "oldLat": 33.43293,
+  "oldLon": -84.35936,
+  "lat": 33.43107,
+  "lon": -84.35635,
+  "precision": "parcel",
+  "movedKm": 0.35,
+  "coordSource": {
+   "url": "https://services1.arcgis.com/9lDFdeC4JIBgML6L/arcgis/rest/services/Clayton_County_Parcels_2023/FeatureServer/5",
+   "title": "Clayton County parcel GIS layer"
+  },
+  "note": "Parcel 05079 081008, 11760 Panhandle Rd, 144 ac (DRI 4794 address).",
+  "countyOk": true
+ },
+ {
+  "name": "Hampton Technology Park",
+  "state": "GA",
+  "county": "Henry",
+  "oldLat": 33.36983,
+  "oldLon": -84.34458,
+  "lat": 33.38224,
+  "lon": -84.3476,
+  "precision": "parcel",
+  "movedKm": 1.41,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4624",
+   "title": "Georgia DCA DRI #4624 initial form (location field)"
+  },
+  "note": "Centroid of DRI parcels 003-01042003 and 003-01042000 (Henry GIS).",
+  "countyOk": true
+ },
+ {
+  "name": "Henderson Farms data center campus",
+  "state": "GA",
+  "county": "Henry",
+  "oldLat": 33.38487,
+  "oldLon": -84.26599,
+  "lat": 33.3911,
+  "lon": -84.26024,
+  "precision": "parcel",
+  "movedKm": 0.87,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4680",
+   "title": "Georgia DCA DRI #4680 initial form (location field)"
+  },
+  "note": "DRI data center parcel 039-01015000 (130 ac).",
+  "countyOk": true
+ },
+ {
+  "name": "Equinix xScale Hampton (AT10x-AT13x)",
+  "state": "GA",
+  "county": "Henry",
+  "oldLat": 33.37925,
+  "oldLon": -84.3,
+  "lat": 33.364,
+  "lon": -84.32113,
+  "precision": "parcel",
+  "movedKm": 2.59,
+  "coordSource": {
+   "url": "https://services1.arcgis.com/W8nsWsU3ZKxVPuk7/arcgis/rest/services/HenryCountyParcels/FeatureServer/0",
+   "title": "Henry County parcel GIS layer"
+  },
+  "note": "Equinix Hyperscale 3 parcels, 220 ac, 1100 Site Pkwy / Lagoon Dr.",
+  "countyOk": true
+ },
+ {
+  "name": "0 Rocky Creek",
+  "state": "GA",
+  "county": "Henry",
+  "oldLat": 33.40205,
+  "oldLon": -84.22516,
+  "lat": 33.39876,
+  "lon": -84.22043,
+  "precision": "parcel",
+  "movedKm": 0.57,
+  "coordSource": {
+   "url": "https://services1.arcgis.com/W8nsWsU3ZKxVPuk7/arcgis/rest/services/HenryCountyParcels/FeatureServer/0",
+   "title": "Henry County parcel GIS layer"
+  },
+  "note": "Parcel 058-01006000, 0 Rocky Creek Road LLC, 149 ac; DRI 4198 intersection agrees.",
+  "countyOk": true
+ },
+ {
+  "name": "Strickland Tract",
+  "state": "GA",
+  "county": "Henry",
+  "oldLat": 33.39154,
+  "oldLon": -84.21326,
+  "lat": 33.38386,
+  "lon": -84.20992,
+  "precision": "parcel",
+  "movedKm": 0.91,
+  "coordSource": {
+   "url": "https://services1.arcgis.com/W8nsWsU3ZKxVPuk7/arcgis/rest/services/HenryCountyParcels/FeatureServer/0",
+   "title": "Henry County parcel GIS layer"
+  },
+  "note": "Strickland Road Farms parcels 059-01017002 and 059-01017000 (311 ac); DRI 4251: Strickland Rd, east of Simpson Mill, north of Hampton-Locust Grove. Match inferred.",
+  "countyOk": true
+ },
+ {
+  "name": "Ellenwood data center (Project Preserve)",
+  "state": "GA",
+  "county": "DeKalb",
+  "oldLat": 33.6531,
+  "oldLon": -84.29777,
+  "lat": 33.65033,
+  "lon": -84.29466,
+  "precision": "parcel",
+  "movedKm": 0.42,
+  "coordSource": {
+   "url": "https://dcgis.dekalbcountyga.gov/mapping/rest/services/TaxParcels/MapServer/0",
+   "title": "DeKalb County parcel GIS layer"
+  },
+  "note": "PCC DeKalb LLC parcels at 4280 and 4358 Loveless Pl and 2281 Pineview Trl.",
+  "countyOk": true
+ },
+ {
+  "name": "Shadowbox Studios data center",
+  "state": "GA",
+  "county": "DeKalb",
+  "oldLat": 33.68643,
+  "oldLon": -84.33207,
+  "lat": 33.67901,
+  "lon": -84.32511,
+  "precision": "parcel",
+  "movedKm": 1.05,
+  "coordSource": {
+   "url": "https://dcgis.dekalbcountyga.gov/mapping/rest/services/TaxParcels/MapServer/0",
+   "title": "DeKalb County parcel GIS layer"
+  },
+  "note": "Parcel 15 051 01 001, Henrico 183 LLC, 3600 International Park Dr, 172 ac. Matched on owner name.",
+  "countyOk": true
+ },
+ {
+  "name": "DC BLOX Atlanta East",
+  "state": "GA",
+  "county": "Rockdale",
+  "oldLat": 33.68859,
+  "oldLon": -84.04601,
+  "lat": 33.6914,
+  "lon": -84.04706,
+  "precision": "parcel",
+  "movedKm": 0.33,
+  "coordSource": {
+   "url": "https://services.arcgis.com/Tbke9ca9DhtF4VIx/ArcGIS/rest/services/Parcel_Polygons_working/FeatureServer/0",
+   "title": "Rockdale County parcel GIS layer"
+  },
+  "note": "Parcel 0210010004, 1726 Farmer Rd (DRI 4120).",
+  "countyOk": true
+ },
+ {
+  "name": "Project Rockforge",
+  "state": "GA",
+  "county": "Rockdale",
+  "oldLat": 33.69679,
+  "oldLon": -84.02221,
+  "lat": 33.69749,
+  "lon": -84.03212,
+  "precision": "parcel",
+  "movedKm": 0.92,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4456",
+   "title": "Georgia DCA DRI #4456 initial form (location field)"
+  },
+  "note": "Centroid of DRI parcels 041001008B and 0410010004 (266 ac).",
+  "countyOk": true
+ },
+ {
+  "name": "Rockdale Technology Park 1",
+  "state": "GA",
+  "county": "Rockdale",
+  "oldLat": 33.68545,
+  "oldLon": -84.05061,
+  "lat": 33.68713,
+  "lon": -84.05214,
+  "precision": "parcel",
+  "movedKm": 0.23,
+  "coordSource": {
+   "url": "https://services.arcgis.com/Tbke9ca9DhtF4VIx/ArcGIS/rest/services/Parcel_Polygons_working/FeatureServer/0",
+   "title": "Rockdale County parcel GIS layer"
+  },
+  "note": "Parcel 0210010003, 1975 Sigman Rd (DRI 4147).",
+  "countyOk": true
+ },
+ {
+  "name": "Union City campus (ATL11-ATL13)",
+  "state": "GA",
+  "county": "Fulton",
+  "oldLat": 33.62579,
+  "oldLon": -84.5587,
+  "lat": 33.6258,
+  "lon": -84.5587,
+  "precision": "parcel",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://services1.arcgis.com/AQDHTHDrZzfsFsB5/arcgis/rest/services/Tax_Parcels/FeatureServer/0",
+   "title": "Fulton County parcel GIS layer"
+  },
+  "note": "Parcel 09F340101340656, EdgeConneX ATL11 LLC, 4810 Stonewall Tell Rd (DRI 4235). ATL12/13 buildings may be on other parcels.",
+  "countyOk": true
+ },
+ {
+  "name": "Microsoft ATL50",
+  "state": "GA",
+  "county": "Fulton",
+  "oldLat": 33.6121,
+  "oldLon": -84.55684,
+  "lat": 33.61359,
+  "lon": -84.56692,
+  "precision": "parcel",
+  "movedKm": 0.95,
+  "coordSource": {
+   "url": "https://services1.arcgis.com/AQDHTHDrZzfsFsB5/arcgis/rest/services/Tax_Parcels/FeatureServer/0",
+   "title": "Fulton County parcel GIS layer"
+  },
+  "note": "Parcel 09F280101220591, Microsoft, 5235 Stonewall Tell Rd, 90 ac (DRI 4843: 88 ac).",
+  "countyOk": true
+ },
+ {
+  "name": "The Crossing Business Park",
+  "state": "GA",
+  "county": "Fulton",
+  "oldLat": 33.59527,
+  "oldLon": -84.5463,
+  "lat": 33.59525,
+  "lon": -84.53967,
+  "precision": "parcel",
+  "movedKm": 0.61,
+  "coordSource": {
+   "url": "https://services1.arcgis.com/AQDHTHDrZzfsFsB5/arcgis/rest/services/Tax_Parcels/FeatureServer/0",
+   "title": "Fulton County parcel GIS layer"
+  },
+  "note": "Parcel 09F230100843794, B9 Union City Owner LLC, 234 ac; DRI 4876 coordinates lie on its west edge.",
+  "countyOk": true
+ },
+ {
+  "name": "ATL03/Red Oak",
+  "state": "GA",
+  "county": "Fulton",
+  "oldLat": 33.56309,
+  "oldLon": -84.5128,
+  "lat": 33.56309,
+  "lon": -84.5128,
+  "precision": "parcel",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4315",
+   "title": "Georgia DCA DRI #4315 initial form (location field)"
+  },
+  "note": "7170 Red Oak Rd, parcel 09F130000590992.",
+  "countyOk": true
+ },
+ {
+  "name": "Stonewall Tell Data Center",
+  "state": "GA",
+  "county": "Fulton",
+  "oldLat": 33.61512,
+  "oldLon": -84.55222,
+  "lat": 33.61512,
+  "lon": -84.55222,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4342",
+   "title": "Georgia DCA DRI #4342 initial form (location field)"
+  },
+  "note": "DRI coordinates; surrounded by RSC Stonewall Tell LLC parcels.",
+  "countyOk": true
+ },
+ {
+  "name": "Vantage Westlake",
+  "state": "GA",
+  "county": "Fulton",
+  "oldLat": 33.70832,
+  "oldLon": -84.58456,
+  "lat": 33.70924,
+  "lon": -84.58418,
+  "precision": "site",
+  "movedKm": 0.11,
+  "coordSource": {
+   "url": "https://www.openstreetmap.org/way/1562013261",
+   "title": "OSM: Westlake Data Center (Vantage)"
+  },
+  "note": "DRI 4256 coordinates are 0.1 km away.",
+  "countyOk": true
+ },
+ {
+  "name": "Vantage Stacks Road",
+  "state": "GA",
+  "county": "Fulton",
+  "oldLat": 33.6057,
+  "oldLon": -84.53089,
+  "lat": 33.60492,
+  "lon": -84.53093,
+  "precision": "parcel",
+  "movedKm": 0.09,
+  "coordSource": {
+   "url": "https://services1.arcgis.com/AQDHTHDrZzfsFsB5/arcgis/rest/services/Tax_Parcels/FeatureServer/0",
+   "title": "Fulton County parcel GIS layer"
+  },
+  "note": "Parcel 09F260101070774, Vantage Data Centers GA11 LLC.",
+  "countyOk": true
+ },
+ {
+  "name": "T5 ATL IV (Gullatt Road, Fairburn)",
+  "state": "GA",
+  "county": "Fulton",
+  "oldLat": 33.52675,
+  "oldLon": -84.61873,
+  "lat": 33.52675,
+  "lon": -84.61873,
+  "precision": "parcel",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://services1.arcgis.com/AQDHTHDrZzfsFsB5/arcgis/rest/services/Tax_Parcels/FeatureServer/0",
+   "title": "Fulton County parcel GIS layer"
+  },
+  "note": "Centroid of T5@Atlanta IV LP parcels 07 380001570168, 07 290001560467, 07 380001570200 (DRI 4222).",
+  "countyOk": true
+ },
+ {
+  "name": "Fairburn Technology Center",
+  "state": "GA",
+  "county": "Fulton",
+  "oldLat": 33.53232,
+  "oldLon": -84.58934,
+  "lat": 33.53273,
+  "lon": -84.58926,
+  "precision": "address",
+  "movedKm": 0.05,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4213",
+   "title": "Georgia DCA DRI #4213 initial form (location field)"
+  },
+  "note": "8125 Bohannon Dr geocode; 59.6-ac assemblage not confirmed.",
+  "countyOk": true
+ },
+ {
+  "name": "1611 Ellsworth mixed-use",
+  "state": "GA",
+  "county": "Fulton",
+  "oldLat": 33.79852,
+  "oldLon": -84.42695,
+  "lat": 33.79833,
+  "lon": -84.42584,
+  "precision": "parcel",
+  "movedKm": 0.1,
+  "coordSource": {
+   "url": "https://services1.arcgis.com/AQDHTHDrZzfsFsB5/arcgis/rest/services/Tax_Parcels/FeatureServer/0",
+   "title": "Fulton County parcel GIS layer"
+  },
+  "note": "Parcel 17 0187 LL0687, 1611 Ellsworth Industrial Blvd.",
+  "countyOk": true
+ },
+ {
+  "name": "Microsoft Palmetto (CCO06)",
+  "state": "GA",
+  "county": "Fulton",
+  "oldLat": 33.5241,
+  "oldLon": -84.6282,
+  "lat": 33.52567,
+  "lon": -84.62819,
+  "precision": "parcel",
+  "movedKm": 0.17,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=3576",
+   "title": "Georgia DCA DRI #3576 initial form (location field)"
+  },
+  "note": "DRI parcel 07-380001320770, Microsoft, 76 ac.",
+  "countyOk": true
+ },
+ {
+  "name": "Microsoft East Point",
+  "state": "GA",
+  "county": "Fulton",
+  "oldLat": 33.647,
+  "oldLon": -84.517,
+  "lat": 33.64104,
+  "lon": -84.51751,
+  "precision": "site",
+  "movedKm": 0.66,
+  "coordSource": {
+   "url": "https://www.openstreetmap.org/way/1562013295",
+   "title": "OSM: Microsoft East Point Datacenter Campus"
+  },
+  "note": "OSM campus polygon; 4165 Ben Hill Rd.",
+  "countyOk": true
+ },
+ {
+  "name": "QTS Atlanta Metro",
+  "state": "GA",
+  "county": "Fulton",
+  "oldLat": 33.778,
+  "oldLon": -84.421,
+  "lat": 33.78014,
+  "lon": -84.42053,
+  "precision": "site",
+  "movedKm": 0.24,
+  "coordSource": {
+   "url": "https://www.openstreetmap.org/way/1008115790",
+   "title": "OSM: QTS Atlanta Data Center Campus"
+  },
+  "note": "QTS-owned Fulton parcels centre on 33.7807,-84.4206.",
+  "countyOk": true
+ },
+ {
+  "name": "Edged Atlanta campus (ATL01-ATL03)",
+  "state": "GA",
+  "county": "Fulton",
+  "oldLat": 33.81394,
+  "oldLon": -84.45852,
+  "lat": 33.81394,
+  "lon": -84.45852,
+  "precision": "parcel",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://services1.arcgis.com/AQDHTHDrZzfsFsB5/arcgis/rest/services/Tax_Parcels/FeatureServer/0",
+   "title": "Fulton County parcel GIS layer"
+  },
+  "note": "Parcel 17 0244 LL0530, 1800 Thomas St NW.",
+  "countyOk": true
+ },
+ {
+  "name": "QTS Fayetteville (Project Excalibur / Microsoft Fairwater Atlanta)",
+  "state": "GA",
+  "county": "Fayette",
+  "oldLat": 33.44678,
+  "oldLon": -84.5222,
+  "lat": 33.44678,
+  "lon": -84.5222,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=3813",
+   "title": "Georgia DCA DRI #3813 initial form (location field)"
+  },
+  "note": "DRI coordinates; OSM QTS buildings within 0.5 km. Campus extends north to 33.464.",
+  "countyOk": true
+ },
+ {
+  "name": "QTS ATL2 East",
+  "state": "GA",
+  "county": "Fayette",
+  "oldLat": 33.45435,
+  "oldLon": -84.51676,
+  "lat": 33.45435,
+  "lon": -84.51676,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4603",
+   "title": "Georgia DCA DRI #4603 initial form (location field)"
+  },
+  "note": "DRI coordinates.",
+  "countyOk": true
+ },
+ {
+  "name": "Project Rita (Microsoft Tyrone)",
+  "state": "GA",
+  "county": "Fayette",
+  "oldLat": 33.51989,
+  "oldLon": -84.5764,
+  "lat": 33.51791,
+  "lon": -84.57949,
+  "precision": "parcel",
+  "movedKm": 0.36,
+  "coordSource": {
+   "url": "https://services5.arcgis.com/Hg5aLg4LtSINzVWa/arcgis/rest/services/TaxParcels_public/FeatureServer/0",
+   "title": "Fayette County parcel GIS layer"
+  },
+  "note": "Parcel 0725 005, 2008 Highway 74 W, 38 ac.",
+  "countyOk": true
+ },
+ {
+  "name": "Highway 85 North data center",
+  "state": "GA",
+  "county": "Fayette",
+  "oldLat": 33.4491,
+  "oldLon": -84.47282,
+  "lat": 33.48444,
+  "lon": -84.43779,
+  "precision": "parcel",
+  "movedKm": 5.1,
+  "coordSource": {
+   "url": "https://services5.arcgis.com/Hg5aLg4LtSINzVWa/arcgis/rest/services/TaxParcels_public/FeatureServer/0",
+   "title": "Fayette County parcel GIS layer"
+  },
+  "note": "Parcel 0538 104, Highway 85 Ventures LLC, 40 ac, south of 1510 Hwy 85 N (reported 37.4 ac north of Fayette Pavilion).",
+  "countyOk": true
+ },
+ {
+  "name": "Bells Ferry Road campus (Grindcap Marietta)",
+  "state": "GA",
+  "county": "Cobb",
+  "oldLat": 33.99578,
+  "oldLon": -84.5483,
+  "lat": 33.99418,
+  "lon": -84.55357,
+  "precision": "parcel",
+  "movedKm": 0.52,
+  "coordSource": {
+   "url": "https://gis.cobbcounty.gov/gisserver/rest/services/tax/taxassessorsdaily/MapServer/0",
+   "title": "Cobb County parcel GIS layer"
+  },
+  "note": "Parcel 16079800040, 1751 Bells Ferry Rd, 31 ac.",
+  "countyOk": true
+ },
+ {
+  "name": "Prime Storage Delk Road",
+  "state": "GA",
+  "county": "Cobb",
+  "oldLat": 33.92614,
+  "oldLon": -84.48574,
+  "lat": 33.9261,
+  "lon": -84.48582,
+  "precision": "parcel",
+  "movedKm": 0.01,
+  "coordSource": {
+   "url": "https://gis.cobbcounty.gov/gisserver/rest/services/tax/taxassessorsdaily/MapServer/0",
+   "title": "Cobb County parcel GIS layer"
+  },
+  "note": "Parcel 17078700110, 1155 Powers Ferry Pl.",
+  "countyOk": true
+ },
+ {
+  "name": "Microsoft Rome (Project Firecracker / ATL80)",
+  "state": "GA",
+  "county": "Floyd",
+  "oldLat": 34.2638,
+  "oldLon": -85.2136,
+  "lat": 34.30278,
+  "lon": -85.30561,
+  "precision": "parcel",
+  "movedKm": 9.5,
+  "coordSource": {
+   "url": "https://services2.arcgis.com/nV67H1IJR8GS6SAA/ArcGIS/rest/services/Current_Parcels/FeatureServer/5",
+   "title": "Floyd County parcel GIS layer"
+  },
+  "note": "Floyd County 1108 LLC parcels north of Huffaker Rd, 352 ac (DRI 4860: 349.03 ac, 0 Huffaker Rd). Owner per Compute Atlas; parcel match inferred. Baxtel 34.2999,-85.3001, GaTech 34.3010,-85.3093.",
+  "countyOk": true
+ },
+ {
+  "name": "Coosa Data Center (Project Gracie)",
+  "state": "GA",
+  "county": "Floyd",
+  "oldLat": 34.26683,
+  "oldLon": -85.29861,
+  "lat": 34.26683,
+  "lon": -85.29861,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4448",
+   "title": "Georgia DCA DRI #4448 initial form (location field)"
+  },
+  "note": "DRI coordinates; inside 157-ac parcel F13Z193.",
+  "countyOk": true
+ },
+ {
+  "name": "Dixon Data Center (Project Sassy)",
+  "state": "GA",
+  "county": "Floyd",
+  "oldLat": 34.36913,
+  "oldLon": -85.04801,
+  "lat": 34.36913,
+  "lon": -85.04801,
+  "precision": "road",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://www.wrganews.com/2025/02/06/rezoning-application-for-data-center-at-plainville-road-at-highway-53-withdrawn/",
+   "title": "WRGA: Plainville Road at Highway 53"
+  },
+  "note": "Plainville Rd x Hwy 53 intersection (TIGER). FracTracker 34.3800,-85.0340 differs by 1.8 km.",
+  "countyOk": true
+ },
+ {
+  "name": "Battey Business Complex data center",
+  "state": "GA",
+  "county": "Floyd",
+  "oldLat": 34.26613,
+  "oldLon": -85.18605,
+  "lat": 34.27977,
+  "lon": -85.20319,
+  "precision": "parcel",
+  "movedKm": 2.19,
+  "coordSource": {
+   "url": "https://services2.arcgis.com/nV67H1IJR8GS6SAA/ArcGIS/rest/services/Current_Parcels/FeatureServer/5",
+   "title": "Floyd County parcel GIS layer"
+  },
+  "note": "State parcel on Division St, 137 ac, former Northwest Georgia Regional Hospital; portion used not confirmed.",
+  "countyOk": true
+ },
+ {
+  "name": "Calhoun Highway 53 data center",
+  "state": "GA",
+  "county": "Gordon",
+  "oldLat": 34.47252,
+  "oldLon": -84.97023,
+  "lat": 34.482,
+  "lon": -84.97623,
+  "precision": "parcel",
+  "movedKm": 1.19,
+  "coordSource": {
+   "url": "https://gis.cityofcalhoun-ga.com/arcgis/rest/services/Roads_and_Parcels/MapServer/5",
+   "title": "Gordon County parcel GIS layer"
+  },
+  "note": "56-ac parcel at 1401 Hwy 53 Spur next to Fair's Auto (57-ac tract reported).",
+  "countyOk": true
+ },
+ {
+  "name": "Dade County data center",
+  "state": "GA",
+  "county": "Dade",
+  "oldLat": 34.87,
+  "oldLon": -85.5,
+  "lat": 34.87842,
+  "lon": -85.50065,
+  "precision": "road",
+  "movedKm": 0.94,
+  "coordSource": {
+   "url": "https://newschannel9.com/news/local/dade-county-commissioner-pushes-data-center-moratorium-cites-need-to-pause-projects",
+   "title": "NewsChannel 9: Dade County Industrial Park"
+  },
+  "note": "Site is the Dade County Industrial Park; point is the N/S Industrial Blvd junction, Trenton (Nominatim). Lot not published.",
+  "countyOk": true
+ },
+ {
+  "name": "Core Scientific Dalton 4 (Old Tilton Road)",
+  "state": "GA",
+  "county": "Whitfield",
+  "oldLat": 34.69285,
+  "oldLon": -84.94159,
+  "lat": 34.69285,
+  "lon": -84.94159,
+  "precision": "parcel",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://gis.whitfieldcountyga.com/server/rest/services/Parcels_and_Development/MapServer/4",
+   "title": "Whitfield County parcel GIS layer"
+  },
+  "note": "Parcel 13-060-01-000, Old Tilton Rd, 165 ac.",
+  "countyOk": true
+ },
+ {
+  "name": "Core Scientific Dalton 1 and 3",
+  "state": "GA",
+  "county": "Whitfield",
+  "oldLat": 34.75,
+  "oldLon": -84.95,
+  "lat": 34.70121,
+  "lon": -84.95039,
+  "precision": "address",
+  "movedKm": 5.43,
+  "coordSource": {
+   "url": "https://services2.arcgis.com/V2PQwgZMTFfgM0Xu/arcgis/rest/services/Data_Centers_in_Georgia/FeatureServer/2",
+   "title": "FracTracker: Dalton 3, 206 Boring Dr; Dalton 1-2, 2205 Industrial South Rd"
+  },
+  "note": "Placed at Dalton 3 (145 of 195 MW). Dalton 1 is at 2205 Industrial South Rd, 34.7132,-84.9514, 1.4 km north.",
+  "countyOk": true
+ },
+ {
+  "name": "AWS Covington (Alcovy Road)",
+  "state": "GA",
+  "county": "Newton",
+  "oldLat": 33.63678,
+  "oldLon": -83.81996,
+  "lat": 33.64089,
+  "lon": -83.82248,
+  "precision": "parcel",
+  "movedKm": 0.51,
+  "coordSource": {
+   "url": "https://services1.arcgis.com/qTQ6qYkHpxlu0G82/arcgis/rest/services/Newton_Parcels/FeatureServer/0",
+   "title": "Newton County parcel GIS layer"
+  },
+  "note": "Parcel C079-009 on Alcovy Rd, 343 ac. Owner not in layer; Baxtel Amazon Alcovy pin 33.6382,-83.8222 falls on it.",
+  "countyOk": true
+ },
+ {
+  "name": "Serverfarm Covington (Hazelbrand Road)",
+  "state": "GA",
+  "county": "Newton",
+  "oldLat": 33.6,
+  "oldLon": -83.86,
+  "lat": 33.62315,
+  "lon": -83.81556,
+  "precision": "site",
+  "movedKm": 4.85,
+  "coordSource": {
+   "url": "https://services1.arcgis.com/qTQ6qYkHpxlu0G82/arcgis/rest/services/Newton_Parcels/FeatureServer/0",
+   "title": "Newton County parcel GIS layer"
+  },
+  "note": "Parcel 0080-083, 104 ac, Hazelbrand Rd; Baxtel pin 33.6219,-83.8161 is inside. FracTracker geocode of 10835 Hazelbrand Rd NE (33.6112,-83.8344) differs by 2.2 km and falls in a subdivision. Match inferred.",
+  "countyOk": true
+ },
+ {
+  "name": "Gregory Road Data Center",
+  "state": "GA",
+  "county": "Newton",
+  "oldLat": 33.65256,
+  "oldLon": -83.81614,
+  "lat": 33.65256,
+  "lon": -83.81614,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4428",
+   "title": "Georgia DCA DRI #4428 initial form (location field)"
+  },
+  "note": "DRI centre coordinates.",
+  "countyOk": true
+ },
+ {
+  "name": "Social Circle Technology Park (Newton County Technology Park)",
+  "state": "GA",
+  "county": "Newton",
+  "oldLat": 33.61628,
+  "oldLon": -83.74012,
+  "lat": 33.61615,
+  "lon": -83.73503,
+  "precision": "parcel",
+  "movedKm": 0.47,
+  "coordSource": {
+   "url": "https://services1.arcgis.com/qTQ6qYkHpxlu0G82/arcgis/rest/services/Newton_Parcels/FeatureServer/0",
+   "title": "Newton County parcel GIS layer"
+  },
+  "note": "Parcel 0123-032, 455 ac (453 ac in Covington News), Hwy 11; DRI 4376 coordinates lie on its west edge.",
+  "countyOk": true
+ },
+ {
+  "name": "Strouds Creek (Georgia Historic Heartland Megasite)",
+  "state": "GA",
+  "county": "Newton",
+  "oldLat": 33.62,
+  "oldLon": -83.74,
+  "lat": 33.63669,
+  "lon": -83.742,
+  "precision": "parcel",
+  "movedKm": 1.87,
+  "coordSource": {
+   "url": "https://services8.arcgis.com/LtjAOW49t0cQdmjH/arcgis/rest/services/Newton_Parcels/FeatureServer/156",
+   "title": "Newton County parcel GIS layer"
+  },
+  "note": "Parcels 111-5 (732 ac) and S110-9 (213 ac), 945 of about 981 ac; Baxtel 33.6353,-83.7412 agrees.",
+  "countyOk": true
+ },
+ {
+  "name": "Meta Stanton Springs",
+  "state": "GA",
+  "county": "Newton",
+  "oldLat": 33.60048,
+  "oldLon": -83.69707,
+  "lat": 33.60047,
+  "lon": -83.70036,
+  "precision": "site",
+  "movedKm": 0.3,
+  "coordSource": {
+   "url": "https://www.openstreetmap.org/way/1054387470",
+   "title": "OSM: Meta Stanton Springs Data Center"
+  },
+  "note": "OSM campus polygon.",
+  "countyOk": true
+ },
+ {
+  "name": "Sailfish Social Circle Parkway",
+  "state": "GA",
+  "county": "Walton",
+  "oldLat": 33.64614,
+  "oldLon": -83.70484,
+  "lat": 33.65905,
+  "lon": -83.68083,
+  "precision": "parcel",
+  "movedKm": 2.65,
+  "coordSource": {
+   "url": "https://services8.arcgis.com/LtjAOW49t0cQdmjH/arcgis/rest/services/Walton_Parcels/FeatureServer/157",
+   "title": "Walton County parcel GIS layer"
+  },
+  "note": "ZMS LLC parcels SC220013, SC220014, SC220009A00 (338 ac) at Amber Stapp Studdard Rd; SC220009A00 is listed in DRI 4329. Baxtel 33.6588,-83.6815 agrees.",
+  "countyOk": true
+ },
+ {
+  "name": "Hawkins Academy Road data center (Project Axis)",
+  "state": "GA",
+  "county": "Walton",
+  "oldLat": 33.67727,
+  "oldLon": -83.68002,
+  "lat": 33.67062,
+  "lon": -83.67974,
+  "precision": "parcel",
+  "movedKm": 0.74,
+  "coordSource": {
+   "url": "https://services8.arcgis.com/LtjAOW49t0cQdmjH/arcgis/rest/services/Walton_Parcels/FeatureServer/157",
+   "title": "Walton County parcel GIS layer"
+  },
+  "note": "Parcel SC200006, Roy Malcom Rd, 146.8 ac (151 ac at Hawkins Academy and Roy Malcom Rds). Name issue: \"Project Axis\" (WSG Land, about 221 ac) is a different tract on Mill Rd near 33.6203,-83.7079.",
+  "countyOk": true
+ },
+ {
+  "name": "East Hightower Trail data center",
+  "state": "GA",
+  "county": "Walton",
+  "oldLat": 33.64614,
+  "oldLon": -83.72084,
+  "lat": 33.64207,
+  "lon": -83.68268,
+  "precision": "parcel",
+  "movedKm": 3.56,
+  "coordSource": {
+   "url": "https://services8.arcgis.com/LtjAOW49t0cQdmjH/arcgis/rest/services/Walton_Parcels/FeatureServer/157",
+   "title": "Walton County parcel GIS layer"
+  },
+  "note": "Parcel SC230011, 96.01 ac, East Hightower Trail; layer shows owner Amazon Data Services Inc.",
+  "countyOk": true
+ },
+ {
+  "name": "1402 Roy Malcom Road data center",
+  "state": "GA",
+  "county": "Walton",
+  "oldLat": 33.67451,
+  "oldLon": -83.68575,
+  "lat": 33.66883,
+  "lon": -83.68416,
+  "precision": "parcel",
+  "movedKm": 0.65,
+  "coordSource": {
+   "url": "https://services8.arcgis.com/LtjAOW49t0cQdmjH/arcgis/rest/services/Walton_Parcels/FeatureServer/157",
+   "title": "Walton County parcel GIS layer"
+  },
+  "note": "Parcel C1480001, 1402 Roy Malcom Rd, 123.36 ac.",
+  "countyOk": true
+ },
+ {
+  "name": "Mine Lake site (Monticello)",
+  "state": "GA",
+  "county": "Jasper",
+  "oldLat": 33.26359,
+  "oldLon": -83.67691,
+  "lat": 33.26359,
+  "lon": -83.67691,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://nominatim.openstreetmap.org/search?q=Mine+Lake,+Monticello,+Georgia",
+   "title": "OSM: Mine Lake Spillway"
+  },
+  "note": "Three plots around Mine Lake; parcels not identified.",
+  "countyOk": true
+ },
+ {
+  "name": "White Oak Technology Park (Project JGK)",
+  "state": "GA",
+  "county": "Columbia",
+  "oldLat": 33.51984,
+  "oldLon": -82.34095,
+  "lat": 33.51984,
+  "lon": -82.34095,
+  "precision": "parcel",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4443",
+   "title": "Georgia DCA DRI #4443 initial form (location field)"
+  },
+  "note": "Centroid of DRI tax map 018 parcel 006 and 019 parcel 003.",
+  "countyOk": true
+ },
+ {
+  "name": "Project Squash / Pumpkin Technology Campus",
+  "state": "GA",
+  "county": "Columbia",
+  "oldLat": 33.48546,
+  "oldLon": -82.32535,
+  "lat": 33.49001,
+  "lon": -82.32205,
+  "precision": "site",
+  "movedKm": 0.59,
+  "coordSource": {
+   "url": "https://services3.arcgis.com/XqCfDEcWKHtcTHsa/arcgis/rest/services/Parcels_Columbia_County_GA/FeatureServer/0",
+   "title": "Columbia County parcel GIS layer"
+  },
+  "note": "DRI 4735 address 6423 Wrightsboro Rd geocodes to the road (33.4855,-82.3254); 383-ac parcel 029 037B adjoining it taken as the site. Baxtel Pumpkin 33.4932,-82.3185, GaTech 33.4903,-82.3207. FracTracker Pumpkin (33.418,-82.316) disagrees.",
+  "countyOk": true
+ },
+ {
+  "name": "Byrd Farms Technology Campus",
+  "state": "GA",
+  "county": "Columbia",
+  "oldLat": 33.55207,
+  "oldLon": -82.25761,
+  "lat": 33.49585,
+  "lon": -82.3026,
+  "precision": "road",
+  "movedKm": 7.51,
+  "coordSource": {
+   "url": "https://www.datacentermap.com/usa/georgia/augusta/byrd-farms-technology-campus/",
+   "title": "Data Center Map: Lonergan Hulme Rd and Nature's Way"
+  },
+  "note": "Intersection from Census TIGER roads. Baxtel 33.5094,-82.3088.",
+  "countyOk": true
+ },
+ {
+  "name": "Project Eisenhower (QTS Augusta)",
+  "state": "GA",
+  "county": "Richmond",
+  "oldLat": 33.4377,
+  "oldLon": -82.1551,
+  "lat": 33.44279,
+  "lon": -82.16505,
+  "precision": "parcel",
+  "movedKm": 1.08,
+  "coordSource": {
+   "url": "https://services1.arcgis.com/UKYQy2KtG5YhYPTp/arcgis/rest/services/OpenData_Parcels/FeatureServer/4",
+   "title": "Richmond County parcel GIS layer"
+  },
+  "note": "Parcel 064-0-004-01-0, 2883 Gordon Hwy, 185 ac (170+ ac reported).",
+  "countyOk": true
+ },
+ {
+  "name": "Nixon Technology Center / Campus",
+  "state": "GA",
+  "county": "Richmond",
+  "oldLat": 33.36563,
+  "oldLon": -81.9891,
+  "lat": 33.36264,
+  "lon": -81.98223,
+  "precision": "parcel",
+  "movedKm": 0.72,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4853",
+   "title": "Georgia DCA DRI #4853 initial form (location field)"
+  },
+  "note": "Centroid of DRI addresses 1550 and 1538 Four H Club Rd and 3806 Mike Padgett Hwy (376 ac). DRI point 33.36563,-81.9891 is 0.7 km west.",
+  "countyOk": true
+ },
+ {
+  "name": "Project Azalea",
+  "state": "GA",
+  "county": "McDuffie",
+  "oldLat": 33.45356,
+  "oldLon": -82.39958,
+  "lat": 33.45356,
+  "lon": -82.39958,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4602",
+   "title": "Georgia DCA DRI #4602 initial form (location field)"
+  },
+  "note": "DRI coordinates.",
+  "countyOk": true
+ },
+ {
+  "name": "Eatonton 379",
+  "state": "GA",
+  "county": "Putnam",
+  "oldLat": 33.30442,
+  "oldLon": -83.40654,
+  "lat": 33.30442,
+  "lon": -83.40654,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4861",
+   "title": "Georgia DCA DRI #4861 initial form (location field)"
+  },
+  "note": "DRI coordinates.",
+  "countyOk": true
+ },
+ {
+  "name": "Google LaGrange (Project Pegasus / PRL2)",
+  "state": "GA",
+  "county": "Troup",
+  "oldLat": 32.98499,
+  "oldLon": -85.05548,
+  "lat": 32.98499,
+  "lon": -85.05548,
+  "precision": "parcel",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4797",
+   "title": "Georgia DCA DRI #4797 initial form (location field)"
+  },
+  "note": "Parcel 0592000004, 411 Pegasus Pkwy.",
+  "countyOk": true
+ },
+ {
+  "name": "Project West",
+  "state": "GA",
+  "county": "Troup",
+  "oldLat": 32.98262,
+  "oldLon": -85.01453,
+  "lat": 32.98262,
+  "lon": -85.01453,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4414",
+   "title": "Georgia DCA DRI #4414 initial form (location field)"
+  },
+  "note": "DRI coordinates.",
+  "countyOk": true
+ },
+ {
+  "name": "Hogansville data center (Hightower Road)",
+  "state": "GA",
+  "county": "Troup",
+  "oldLat": 33.15638,
+  "oldLon": -84.93889,
+  "lat": 33.15638,
+  "lon": -84.93889,
+  "precision": "parcel",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://services6.arcgis.com/WjqAE1SlQxuk7dsk/arcgis/rest/services/Troup_County_GA_Parcel_Feature_Layer/FeatureServer/0",
+   "title": "Troup County parcel GIS layer"
+  },
+  "note": "City of Hogansville parcels 0250 000002 and 000001, 458 ac, Hightower / Mobley Bridge Rds.",
+  "countyOk": true
+ },
+ {
+  "name": "Project Ruby",
+  "state": "GA",
+  "county": "Muscogee",
+  "oldLat": 32.556,
+  "oldLon": -84.827,
+  "lat": 32.582,
+  "lon": -84.7043,
+  "precision": "site",
+  "movedKm": 11.86,
+  "coordSource": {
+   "url": "https://groups.google.com/g/okravores/c/unWP5T3pl9g",
+   "title": "Columbus Ledger: site for proposed Columbus data center confirmed"
+  },
+  "note": "Midpoint of two tracker pins 1.1 km apart (FracTracker 32.5815,-84.7100, \"just west of Talbot Energy\"; GaTech parcel 119 003 002, 32.5825,-84.6985). 865 ac in the NE corner of Muscogee. County parcel service did not respond.",
+  "countyOk": true
+ },
+ {
+  "name": "Project Camellia",
+  "state": "GA",
+  "county": "Effingham",
+  "oldLat": 32.26108,
+  "oldLon": -81.2639,
+  "lat": 32.26108,
+  "lon": -81.2639,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4801",
+   "title": "Georgia DCA DRI #4801 initial form (location field)"
+  },
+  "note": "DRI coordinates; inside Octans GA LLC parcel 0433001E00 (740 ac).",
+  "countyOk": true
+ },
+ {
+  "name": "QTS Blakely (Project Blue Hole)",
+  "state": "GA",
+  "county": "Early",
+  "oldLat": 31.4063,
+  "oldLon": -84.91291,
+  "lat": 31.4063,
+  "lon": -84.91291,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4651",
+   "title": "Georgia DCA DRI #4651 initial form (location field)"
+  },
+  "note": "DRI coordinates.",
+  "countyOk": true
+ },
+ {
+  "name": "Project Arrowhead",
+  "state": "GA",
+  "county": "Irwin",
+  "oldLat": 31.59917,
+  "oldLon": -83.36744,
+  "lat": 31.59917,
+  "lon": -83.36744,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4689",
+   "title": "Georgia DCA DRI #4689 initial form (location field)"
+  },
+  "note": "DRI coordinates (31 35 57.00 N, 83 22 2.79 W).",
+  "countyOk": true
+ },
+ {
+  "name": "Irwin Forward Tech Park",
+  "state": "GA",
+  "county": "Irwin",
+  "oldLat": 31.6,
+  "oldLon": -83.36,
+  "lat": 31.6,
+  "lon": -83.36,
+  "precision": "city",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://www.datacenterdynamics.com/en/news/12gw-data-center-campus-proposed-in-irwin-county-georgia/",
+   "title": "DCD: Irwin County"
+  },
+  "note": "No site location found; existing tracker point kept.",
+  "countyOk": true
+ },
+ {
+  "name": "Project Splice (Cordele Technology Campus)",
+  "state": "GA",
+  "county": "Crisp",
+  "oldLat": 31.97155,
+  "oldLon": -83.73108,
+  "lat": 31.97155,
+  "lon": -83.73108,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4390",
+   "title": "Georgia DCA DRI #4390 initial form (location field)"
+  },
+  "note": "DRI coordinates.",
+  "countyOk": true
+ },
+ {
+  "name": "Liberty Data Centers Americus (Frank Myers Industrial Park)",
+  "state": "GA",
+  "county": "Sumter",
+  "oldLat": 32.05027,
+  "oldLon": -84.20792,
+  "lat": 32.04854,
+  "lon": -84.20729,
+  "precision": "parcel",
+  "movedKm": 0.2,
+  "coordSource": {
+   "url": "https://scc4t.com/map/",
+   "title": "Sumter County parcel 64-17, 301 Brady Road"
+  },
+  "note": "Parcel 64-17, as supplied.",
+  "countyOk": true
+ },
+ {
+  "name": "Burkhalter Road data center",
+  "state": "GA",
+  "county": "Bulloch",
+  "oldLat": 32.40011,
+  "oldLon": -81.75277,
+  "lat": 32.40011,
+  "lon": -81.75277,
+  "precision": "address",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://geocoding.geo.census.gov/geocoder/",
+   "title": "Census geocoder: 6539 Burkhalter Rd, Statesboro"
+  },
+  "note": "Address geocode; FracTracker 32.3997,-81.7539 agrees.",
+  "countyOk": true
+ },
+ {
+  "name": "Canoochee River RV Resort data center (Metter airport)",
+  "state": "GA",
+  "county": "Candler",
+  "oldLat": 32.37255,
+  "oldLon": -82.08178,
+  "lat": 32.37113,
+  "lon": -82.09956,
+  "precision": "parcel",
+  "movedKm": 1.68,
+  "coordSource": {
+   "url": "https://services5.arcgis.com/HHvUPZ2XuLOAJxjR/arcgis/rest/services/Candler_County_Wide_View/FeatureServer/18",
+   "title": "Candler County parcel GIS layer"
+  },
+  "note": "Parcel 037 025 002, 460 ac (DRI 4846: +/-470 ac south of I-16 by the airport). 2700 Airport Rd geocode is the parent parcel 037 025. Baxtel Project Metter uses the same point.",
+  "countyOk": true
+ },
+ {
+  "name": "Metter East Hiawatha Street site",
+  "state": "GA",
+  "county": "Candler",
+  "oldLat": 32.39451,
+  "oldLon": -82.06243,
+  "lat": 32.38997,
+  "lon": -82.05011,
+  "precision": "road",
+  "movedKm": 1.26,
+  "coordSource": {
+   "url": "https://www.wtoc.com/2026/09/15/two-groups-propose-data-centers-metter-candler-county/",
+   "title": "WTOC: west of Highway 129 off East Hiawatha Street"
+  },
+  "note": "East Hiawatha St (Nominatim); parcel not published.",
+  "countyOk": true
+ },
+ {
+  "name": "Lowndes County Coleman Road site",
+  "state": "GA",
+  "county": "Lowndes",
+  "oldLat": 30.8275,
+  "oldLon": -83.16881,
+  "lat": 30.88246,
+  "lon": -83.33511,
+  "precision": "parcel",
+  "movedKm": 17.01,
+  "coordSource": {
+   "url": "https://services3.arcgis.com/fYt1jp3hqamxgSvI/arcgis/rest/services/TaxParcel/FeatureServer/0",
+   "title": "Lowndes County parcel GIS layer"
+  },
+  "note": "Parcel 0055 021, Langdale Capital Assets, Coleman Rd, 724 ac (719 ac rezoned in REZ-2025-11).",
+  "countyOk": true
+ },
+ {
+  "name": "Byron Boy Scout Road data center",
+  "state": "GA",
+  "county": "Crawford",
+  "oldLat": 32.70944,
+  "oldLon": -83.97917,
+  "lat": 32.70851,
+  "lon": -83.78082,
+  "precision": "road",
+  "movedKm": 18.56,
+  "coordSource": {
+   "url": "https://hhjonline.com/peach-county-citizens-take-stance-against-data-centers-in-their-backyard-during-public-meeting/",
+   "title": "Houston Home Journal: ErgonX Industrial Park, 2251 Boy Scout Road, 489 ac"
+  },
+  "note": "Midpoint of Boy Scout Rd in Crawford County (TIGER). 2251 Boy Scout Rd geocodes to 32.6854,-83.7659, across the line in Peach County; the 489-ac camp parcel was not identified.",
+  "countyOk": true
+ },
+ {
+  "name": "Brantley County landfill tract",
+  "state": "GA",
+  "county": "Brantley",
+  "oldLat": 31.19175,
+  "oldLon": -81.87225,
+  "lat": 31.2259,
+  "lon": -81.8208,
+  "precision": "road",
+  "movedKm": 6.19,
+  "coordSource": {
+   "url": "https://www.theblacksheartimes.com/article/9633,bcdp-group-are-possibly-open-to-selling-off-landfill-property",
+   "title": "Blackshear Times: between Waynesville and Atkinson, both sides of US 82"
+  },
+  "note": "Midpoint of Waynesville and Atkinson on US 82; parcel not identified.",
+  "countyOk": true
+ },
+ {
+  "name": "Kingsland I-95 / Laurel Island Parkway",
+  "state": "GA",
+  "county": "Camden",
+  "oldLat": 30.8255,
+  "oldLon": -81.66645,
+  "lat": 30.8255,
+  "lon": -81.66645,
+  "precision": "road",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://thecurrentga.org/2026/04/24/kingsland-tree-farms-may-sprout-data-center/",
+   "title": "The Current: I-95 and Laurel Island Parkway"
+  },
+  "note": "I-95 at Laurel Island Pkwy (TIGER); 682-ac parcels not identified.",
+  "countyOk": true
+ },
+ {
+  "name": "Wayne Commerce Center",
+  "state": "GA",
+  "county": "Wayne",
+  "oldLat": 31.59457,
+  "oldLon": -81.8957,
+  "lat": 31.5999,
+  "lon": -81.93156,
+  "precision": "address",
+  "movedKm": 3.45,
+  "coordSource": {
+   "url": "https://georgia.org/press-releases/2025/wayne-commerce-center-certified-ready-accelerated-development",
+   "title": "Georgia.org: Wayne Commerce Center, 2520 Waycross Highway"
+  },
+  "note": "Census geocode. GaTech layer 31.5864,-81.9245 is 1.6 km south.",
+  "countyOk": true
+ },
+ {
+  "name": "Belfast Commerce Park data center",
+  "state": "GA",
+  "county": "Bryan",
+  "oldLat": 31.94,
+  "oldLon": -81.3,
+  "lat": 31.87719,
+  "lon": -81.3535,
+  "precision": "parcel",
+  "movedKm": 8.62,
+  "coordSource": {
+   "url": "https://bryangis.bryan-county.org/arcgis/rest/services/PropertyDetails/MapServer/0",
+   "title": "Bryan County parcel GIS layer"
+  },
+  "note": "Parcel 049006, 901 Belfast Commerce Center, 20 ac (19 ac at 901 Commerce Dr reported).",
+  "countyOk": true
+ },
+ {
+  "name": "LN Energy Blackshear bitcoin mine",
+  "state": "GA",
+  "county": "Pierce",
+  "oldLat": 31.31842,
+  "oldLon": -82.36375,
+  "lat": 31.31842,
+  "lon": -82.36375,
+  "precision": "address",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://geocoding.geo.census.gov/geocoder/",
+   "title": "Census geocoder: 1199 Cason Rd, Blackshear"
+  },
+  "note": "Address geocode reproduced.",
+  "countyOk": true
+ },
+ {
+  "name": "Athena Studios data center",
+  "state": "GA",
+  "county": "Clarke",
+  "oldLat": 33.97032,
+  "oldLon": -83.31682,
+  "lat": 33.97032,
+  "lon": -83.31682,
+  "precision": "address",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://services2.arcgis.com/xSEULKvB31odt3XQ/arcgis/rest/services/Parcel/FeatureServer/0",
+   "title": "Athens-Clarke parcels: 223 001"
+  },
+  "note": "900 Athena Dr; inside/adjacent to parcel 223 001.",
+  "countyOk": true
+ },
+ {
+  "name": "Old Elberton Road data center",
+  "state": "GA",
+  "county": "Clarke",
+  "oldLat": 33.95219,
+  "oldLon": -83.36715,
+  "lat": 33.99386,
+  "lon": -83.28739,
+  "precision": "parcel",
+  "movedKm": 8.69,
+  "coordSource": {
+   "url": "https://services2.arcgis.com/xSEULKvB31odt3XQ/arcgis/rest/services/Parcel/FeatureServer/0",
+   "title": "Clarke County parcel GIS layer"
+  },
+  "note": "Parcel 273 001, FAE Clarke LLC, 366.76 ac tract (233 ac proposed).",
+  "countyOk": true
+ },
+ {
+  "name": "Project Turbo",
+  "state": "GA",
+  "county": "Hall",
+  "oldLat": 34.22531,
+  "oldLon": -83.78081,
+  "lat": 34.22531,
+  "lon": -83.78081,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4522",
+   "title": "Georgia DCA DRI #4522 initial form (location field)"
+  },
+  "note": "DRI coordinates, 2400 O Kelly Rd.",
+  "countyOk": true
+ },
+ {
+  "name": "Big Red Apple Innovation Corridor (data center component)",
+  "state": "GA",
+  "county": "Habersham",
+  "oldLat": 34.63439,
+  "oldLon": -83.52587,
+  "lat": 34.51268,
+  "lon": -83.54996,
+  "precision": "road",
+  "movedKm": 13.71,
+  "coordSource": {
+   "url": "https://apps.dca.ga.gov/DRI/InitialForm.aspx?driid=4558",
+   "title": "Georgia DCA DRI #4558 initial form (location field)"
+  },
+  "note": "DRI address 1900 Level Grove Rd did not geocode exactly; point on Level Grove Rd, Cornelia (Nominatim). 284 ac. Baxtel puts it about 3 km north.",
+  "countyOk": true
+ },
+ {
+  "name": "Northern Data Maysville",
+  "state": "GA",
+  "county": "Jackson",
+  "oldLat": 34.23923,
+  "oldLon": -83.54795,
+  "lat": 34.23923,
+  "lon": -83.54795,
+  "precision": "parcel",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://services8.arcgis.com/bcbi4lYRFOsss0F5/ArcGIS/rest/services/jackson_baselayers/FeatureServer/9",
+   "title": "Jackson County parcel GIS layer"
+  },
+  "note": "Parcel 046 048, Northern Data Maysville ADC I LLC, Meeks Rd.",
+  "countyOk": true
+ },
+ {
+  "name": "Undisclosed Browns Bridge Road data center",
+  "state": "GA",
+  "county": "Forsyth",
+  "oldLat": 34.21,
+  "oldLon": -84.14,
+  "lat": 34.26327,
+  "lon": -84.08523,
+  "precision": "road",
+  "movedKm": 7.77,
+  "coordSource": {
+   "url": "https://www.forsythnews.com/news/government/commissioners-revoke-data-center-permit-in-north-forsyth-county/",
+   "title": "Forsyth News: permit in north Forsyth"
+  },
+  "note": "Midpoint of Browns Bridge Rd in north Forsyth (Nominatim); address not published.",
+  "countyOk": true
+ },
+ {
+  "name": "CleanSpark Sandersville AI campus",
+  "state": "GA",
+  "county": "Washington",
+  "oldLat": 32.981,
+  "oldLon": -82.807,
+  "lat": 33.00328,
+  "lon": -82.8374,
+  "precision": "address",
+  "movedKm": 3.77,
+  "coordSource": {
+   "url": "https://services2.arcgis.com/V2PQwgZMTFfgM0Xu/arcgis/rest/services/Data_Centers_in_Georgia/FeatureServer/2",
+   "title": "FracTracker: CleanSpark Sandersville, 2015 George J Lyons Pkwy"
+  },
+  "note": "Address of the CleanSpark Sandersville campus; Baxtel 33.0012,-82.8357 agrees. That the AI campus uses the same site is assumed.",
+  "countyOk": true
+ },
+ {
+  "name": "Cango GreenVolt Soperton (bitcoin mine)",
+  "state": "GA",
+  "county": "Treutlen",
+  "oldLat": 32.381,
+  "oldLon": -82.592,
+  "lat": 32.40044,
+  "lon": -82.62164,
+  "precision": "address",
+  "movedKm": 3.52,
+  "coordSource": {
+   "url": "https://datacenterdynamics.com/en/news/two-injured-after-fire-at-georgia-bitcoin-mining-facility",
+   "title": "DCD: 811 Commerce Road, Soperton"
+  },
+  "note": "Census matched 811 Commerce Dr, Soperton (industrial park).",
+  "countyOk": true
+ },
+ {
+  "name": "BTC Digital Vienna mine",
+  "state": "GA",
+  "county": "Dooly",
+  "oldLat": 32.092,
+  "oldLon": -83.795,
+  "lat": 32.092,
+  "lon": -83.795,
+  "precision": "city",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://www.sec.gov/Archives/edgar/data/1796514/000121390025040693/ea0241322-6k_btcdigital.htm",
+   "title": "BTC Digital 6-K: 62 acres, Vienna"
+  },
+  "note": "Only Vienna, Dooly County is published; city point.",
+  "countyOk": true
+ },
+ {
+  "name": "Project Marvel (Bessemer)",
+  "state": "AL",
+  "county": "Jefferson",
+  "oldLat": 33.34686,
+  "oldLon": -87.04352,
+  "lat": 33.34686,
+  "lon": -87.04352,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://baxtel.com/data-center/qts-project-marvel",
+   "title": "Baxtel map pin"
+  },
+  "note": "Baxtel 33.3455,-87.0428 agrees within 0.2 km.",
+  "countyOk": true
+ },
+ {
+  "name": "Project Red Clay / Red Clay Technology Center",
+  "state": "AL",
+  "county": "Lowndes",
+  "oldLat": 32.27,
+  "oldLon": -86.513,
+  "lat": 32.27064,
+  "lon": -86.51237,
+  "precision": "road",
+  "movedKm": 0.09,
+  "coordSource": {
+   "url": "https://baxtel.com/data-center/lambda-red-clay-building-1",
+   "title": "Baxtel map pin"
+  },
+  "note": "US 80 at AL 21 near Burkville. Nearby Data Centers pin (32.3282,-86.5369) is the Burkville hamlet, north of US 80.",
+  "countyOk": true
+ },
+ {
+  "name": "Nebius Birmingham AI Factory (Oxmoor)",
+  "state": "AL",
+  "county": "Jefferson",
+  "oldLat": 33.42911,
+  "oldLon": -86.8852,
+  "lat": 33.42911,
+  "lon": -86.8852,
+  "precision": "address",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://geocoding.geo.census.gov/geocoder/",
+   "title": "Census geocoder: 201 Milan Pkwy, Birmingham"
+  },
+  "note": "Address geocode reproduced.",
+  "countyOk": true
+ },
+ {
+  "name": "Wilsonville hyperscale (NorthPoint)",
+  "state": "AL",
+  "county": "Shelby",
+  "oldLat": 33.24075,
+  "oldLon": -86.49111,
+  "lat": 33.2697,
+  "lon": -86.4888,
+  "precision": "road",
+  "movedKm": 3.23,
+  "coordSource": {
+   "url": "https://insideclimatenews.org/news/20082025/wilsonville-alabama-residents-against-massive-data-center/",
+   "title": "Inside Climate News: off County Hwy 61, 2.5 mi NW of Plant Gaston"
+  },
+  "note": "Point 2.5 miles northwest of Plant Gaston, off Co Rd 61 along Lick Branch. Derived from distance, error about 1.5 km. Shelby parcel service returned errors.",
+  "countyOk": true
+ },
+ {
+  "name": "Childersburg Industrial Park data center",
+  "state": "AL",
+  "county": "Talladega",
+  "oldLat": 33.29256,
+  "oldLon": -86.34086,
+  "lat": 33.33418,
+  "lon": -86.33319,
+  "precision": "site",
+  "movedKm": 4.68,
+  "coordSource": {
+   "url": "https://baxtel.com/data-center/western-hospitality-childersburg-campus",
+   "title": "Baxtel map pin"
+  },
+  "note": "486 ac in Childersburg Industrial Park, former Alabama Army Ammunition Plant (OSM 33.3408,-86.3396, 0.9 km).",
+  "countyOk": true
+ },
+ {
+  "name": "Applied Digital Delta Forge 2 (Brookwood)",
+  "state": "AL",
+  "county": "Tuscaloosa",
+  "oldLat": 33.2185,
+  "oldLon": -87.283,
+  "lat": 33.2185,
+  "lon": -87.283,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://baxtel.com/data-center/applied-digital-delta-forge-2",
+   "title": "Baxtel map pin"
+  },
+  "note": "Baxtel 33.2196,-87.2818 agrees within 0.2 km.",
+  "countyOk": true
+ },
+ {
+  "name": "Calvert Infrastructure Hub",
+  "state": "AL",
+  "county": "Mobile",
+  "oldLat": 31.112,
+  "oldLon": -88.025,
+  "lat": 31.112,
+  "lon": -88.025,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://w.media/beacon-commits-us-6-billion-to-alabama-data-center-hub/",
+   "title": "Beacon commits US$ 6 billion to Alabama data center hub \u2013 w.media"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "Meta Montgomery",
+  "state": "AL",
+  "county": "Montgomery",
+  "oldLat": 32.27004,
+  "oldLon": -86.32711,
+  "lat": 32.27004,
+  "lon": -86.32711,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://www.alreporter.com/2025/09/24/meta-to-expand-montgomery-data-center-upping-local-investments-to-1-5-billion/",
+   "title": "Meta to expand Montgomery data center, upping local investments to $1.5 billion"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "Google Jackson County (Widows Creek) expansion",
+  "state": "AL",
+  "county": "Jackson",
+  "oldLat": 34.91367,
+  "oldLon": -85.74742,
+  "lat": 34.91367,
+  "lon": -85.74742,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://www.alreporter.com/2026/06/16/google-plans-1-5-billion-jackson-county-data-center-expansion/",
+   "title": "Google plans $1.5 billion Jackson County data center expansion"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "Meta Huntsville",
+  "state": "AL",
+  "county": "Madison",
+  "oldLat": 34.84732,
+  "oldLon": -86.62692,
+  "lat": 34.84732,
+  "lon": -86.62692,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://nearbydatacenters.org/projects/al-huntsville-meta/",
+   "title": "Nearby Data Centers: Meta Huntsville data center"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "Project Brookwood (Youngwoo)",
+  "state": "AL",
+  "county": "Tuscaloosa",
+  "oldLat": 33.216,
+  "oldLon": -87.29,
+  "lat": 33.216,
+  "lon": -87.29,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://www.wbrc.com/2026/09/16/brookwood-council-approves-rezoning-annexation-project-brookwood-llc/",
+   "title": "brookwood council approves rezoning annexation project brookwood llc"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "Westover Swift data center",
+  "state": "AL",
+  "county": "Shelby",
+  "oldLat": 33.35377,
+  "oldLon": -86.50072,
+  "lat": 33.35377,
+  "lon": -86.50072,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://nearbydatacenters.org/projects/al-westover-swift-data-center/",
+   "title": "Nearby Data Centers: Westover data center near U.S. 280"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "xAI Southaven (MACROHARDRR)",
+  "state": "MS",
+  "county": "DeSoto",
+  "oldLat": 34.99186,
+  "oldLon": -90.03428,
+  "lat": 34.99186,
+  "lon": -90.03428,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://governorreeves.ms.gov/tech-leader-xai-investing-more-than-20-billion-in-southaven/",
+   "title": "Tech leader xAI investing more than $20 billion in Southaven \u00bb Office of Governor Tate Reeves"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "AWS Madison County Mega Site (Project Atlas)",
+  "state": "MS",
+  "county": "Madison",
+  "oldLat": 32.59677,
+  "oldLon": -90.09113,
+  "lat": 32.59677,
+  "lon": -90.09113,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://www.areadevelopment.com/newsitems/1-26-2024/amazon-aws-madison-county-mississippi.shtml",
+   "title": "Amazon-AWS Plans Madison County, Mississippi, Data Center Operations - Area Development"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "AWS Ridgeland (Costas) campus",
+  "state": "MS",
+  "county": "Madison",
+  "oldLat": 32.412,
+  "oldLon": -90.19,
+  "lat": 32.412,
+  "lon": -90.19,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://governorreeves.ms.gov/?p=1600",
+   "title": "Amazon continues Mississippi expansion, announcing plans to invest a total of $25 billion across the Magnolia State \u00bb Office of Governor Tate Reeves"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "AWS Clinton (former Delphi plant)",
+  "state": "MS",
+  "county": "Hinds",
+  "oldLat": 32.35695,
+  "oldLon": -90.34419,
+  "lat": 32.35695,
+  "lon": -90.34419,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://governorreeves.ms.gov/?p=1600",
+   "title": "Amazon continues Mississippi expansion, announcing plans to invest a total of $25 billion across the Magnolia State \u00bb Office of Governor Tate Reeves"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "AWS Warren County (Project Steamboat)",
+  "state": "MS",
+  "county": "Warren",
+  "oldLat": 32.35609,
+  "oldLon": -90.85238,
+  "lat": 32.35609,
+  "lon": -90.85238,
+  "precision": "county",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://www.mpbonline.org/blogs/news/amazon-web-services-to-build-3-billion-data-center-in-warren-county-expanding-tech-footprint-in-mi/",
+   "title": "Amazon to build $3 billion data center in Warren County, expanding tech footprint in Mississippi"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "Compass Meridian",
+  "state": "MS",
+  "county": "Lauderdale",
+  "oldLat": 32.391,
+  "oldLon": -88.6224,
+  "lat": 32.391,
+  "lon": -88.6224,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://geocoding.geo.census.gov/geocoder/",
+   "title": "Census geocoder: 290 Sweet Gum Bottom Rd, Meridian"
+  },
+  "note": "Address geocode 32.3876,-88.6210 is 0.4 km away.",
+  "countyOk": true
+ },
+ {
+  "name": "Echelon Meridian (Sonny Montgomery Park)",
+  "state": "MS",
+  "county": "Lauderdale",
+  "oldLat": 32.406,
+  "oldLon": -88.638,
+  "lat": 32.406,
+  "lon": -88.638,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://nearbydatacenters.org/projects/ms-meridian-echelon-sonny-montgomery-park/",
+   "title": "Nearby Data Centers"
+  },
+  "note": "Described location; parcel not checked.",
+  "countyOk": true
+ },
+ {
+  "name": "AVAIO Taurus (Brandon)",
+  "state": "MS",
+  "county": "Rankin",
+  "oldLat": 32.27809,
+  "oldLon": -89.99069,
+  "lat": 32.27809,
+  "lon": -89.99069,
+  "precision": "city",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://www.avaiodigital.com/updates/avaio-digital-breaks-ground-on-6-billion-brandon-data-center-campus-leading-mississippi-contractor-begins-site-work",
+   "title": "AVAIO Digital Breaks Ground on $6 Billion Brandon Data Center Campus; Leading Mississippi Contractor Begins Site Work"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "Big Woods Technology Park",
+  "state": "MS",
+  "county": "Jefferson Davis",
+  "oldLat": 31.56481,
+  "oldLon": -89.82709,
+  "lat": 31.56481,
+  "lon": -89.82709,
+  "precision": "city",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://www.mississippifreepress.org/jefferson-davis-county-residents-sound-alarm-over-proposed-6-billion-data-center/",
+   "title": "Jefferson Davis County Residents Resist Proposed Data Center"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "Clarksdale hyperscale site",
+  "state": "MS",
+  "county": "Coahoma",
+  "oldLat": 34.1938,
+  "oldLon": -90.5686,
+  "lat": 34.1938,
+  "lon": -90.5686,
+  "precision": "city",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://mississippitoday.org/2026/03/24/clarksdale-data-center-rezoning/",
+   "title": "clarksdale data center rezoning"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "QTS York County (Hands Mill)",
+  "state": "SC",
+  "county": "York",
+  "oldLat": 35.03428,
+  "oldLon": -81.10343,
+  "lat": 35.03428,
+  "lon": -81.10343,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://www.postandcourier.com/york-county/news/qts-data-center-york-county-community-meeting/article_fb2c12f3-d1a8-41eb-bd58-d89d8dfb92d5.html",
+   "title": "QTS responds to York County questions about $8B data center"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "Savannah River Site AI data center",
+  "state": "SC",
+  "county": "Aiken",
+  "oldLat": 33.335,
+  "oldLon": -81.736,
+  "lat": 33.335,
+  "lon": -81.736,
+  "precision": "county",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://nearbydatacenters.org/projects/sc-aiken-savannah-river-site-ai/",
+   "title": "Nearby Data Centers"
+  },
+  "note": "Exact location inside Savannah River Site not published; existing county-level point kept.",
+  "countyOk": true
+ },
+ {
+  "name": "Rhodes Technology Park",
+  "state": "SC",
+  "county": "Colleton",
+  "oldLat": 33.051,
+  "oldLon": -80.791,
+  "lat": 33.03526,
+  "lon": -80.74666,
+  "precision": "road",
+  "movedKm": 4.49,
+  "coordSource": {
+   "url": "https://www.live5news.com/2026/09/23/new-proposed-colleton-county-data-center-campus-draws-residents-questions/",
+   "title": "Live 5: west of I-95 off Mount Carmel Road"
+  },
+  "note": "Midpoint of Mount Carmel Rd west of I-95 (TIGER).",
+  "countyOk": true
+ },
+ {
+  "name": "Project Boulder (Cooks Hill Road)",
+  "state": "SC",
+  "county": "Colleton",
+  "oldLat": 32.8277,
+  "oldLon": -80.6018,
+  "lat": 32.8277,
+  "lon": -80.6018,
+  "precision": "road",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://nearbydatacenters.org/projects/sc-colleton-eagle-rock-cooks-hill/",
+   "title": "Nearby Data Centers"
+  },
+  "note": "Off Cooks Hill Rd south of Walterboro (Nominatim road 32.834 to 32.848).",
+  "countyOk": true
+ },
+ {
+  "name": "NorthMark MoC-1 (Spartanburg)",
+  "state": "SC",
+  "county": "Spartanburg",
+  "oldLat": 34.92328,
+  "oldLon": -81.84991,
+  "lat": 34.92328,
+  "lon": -81.84991,
+  "precision": "address",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://nearbydatacenters.org/projects/sc-spartanburg-northmark-moc1/",
+   "title": "Nearby Data Centers"
+  },
+  "note": "4000 S Pine St; Census geocode 34.9268,-81.8515 is on the road, 0.4 km away.",
+  "countyOk": true
+ },
+ {
+  "name": "Project Spero (TigerDC)",
+  "state": "SC",
+  "county": "Spartanburg",
+  "oldLat": 34.93485,
+  "oldLon": -81.99337,
+  "lat": 34.93485,
+  "lon": -81.99337,
+  "precision": "county",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://www.foxcarolina.com/2026/02/27/company-withdraws-ai-data-center-spartanburg-county-consideration",
+   "title": "Company withdraws AI data center from Spartanburg County consideration"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "Cielo Gaffney",
+  "state": "SC",
+  "county": "Cherokee",
+  "oldLat": 35.067,
+  "oldLon": -81.558,
+  "lat": 35.05962,
+  "lon": -81.56726,
+  "precision": "road",
+  "movedKm": 1.18,
+  "coordSource": {
+   "url": "https://baxtel.com/data-center/cielo-digital-gaffney-1",
+   "title": "Baxtel map pin"
+  },
+  "note": "Ford Rd east of Gaffney (road spans 35.054 to 35.067).",
+  "countyOk": true
+ },
+ {
+  "name": "Meta Aiken County",
+  "state": "SC",
+  "county": "Aiken",
+  "oldLat": 33.64266,
+  "oldLon": -81.8432,
+  "lat": 33.64266,
+  "lon": -81.8432,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://wach.com/news/local/meta-to-build-800-million-data-center-in-aiken-county-creating-100-jobs",
+   "title": "Meta to build $800 million data center in Aiken County, creating 100 jobs"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "Google Pine Hill (Ridgeville)",
+  "state": "SC",
+  "county": "Dorchester",
+  "oldLat": 32.95806,
+  "oldLon": -80.30886,
+  "lat": 32.95806,
+  "lon": -80.30886,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://governor.sc.gov/node/4236",
+   "title": "Google grows South Carolina footprint with new Dorchester County operations, expansion in Berkeley County | S.C. Governor Henry McMaster"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "Google Winding Woods (St. George)",
+  "state": "SC",
+  "county": "Dorchester",
+  "oldLat": 33.1774,
+  "oldLon": -80.53534,
+  "lat": 33.1774,
+  "lon": -80.53534,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://governor.sc.gov/node/4236",
+   "title": "Google grows South Carolina footprint with new Dorchester County operations, expansion in Berkeley County | S.C. Governor Henry McMaster"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "Google Berkeley County expansion",
+  "state": "SC",
+  "county": "Berkeley",
+  "oldLat": 33.06401,
+  "oldLon": -80.04237,
+  "lat": 33.06401,
+  "lon": -80.04237,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://governor.sc.gov/node/4236",
+   "title": "Google grows South Carolina footprint with new Dorchester County operations, expansion in Berkeley County | S.C. Governor Henry McMaster"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "LightHouse 300 Jones Road",
+  "state": "SC",
+  "county": "Spartanburg",
+  "oldLat": 35.01917,
+  "oldLon": -81.88744,
+  "lat": 35.01917,
+  "lon": -81.88744,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://www.wyff4.com/article/spartanburg-county-council-approves-three-data-center-agreements-advances-three-more/74446495",
+   "title": "spartanburg county council approves three data center agreements advances three more"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "Amazon Richmond County (Energy Way)",
+  "state": "NC",
+  "county": "Richmond",
+  "oldLat": 34.82997,
+  "oldLon": -79.72178,
+  "lat": 34.82997,
+  "lon": -79.72178,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://www.wfae.org/energy-environment/2026-07-30/state-regulators-to-hold-public-hearing-for-amazons-large-richmond-county-data-center",
+   "title": "State regulators to hold public hearing for Amazon's large Richmond County data center | WFAE 90.7 - Charlotte's NPR News Source"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "Microsoft Person County Mega Park",
+  "state": "NC",
+  "county": "Person",
+  "oldLat": 36.4783,
+  "oldLon": -78.99318,
+  "lat": 36.4783,
+  "lon": -78.99318,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://www.wral.com/news/local/person-county-microsoft-data-center-discussion-june-2026/",
+   "title": "Microsoft hosts meeting on future Person County data center amid AI tensions :: WRAL.com"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "Project Delta",
+  "state": "NC",
+  "county": "Stokes",
+  "oldLat": 36.31001,
+  "oldLon": -80.09478,
+  "lat": 36.31001,
+  "lon": -80.09478,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://www.wunc.org/2026-09-15/inside-stokes-countys-latest-vote-on-the-project-delta-data-center",
+   "title": "Inside Stokes County\u2019s latest vote on the Project Delta data center | WUNC News"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "Kingsboro NetZero campus",
+  "state": "NC",
+  "county": "Edgecombe",
+  "oldLat": 35.92574,
+  "oldLon": -77.66331,
+  "lat": 35.92574,
+  "lon": -77.66331,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://baxtel.com/data-center/kingsboro-ai-data-center",
+   "title": "Baxtel map pin"
+  },
+  "note": "Kingsboro megasite; Baxtel latitude 35.9219 agrees.",
+  "countyOk": true
+ },
+ {
+  "name": "Tarboro data center",
+  "state": "NC",
+  "county": "Edgecombe",
+  "oldLat": 35.912,
+  "oldLon": -77.5939,
+  "lat": 35.90853,
+  "lon": -77.58651,
+  "precision": "road",
+  "movedKm": 0.77,
+  "coordSource": {
+   "url": "https://services.nconemap.gov/secure/rest/services/NC1Map_Parcels/MapServer/1",
+   "title": "NC OneMap parcels"
+  },
+  "note": "Anaconda Rd industrial area near McNair Rd (2901 Anaconda Rd parcel); Baxtel 35.9051,-77.5869. Exact 50-ac parcel not confirmed.",
+  "countyOk": true
+ },
+ {
+  "name": "Fayetteville Dunn Road",
+  "state": "NC",
+  "county": "Cumberland",
+  "oldLat": 35.08165,
+  "oldLon": -78.96516,
+  "lat": 35.04806,
+  "lon": -78.85564,
+  "precision": "road",
+  "movedKm": 10.64,
+  "coordSource": {
+   "url": "https://nominatim.openstreetmap.org/search?q=Dunn+Road,+Fayetteville,+North+Carolina",
+   "title": "OSM: Dunn Road, East Fayetteville"
+  },
+  "note": "About 50 ac along Dunn Rd; parcel not found.",
+  "countyOk": true
+ },
+ {
+  "name": "Custer Avenue (Fayetteville)",
+  "state": "NC",
+  "county": "Cumberland",
+  "oldLat": 35.08165,
+  "oldLon": -78.98116,
+  "lat": 35.10069,
+  "lon": -78.83068,
+  "precision": "road",
+  "movedKm": 13.85,
+  "coordSource": {
+   "url": "https://nominatim.openstreetmap.org/search?q=Custer+Avenue,+Fayetteville,+North+Carolina",
+   "title": "OSM: Custer Avenue"
+  },
+  "note": "180 ac on Custer Ave near the PWC plant; parcel not found.",
+  "countyOk": true
+ },
+ {
+  "name": "PRSM Cumberland County",
+  "state": "NC",
+  "county": "Cumberland",
+  "oldLat": 35.05019,
+  "oldLon": -78.82872,
+  "lat": 35.05019,
+  "lon": -78.82872,
+  "precision": "county",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://nearbydatacenters.org/projects/nc-cumberland-prsm-group/",
+   "title": "Nearby Data Centers"
+  },
+  "note": "Industrial park not named by any source; county point.",
+  "countyOk": true
+ },
+ {
+  "name": "Triangle Innovation Point West",
+  "state": "NC",
+  "county": "Chatham",
+  "oldLat": 35.62135,
+  "oldLon": -79.04316,
+  "lat": 35.62135,
+  "lon": -79.04316,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://baxtel.com/data-center/eco-tip-west-new-hill-nc",
+   "title": "Baxtel map pin"
+  },
+  "note": "Baxtel 35.6208,-79.0449 agrees within 0.2 km.",
+  "countyOk": true
+ },
+ {
+  "name": "Compass Statesville",
+  "state": "NC",
+  "county": "Iredell",
+  "oldLat": 35.77271,
+  "oldLon": -80.9765,
+  "lat": 35.77271,
+  "lon": -80.9765,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://nearbydatacenters.org/projects/nc-statesville-compass/",
+   "title": "Nearby Data Centers"
+  },
+  "note": "255 Stamey Farm Rd and nearby parcels; Census geocode 35.7772,-80.9708 is 0.7 km away.",
+  "countyOk": true
+ },
+ {
+  "name": "Digital Realty Moores Chapel (Charlotte)",
+  "state": "NC",
+  "county": "Mecklenburg",
+  "oldLat": 35.2519,
+  "oldLon": -81.0015,
+  "lat": 35.25109,
+  "lon": -80.99753,
+  "precision": "parcel",
+  "movedKm": 0.37,
+  "coordSource": {
+   "url": "https://services.nconemap.gov/secure/rest/services/NC1Map_Parcels/MapServer/1",
+   "title": "NC OneMap parcels"
+  },
+  "note": "Digital Moores Chapel LLC and LLC 2 parcels 05316101 and 05323101 (199 ac).",
+  "countyOk": true
+ },
+ {
+  "name": "PowerHouse Charlotte (University City)",
+  "state": "NC",
+  "county": "Mecklenburg",
+  "oldLat": 35.31128,
+  "oldLon": -80.69897,
+  "lat": 35.31128,
+  "lon": -80.69897,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://baxtel.com/data-center/powerhouse-charlotte-nc",
+   "title": "Baxtel map pin"
+  },
+  "note": "Baxtel 35.3139,-80.6964 is 0.4 km away.",
+  "countyOk": true
+ },
+ {
+  "name": "Mooresville Technology Park",
+  "state": "NC",
+  "county": "Iredell",
+  "oldLat": 35.51447,
+  "oldLon": -80.75428,
+  "lat": 35.51447,
+  "lon": -80.75428,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://www.wbtv.com/2025/08/13/developers-withdraw-plans-data-center-nascar-legends-land-mooresville/",
+   "title": "Developers withdraw plans for data center on NASCAR legend\u2019s land in Mooresville"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "New Hill Digital Campus",
+  "state": "NC",
+  "county": "Wake",
+  "oldLat": 35.72558,
+  "oldLon": -78.87992,
+  "lat": 35.72558,
+  "lon": -78.87992,
+  "precision": "city",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://www.wral.com/news/local/natelli-withdraws-apex-data-center-project-shearon-harris-march-2026/",
+   "title": "natelli withdraws apex data center project shearon harris march 2026"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "Project Iron Spur (Rural Hall)",
+  "state": "NC",
+  "county": "Forsyth",
+  "oldLat": 36.2407,
+  "oldLon": -80.30464,
+  "lat": 36.2407,
+  "lon": -80.30464,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://www.wunc.org/2026-07-30/forsyth-commission-votes-down-rural-hall-data-center-proposal",
+   "title": "Forsyth Commission votes down Rural Hall data center proposal | WUNC News"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "Project Accelerate (Matthews)",
+  "state": "NC",
+  "county": "Mecklenburg",
+  "oldLat": 35.11986,
+  "oldLon": -80.70941,
+  "lat": 35.10097,
+  "lon": -80.70318,
+  "precision": "site",
+  "movedKm": 2.18,
+  "coordSource": {
+   "url": "https://baxtel.com/data-center/project-accelerate",
+   "title": "Baxtel map pin"
+  },
+  "note": "123 ac near I-485 and East John St.",
+  "countyOk": true
+ },
+ {
+  "name": "HB2K Kings Mountain",
+  "state": "NC",
+  "county": "Cleveland",
+  "oldLat": 35.20378,
+  "oldLon": -81.35612,
+  "lat": 35.20378,
+  "lon": -81.35612,
+  "precision": "parcel",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://services.nconemap.gov/secure/rest/services/NC1Map_Parcels/MapServer/1",
+   "title": "NC OneMap parcels"
+  },
+  "note": "HB2K LLC parcel 49416, 166 Gage Rd, 77 ac.",
+  "countyOk": true
+ },
+ {
+  "name": "Hildebran data center",
+  "state": "NC",
+  "county": "Burke",
+  "oldLat": 35.71722,
+  "oldLon": -81.41867,
+  "lat": 35.71904,
+  "lon": -81.41574,
+  "precision": "parcel",
+  "movedKm": 0.33,
+  "coordSource": {
+   "url": "https://services.nconemap.gov/secure/rest/services/NC1Map_Parcels/MapServer/1",
+   "title": "NC OneMap parcels"
+  },
+  "note": "Two Digihost International parcels, 199 Cline Park Ct and US 70 E (37 ac).",
+  "countyOk": true
+ },
+ {
+  "name": "WhiteFiber NC-1 (Madison)",
+  "state": "NC",
+  "county": "Rockingham",
+  "oldLat": 36.40361,
+  "oldLon": -79.98942,
+  "lat": 36.40361,
+  "lon": -79.98942,
+  "precision": "parcel",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://services.nconemap.gov/secure/rest/services/NC1Map_Parcels/MapServer/1",
+   "title": "NC OneMap parcels"
+  },
+  "note": "Enovum NC-1 Bidco parcel 790600970364, 805 Island Dr, 97 ac.",
+  "countyOk": true
+ },
+ {
+  "name": "Microsoft Catawba County (Conover, Hickory, Maiden sites)",
+  "state": "NC",
+  "county": "Catawba",
+  "oldLat": 35.65,
+  "oldLon": -81.25,
+  "lat": 35.65,
+  "lon": -81.25,
+  "precision": "county",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://local.microsoft.com/?p=4297",
+   "title": "Conover - Lyle Creek datacenter construction update - Microsoft Local"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "Google Lenoir expansion",
+  "state": "NC",
+  "county": "Caldwell",
+  "oldLat": 35.89854,
+  "oldLon": -81.54754,
+  "lat": 35.89854,
+  "lon": -81.54754,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://www.wsoctv.com/news/local/google-invests-1b-nc-expand-operations-data-center/UJRZP5BANVBEZOFYR6SH5PCRCE/",
+   "title": "Google invests $1B in NC to expand operations at data center \u2013 WSOC TV"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "xAI Colossus 1",
+  "state": "TN",
+  "county": "Shelby",
+  "oldLat": 35.05991,
+  "oldLon": -90.15669,
+  "lat": 35.05991,
+  "lon": -90.15669,
+  "precision": "address",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://geocoding.geo.census.gov/geocoder/",
+   "title": "Census geocoder: 3231 Paul R Lowry Rd, Memphis"
+  },
+  "note": "Address geocode 35.0601,-90.1522 is 0.4 km east.",
+  "countyOk": true
+ },
+ {
+  "name": "xAI Colossus 2 (Tulane Road)",
+  "state": "TN",
+  "county": "Shelby",
+  "oldLat": 34.99796,
+  "oldLon": -90.03492,
+  "lat": 34.99796,
+  "lon": -90.03492,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://epoch.ai/data/data-centers/satellite-explorer/xAIColossus2MemphisTennessee",
+   "title": "data centers"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "Project River",
+  "state": "TN",
+  "county": "Bradley",
+  "oldLat": 35.29706,
+  "oldLon": -84.82166,
+  "lat": 35.29706,
+  "lon": -84.82166,
+  "precision": "parcel",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://services1.arcgis.com/YuVBSS7Y1of2Qud1/arcgis/rest/services/Tennessee_Property_Boundaries_Public_Use/FeatureServer/0",
+   "title": "Tennessee property boundaries"
+  },
+  "note": "Wright Brothers parcels on Lower River Rd; not all 850 ac confirmed.",
+  "countyOk": true
+ },
+ {
+  "name": "Project MidSpan",
+  "state": "TN",
+  "county": "Bradley",
+  "oldLat": 35.276,
+  "oldLon": -84.785,
+  "lat": 35.28715,
+  "lon": -84.78237,
+  "precision": "parcel",
+  "movedKm": 1.26,
+  "coordSource": {
+   "url": "https://services1.arcgis.com/YuVBSS7Y1of2Qud1/arcgis/rest/services/Tennessee_Property_Boundaries_Public_Use/FeatureServer/0",
+   "title": "Tennessee property boundaries"
+  },
+  "note": "SDCL Tennessee Propco parcels on Maddux and Dillard Rds, 308 ac (306 reported).",
+  "countyOk": true
+ },
+ {
+  "name": "Cielo Clarksville",
+  "state": "TN",
+  "county": "Montgomery",
+  "oldLat": 36.53,
+  "oldLon": -87.36,
+  "lat": 36.53,
+  "lon": -87.36,
+  "precision": "city",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://cleanview.co/data-centers/tennessee/2037/cielo-clarksville-data-center",
+   "title": "Cielo Clarksville Data Center, Montgomery County, Tennessee"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "Meta Gallatin",
+  "state": "TN",
+  "county": "Sumner",
+  "oldLat": 36.41189,
+  "oldLon": -86.36965,
+  "lat": 36.41189,
+  "lon": -86.36965,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://www.gallatingetsit.com/newsroom/metas-data-centers-in-gallatin-are-up-and-running",
+   "title": "Meta's data centers in Gallatin are up and running | Newsroom | Gallatin Economic Development Agency"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "DOE Oak Ridge AI data center sites",
+  "state": "TN",
+  "county": "Roane",
+  "oldLat": 35.93526,
+  "oldLon": -84.39236,
+  "lat": 35.93526,
+  "lon": -84.39236,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://roanecountytn.gov/oak-ridge-reservation-in-roane-county-selected-for-national-ai-and-energy-infrastructure-initiative/",
+   "title": "oak ridge reservation in roane county selected for national ai and energy infrastructure initiative"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "Fort Meade hyperscale campus",
+  "state": "FL",
+  "county": "Polk",
+  "oldLat": 27.78398,
+  "oldLon": -81.81938,
+  "lat": 27.78398,
+  "lon": -81.81938,
+  "precision": "parcel",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://services9.arcgis.com/Gh9awoU677aKree0/arcgis/rest/services/Florida_Statewide_Cadastral/FeatureServer/0",
+   "title": "Florida statewide cadastral"
+  },
+  "note": "Parcel 253116000000012040, 505 ac.",
+  "countyOk": true
+ },
+ {
+  "name": "Auburndale Technology Center",
+  "state": "FL",
+  "county": "Polk",
+  "oldLat": 28.136,
+  "oldLon": -81.829,
+  "lat": 28.13762,
+  "lon": -81.83472,
+  "precision": "parcel",
+  "movedKm": 0.59,
+  "coordSource": {
+   "url": "https://services9.arcgis.com/Gh9awoU677aKree0/arcgis/rest/services/Florida_Statewide_Cadastral/FeatureServer/0",
+   "title": "Florida statewide cadastral"
+  },
+  "note": "Pace Road DC Development LLC, 810 Pace Rd, 76 ac.",
+  "countyOk": true
+ },
+ {
+  "name": "Cielo Haines City",
+  "state": "FL",
+  "county": "Polk",
+  "oldLat": 28.11282,
+  "oldLon": -81.61654,
+  "lat": 28.11282,
+  "lon": -81.61654,
+  "precision": "city",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://baynews9.com/fl/tampa/news/2026/07/10/haines-city-officials-explain-water-capacity-address-data-center-concerns",
+   "title": "Haines City water limits puts data center plan on hold"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "Sentinel Grove Technology Park (Project Jarvis)",
+  "state": "FL",
+  "county": "St. Lucie",
+  "oldLat": 27.455,
+  "oldLon": -80.559,
+  "lat": 27.46594,
+  "lon": -80.55334,
+  "precision": "parcel",
+  "movedKm": 1.34,
+  "coordSource": {
+   "url": "https://services9.arcgis.com/Gh9awoU677aKree0/arcgis/rest/services/Florida_Statewide_Cadastral/FeatureServer/0",
+   "title": "Florida statewide cadastral"
+  },
+  "note": "Centroid of three Epic Estates 68 LLC parcels, Minute Maid Rd and Orange Ave, 1,224 ac (1,218 reported).",
+  "countyOk": true
+ },
+ {
+  "name": "Atlas Compute Fort Pierce",
+  "state": "FL",
+  "county": "St. Lucie",
+  "oldLat": 27.44,
+  "oldLon": -80.33,
+  "lat": 27.37985,
+  "lon": -80.3752,
+  "precision": "parcel",
+  "movedKm": 8.04,
+  "coordSource": {
+   "url": "https://services9.arcgis.com/Gh9awoU677aKree0/arcgis/rest/services/Florida_Statewide_Cadastral/FeatureServer/0",
+   "title": "Florida statewide cadastral"
+  },
+  "note": "Fort Pierce No 2 and No 3 LLC parcels, Post Office Rd, Midway Industrial Park.",
+  "countyOk": true
+ },
+ {
+  "name": "Project Tango",
+  "state": "FL",
+  "county": "Palm Beach",
+  "oldLat": 26.6934,
+  "oldLon": -80.369,
+  "lat": 26.6934,
+  "lon": -80.369,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://www.wlrn.org/government-politics/2026-07-16/project-tango-ai-data-center-palm-beach-rejected",
+   "title": "Palm Beach County rejects controversial Project Tango AI data center | WLRN"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ },
+ {
+  "name": "DCIP Roan Street (Arcadia)",
+  "state": "FL",
+  "county": "DeSoto",
+  "oldLat": 27.2273,
+  "oldLon": -81.8096,
+  "lat": 27.2273,
+  "lon": -81.8096,
+  "precision": "site",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://nearbydatacenters.org/projects/fl-desoto-dcip-roan-street/",
+   "title": "Nearby Data Centers"
+  },
+  "note": "Closed DeSoto County Generating plant, 3800 NE Roan St; parcel query timed out. Census interpolates the address 1.2 km west (27.2237,-81.8207).",
+  "countyOk": true
+ },
+ {
+  "name": "Silver Fox 606 (Indiantown)",
+  "state": "FL",
+  "county": "Martin",
+  "oldLat": 27.04,
+  "oldLon": -80.517,
+  "lat": 27.04,
+  "lon": -80.517,
+  "precision": "city",
+  "movedKm": 0.0,
+  "coordSource": {
+   "url": "https://www.compute-atlas.com/facilities/silver-fox-606-indiantown-fl",
+   "title": "Silver Fox 606 AI Data Center Campus \u2014 Indiantown, FL \u00b7 Compute Atlas"
+  },
+  "note": "Not reviewed: outside Georgia and below 200 MW (or MW not stated). Coordinates and precision unchanged; only the county check was run.",
+  "countyOk": true
+ }
+]

@@ -1,10 +1,10 @@
 /**
- * Vendored icon paths — GENERATED, do not edit by hand.
+ * Vendored icon paths: GENERATED, do not edit by hand.
  * Regenerate with `npm run build:icons`.
  *
  * Source: Material Design Icons by Pictogrammers
  *   https://github.com/Templarian/MaterialDesign
- * Licence: Apache 2.0 — https://github.com/Templarian/MaterialDesign/blob/master/LICENSE
+ * Licence: Apache 2.0: https://github.com/Templarian/MaterialDesign/blob/master/LICENSE
  * Taken from @iconify-json/mdi@1.2.3; only the icons this game draws
  * are included.
  *

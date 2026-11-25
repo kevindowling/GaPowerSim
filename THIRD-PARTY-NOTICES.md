@@ -69,3 +69,13 @@ Runtime: `react`, `react-dom` (MIT), `zustand` (MIT), `polygon-clipping` (MIT).
 Build and test: `vite`, `typescript`, `vitest`, `tsx`, `@playwright/test`,
 `topojson-client`, `us-atlas`, `@iconify-json/mdi`. Licences as declared in each
 package.
+
+## Public Sans
+
+Interface typeface, by the US Web Design System. SIL Open Font License 1.1.
+Bundled from `@fontsource-variable/public-sans`.
+
+## OpenStreetMap
+
+Rivers, water, roads, rail, buildings, land cover, parks and power infrastructure.
+© OpenStreetMap contributors, Open Database License 1.0.

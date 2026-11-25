@@ -1,64 +1,43 @@
 import { useState } from 'react'
 import type { GameState } from '../engine/types.ts'
-import { BEATS, currentBeat } from '../engine/tutorial.ts'
+import { BEATS, beatIndex, currentBeat, type TutorialBeat } from '../engine/tutorial.ts'
+import { Icon } from './Icon.tsx'
 
-interface Props {
-  game: GameState
-  onDismiss: () => void
+const TAB_NAMES: Record<TutorialBeat['focus'], string> = {
+  build: 'Build', grid: 'Grid', land: 'land offers', customers: 'Customers', ops: 'Operate',
 }
 
-/**
- * The coach.
- *
- * Sits out of the way, states what this beat is about, and gets out of the
- * player's hands — every beat completes because the player did the thing, never
- * because they clicked "next". It can be dismissed permanently, because a
- * tutorial that cannot be turned off is a nag.
- */
-export function TutorialCoach({ game, onDismiss }: Props) {
-  // Collapsible because on a phone the full card covers half the map, and the
-  // map is what the player is being asked to act on.
-  const [open, setOpen] = useState(true)
+export function TutorialCoach({ game, activeTab, startOpen, onGo, onHide }: {
+  game: GameState
+  activeTab: string
+  startOpen: boolean
+  onGo: (tab: TutorialBeat['focus']) => void
+  onHide: () => void
+}) {
+  const [open, setOpen] = useState(startOpen)
   const beat = currentBeat(game)
   if (!beat) return null
+  const i = beatIndex(game)
 
-  const index = game.tutorial!.beat
   return (
-    <aside className={open ? 'coach' : 'coach collapsed'} aria-live="polite">
+    <section className={open ? 'coach' : 'coach collapsed'} aria-label="Guide" aria-live="polite">
       <div className="coach-head">
-        <span className="coach-step">
-          {index + 1} of {BEATS.length}
-        </span>
-        <div className="coach-actions">
-          <button
-            className="coach-collapse"
-            onClick={() => setOpen((v) => !v)}
-            aria-expanded={open}
-            aria-label={open ? 'Collapse the hint' : 'Expand the hint'}
-          >
-            {open ? '▾' : '▴'}
-          </button>
-          <button className="coach-close" onClick={onDismiss} aria-label="Dismiss the tutorial">
-            ✕
-          </button>
-        </div>
-      </div>
-
-      <button
-        className="coach-title-btn"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-      >
         <h2 className="coach-title">{beat.title}</h2>
-      </button>
-
-      {open && beat.body.map((line, i) => <p key={i}>{line}</p>)}
-
-      <div className="coach-progress" role="img" aria-label={`Beat ${index + 1} of ${BEATS.length}`}>
-        {BEATS.map((b, i) => (
-          <span key={b.id} className={i < index ? 'done' : i === index ? 'now' : ''} />
-        ))}
+        <span className="coach-step">{i + 1} of {BEATS.length}</span>
+        <button className="btn ghost icon-only" onClick={() => setOpen((v) => !v)}
+          aria-expanded={open} aria-label={open ? 'Collapse the guide' : 'Expand the guide'}>
+          <Icon name={open ? 'chevronUp' : 'chevronDown'} />
+        </button>
+        <button className="btn ghost icon-only" onClick={onHide} aria-label="Hide the guide"><Icon name="close" /></button>
       </div>
-    </aside>
+      {open && (
+        <>
+          {beat.body.map((line) => <p key={line}>{line}</p>)}
+          {beat.focus !== activeTab && (
+            <button className="btn small" onClick={() => onGo(beat.focus)}>Open {TAB_NAMES[beat.focus]}</button>
+          )}
+        </>
+      )}
+    </section>
   )
 }

@@ -1,27 +1,4 @@
-/**
- * fetch-parcels.ts — pull real parcel geometry for a county and vendor it.
- *
- * This is a DEVELOPER action, run once per county. The output is committed to
- * the repository, and the game loads it as a static file. A player never touches
- * a county server: that keeps the embed self-contained, keeps county GIS
- * infrastructure from being hammered by traffic we generated, and means the game
- * still works offline.
- *
- * Georgia has no free statewide parcel download — parcel data is maintained
- * county by county, most commonly through ArcGIS Hub or qPublic (Schneider
- * Geospatial). So each county gets an adapter behind one `ParcelSource`
- * interface; an awkward portal is an adapter, not a redesign.
- *
- * PRIVACY: owner-identifying fields are dropped at ingest and never written to
- * disk. Georgia parcel ownership is public record, but naming identifiable
- * private individuals at their home address inside a public web game about
- * seizing their property is a different act from mapping their lot. Real
- * boundaries, real acreage, real assessed values; synthesized people.
- *
- * Usage:
- *   npm run fetch:parcels -- --county 13261
- *   npm run fetch:parcels -- --county 13261 --dry-run
- */
+// PRIVACY: owner-identifying fields are dropped at ingest and never written.
 
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
@@ -34,22 +11,10 @@ import { Rng, deriveSeed } from '../src/engine/rng.ts'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
-// --- county registry -----------------------------------------------------
-
 interface CountySource {
   fips: string
   name: string
   kind: 'arcgis' | 'qpublic' | 'file'
-  /**
-   * ArcGIS FeatureServer layer query endpoint, ending in `/query`.
-   *
-   * NOT YET CONFIRMED for any county. Sumter County publishes a Parcels layer
-   * through an ArcGIS Hub site, but resolving a Hub dataset page to its backing
-   * FeatureServer URL requires loading that page, and the sandbox this was
-   * developed in blocks egress to *.arcgis.com. Fill this in by opening the
-   * dataset page below, choosing "I want to use this" → "View API Resources",
-   * and copying the GeoJSON/FeatureServer URL.
-   */
   featureService: string | null
   /** Human-facing page where the endpoint can be found. */
   portal: string
@@ -74,17 +39,11 @@ const COUNTIES: CountySource[] = [
   },
 ]
 
-/**
- * Fields that identify a human being. These are read from the source only to be
- * discarded — they are never written to the vendored file.
- */
 const PII_FIELDS = [
   'OWNER', 'OWNER1', 'OWNER2', 'OWNERNAME', 'OWNER_NAME', 'OWN_NAME',
   'TAXPAYER', 'MAILADDR', 'MAIL_ADDR', 'MAILING', 'MAILADD1', 'MAILADD2',
   'ADDR', 'ADDRESS', 'SITEADDR', 'SITE_ADDR', 'PHYSADDR', 'PHONE', 'EMAIL',
 ]
-
-// --- source adapters -----------------------------------------------------
 
 interface RawFeature {
   geometry: { type: string; coordinates: unknown }
@@ -130,14 +89,6 @@ const arcgisSource: ParcelSource = {
   },
 }
 
-/**
- * Read a GeoJSON already on disk.
- *
- * This is the path most people will actually use: open the county's Hub page in
- * a browser, hit Download → GeoJSON, and point this at the file. It needs no
- * network access at all, which also makes it the only path that works from a
- * restricted environment.
- */
 const fileSource: ParcelSource = {
   async fetchAll(source, explicitPath) {
     const path = explicitPath
@@ -166,8 +117,6 @@ function sourceFor(kind: CountySource['kind']): ParcelSource {
       )
   }
 }
-
-// --- transform -----------------------------------------------------------
 
 /** Project a lon/lat ring into km and close it. */
 function projectRing(ring: number[][]): Ring {
@@ -215,12 +164,10 @@ function assertNoPii(parcels: ParcelWire[]): void {
   const serialized = JSON.stringify(parcels).toUpperCase()
   for (const field of PII_FIELDS) {
     if (serialized.includes(`"${field}"`)) {
-      throw new Error(`PII field "${field}" leaked into the output — refusing to write.`)
+      throw new Error(`PII field "${field}" leaked into the output: refusing to write.`)
     }
   }
 }
-
-// --- main ----------------------------------------------------------------
 
 async function main(): Promise<void> {
   const args = process.argv.slice(2)
@@ -241,15 +188,11 @@ async function main(): Promise<void> {
     process.exit(1)
   }
 
-  // An explicit file always wins: it needs no network and is the path that
-  // works when a portal is unreachable.
   const kind = filePath ? 'file' : source.kind
   console.log(`Fetching parcels for ${source.name} County (${source.fips}) via ${kind}…`)
   const raw = await sourceFor(kind).fetchAll(source, filePath)
   console.log(`  ${raw.length} features from source`)
 
-  // Seeded from the FIPS so a re-fetch produces the same synthesized names and
-  // the vendored file diffs cleanly instead of churning.
   const rng = new Rng(deriveSeed(0x9a5ce1, source.fips))
   const parcels: ParcelWire[] = []
 
@@ -288,8 +231,6 @@ async function main(): Promise<void> {
         rings,
         acres: Math.round(acres * 10) / 10,
         archetype,
-        // NOTE: no owner field. Names are derived from the parcel id at load by
-        // src/engine/parcels/owners.ts, so no real name is ever read or stored.
         assessedPerAcre: assessedTotal
           ? Math.round(assessedTotal / Math.max(statedAcres, 0.1))
           : 0,

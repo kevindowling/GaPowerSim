@@ -1,215 +1,167 @@
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect } from '@playwright/test'
+import { PLANT, start, sitePlants, drawRoute, clickAt, endQuarter, answer, state, tab } from './helpers.ts'
 
-/**
- * The M2 loop in a real browser: plan a route across Sumter County, see what it
- * takes from whom, commit it, make offers, and deal with whoever refuses.
- */
-
-async function signContract(page: Page): Promise<void> {
-  await page.getByRole('button', { name: 'Sign the contract' }).click()
-  await expect(page.locator('.briefing')).toHaveCount(0)
-}
-
-async function clearHeadlines(page: Page): Promise<void> {
-  const cont = page.getByRole('button', { name: 'Continue' })
-  if (await cont.count()) await cont.click()
-}
-
-/**
- * Answer the county commission if it has convened. The hearing gates progress
- * on purpose, so anything that plays past acquisition has to deal with it.
- */
-async function clearHearing(page: Page): Promise<void> {
-  const hearing = page.locator('.hearing')
-  if (await hearing.count()) {
-    await page.getByRole('button', { name: /The data centre pays for all of it/ }).click()
-    await expect(hearing).toHaveCount(0)
-  }
-}
-
-/** Zoom into south-west Georgia so map clicks land in Sumter County. */
-async function zoomToSumter(page: Page): Promise<void> {
-  const box = (await page.locator('canvas.map-canvas').boundingBox())!
-  await page.mouse.move(box.x + box.width * 0.42, box.y + box.height * 0.66)
-  for (let i = 0; i < 5; i++) {
-    await page.mouse.wheel(0, -400)
-    await page.waitForTimeout(120)
-  }
-}
-
-/** Draw a corridor between two points on screen. */
-async function drawRoute(page: Page): Promise<void> {
-  const box = (await page.locator('canvas.map-canvas').boundingBox())!
-  await page.mouse.click(box.x + box.width * 0.42, box.y + box.height * 0.55)
-  await page.waitForTimeout(200)
-  await page.mouse.click(box.x + box.width * 0.56, box.y + box.height * 0.45)
-  await page.waitForTimeout(600)
-}
-
-test('plans a corridor and reports what it takes from whom', async ({ page }) => {
-  test.setTimeout(90_000)
-  await page.goto('/')
-  await signContract(page)
-  await zoomToSumter(page)
-
-  await page.getByRole('button', { name: 'Plan a corridor' }).click()
-  // The cadastre loads on demand, not at startup.
-  await expect(page.locator('.class-picker')).toBeVisible()
-
+test('prices a route and who it affects', async ({ page }) => {
+  await start(page)
+  await sitePlants(page, 3)
   await drawRoute(page)
-
-  const plan = page.locator('.plan-card')
-  await expect(plan).toBeVisible()
-  await expect(plan).toContainText('properties crossed')
-  await expect(plan).toContainText('cut in two')
-  // A stand-in cadastre must say so rather than passing as the real thing.
-  await expect(page.locator('.synthetic-warning')).toBeVisible()
-
-  await page.screenshot({ path: 'tests/.artifacts/corridor-plan.png' })
+  await expect(page.locator('.plan')).toContainText('Parcels crossed')
+  expect(Number(await page.getByTestId('plan-parcels').innerText())).toBeGreaterThan(10)
+  await expect(page.locator('.plan')).toContainText('generated')
+  await page.screenshot({ path: 'tests/.artifacts/plan.png' })
 })
 
-test('a wider voltage class takes more land over the same route', async ({ page }) => {
-  test.setTimeout(90_000)
-  await page.goto('/')
-  await signContract(page)
-  await zoomToSumter(page)
-  await page.getByRole('button', { name: 'Plan a corridor' }).click()
-  await drawRoute(page)
-  await expect(page.locator('.plan-card')).toBeVisible()
-
-  const acresText = async () =>
-    (await page.locator('.plan-card dd').nth(2).innerText()).replace(/[^\d]/g, '')
-
-  const at230 = Number(await acresText())
-  await page.getByRole('button', { name: /500 kV/ }).click()
-  await page.waitForTimeout(500)
-  const at500 = Number(await acresText())
-
-  expect(at500).toBeGreaterThan(at230)
+test('will not start a line in an empty field', async ({ page }) => {
+  await start(page)
+  await tab(page, 'Grid')
+  await page.getByRole('button', { name: 'Plan a line', exact: true }).click()
+  await clickAt(page, 0.7, 0.2)
+  await expect(page.locator('.map-banner')).toContainText('a line of 115 kV or more')
+  await expect(page.locator('.plan')).toHaveCount(0)
 })
 
-test('commits a route and opens a negotiation for every parcel', async ({ page }) => {
-  test.setTimeout(90_000)
-  await page.goto('/')
-  await signContract(page)
-  await zoomToSumter(page)
-  await page.getByRole('button', { name: 'Plan a corridor' }).click()
-  await drawRoute(page)
-  await page.getByRole('button', { name: 'Commit this route' }).click()
-
-  await expect(page.locator('.parcel-list')).toBeVisible()
-  const rows = page.locator('.parcel-row')
-  expect(await rows.count()).toBeGreaterThan(3)
-  await expect(page.locator('.acq-count')).toContainText('settled')
-
-  // Owners are named as households and companies, never as individuals.
-  await expect(rows.first().locator('.parcel-owner')).not.toHaveText('')
-
-  await page.screenshot({ path: 'tests/.artifacts/acquisition.png' })
-})
-
-test('offers settle some owners and leave others refusing', async ({ page }) => {
-  test.setTimeout(120_000)
-  await page.goto('/')
-  await signContract(page)
-  await zoomToSumter(page)
-  await page.getByRole('button', { name: 'Plan a corridor' }).click()
-  await drawRoute(page)
-  await page.getByRole('button', { name: 'Commit this route' }).click()
-
-  await page.getByRole('button', { name: 'Send offers' }).click()
-  await page.getByRole('button', { name: 'End quarter' }).click()
-  await clearHeadlines(page)
-
-  // Some accepted, and the log records the round.
-  await expect(page.locator('.parcel-row.status-accepted').first()).toBeVisible()
-  await expect(page.locator('.logstrip')).toContainText('signed')
-})
-
-test('condemning hardens everyone still holding out', async ({ page }) => {
-  test.setTimeout(120_000)
-  await page.goto('/')
-  await signContract(page)
-  await zoomToSumter(page)
-  await page.getByRole('button', { name: 'Plan a corridor' }).click()
-  await drawRoute(page)
-  await page.getByRole('button', { name: 'Commit this route' }).click()
-
-  // A bare-appraisal offer produces holdouts to work with.
-  await page.getByRole('button', { name: 'Send offers' }).click()
-  await page.getByRole('button', { name: 'End quarter' }).click()
-  await clearHeadlines(page)
-
-  const holdout = page.locator('.parcel-row.status-holdout').first()
-  await expect(holdout).toBeVisible()
-  await holdout.getByRole('button', { name: 'Condemn' }).click()
-
-  await expect(page.locator('.parcel-row.status-condemning').first()).toBeVisible()
-  // The contagion is stated to the player, not just modelled behind the scenes.
-  await expect(page.locator('.panel-note').filter({ hasText: 'Word has got around' })).toBeVisible()
-  await expect(page.locator('.logstrip')).toContainText('Condemnation filed')
-
-  await page.screenshot({ path: 'tests/.artifacts/condemnation.png' })
-})
-
-test('plays the whole chain through to energization', async ({ page }) => {
-  test.setTimeout(240_000)
-  await page.goto('/')
-  await signContract(page)
-  await zoomToSumter(page)
-
-  const box = (await page.locator('canvas.map-canvas').boundingBox())!
-
-  // Generation first: three turbines, 570 MW firm against a 400 MW contract.
-  for (let i = 0; i < 3; i++) {
-    await page.getByRole('button', { name: /Gas combustion turbine/ }).click()
-    await page.mouse.click(box.x + box.width * 0.42, box.y + box.height * 0.55)
-    await page.waitForTimeout(150)
-  }
-  await expect(page.locator('.fleet li')).toHaveCount(3)
-
-  // Then the wire.
-  await page.getByRole('button', { name: 'Plan a corridor' }).click()
-  await drawRoute(page)
-  await page.getByRole('button', { name: 'Commit this route' }).click()
-  await expect(page.locator('.parcel-list')).toBeVisible()
-
-  // Pay generously and keep raising until nobody is left refusing; condemn
-  // whoever still will not sell, because the deadline does not negotiate.
-  for (let round = 0; round < 10; round++) {
-    const settled = await page.locator('.acq-count').innerText()
-    const [done, total] = settled.match(/(\d+) of (\d+)/)!.slice(1).map(Number)
-    if (done >= total) break
-
-    const slider = page.locator('.bulk-offer input[type="range"]')
-    // Snap to the input's 0.05 step and stringify without a trailing zero —
-    // the element normalises "1.50" to "1.5" and then rejects the mismatch.
-    await slider.fill(String(Math.round(Math.min(4, 1.5 + round * 0.35) * 20) / 20))
-    await page.getByRole('button', { name: 'Send offers' }).click()
-    await page.getByRole('button', { name: 'End quarter' }).click()
-    await clearHeadlines(page)
-    await clearHearing(page)
-
-    if (round >= 4) {
-      const holdouts = page.locator('.parcel-row.status-holdout')
-      const n = await holdouts.count()
-      for (let i = 0; i < n; i++) {
-        await holdouts.nth(0).getByRole('button', { name: 'Condemn' }).click()
-        await page.waitForTimeout(80)
+test('can tap an existing line', async ({ page }) => {
+  await start(page)
+  await sitePlants(page, 1)
+  await tab(page, 'Grid')
+  await page.getByRole('button', { name: 'Plan a line', exact: true }).click()
+  await clickAt(page, ...PLANT)
+  // The nearest existing 230 kV line to the plant.
+  const ok = await page.evaluate(() => {
+    const s = (window as any).__game.getState()
+    const from = s.tool.from
+    let best: any = null
+    for (const l of s.tappable()) {
+      if (l.kv < 230 || l.kv >= 500) continue
+      for (const [x, y] of l.points) {
+        const d = Math.hypot(x - from.x, y - from.y)
+        if (!best || d < best.d) best = { x, y, d }
       }
     }
-  }
+    s.clickMap(best.x, best.y, -1, 24)
+    return (window as any).__game.getState().plan !== null
+  })
+  expect(ok).toBe(true)
+  await expect(page.locator('.planner')).toContainText('existing 230 kV line')
+  await expect(page.getByTestId('plan-tap')).toContainText('$22.0M, 2 quarters')
+  await page.screenshot({ path: 'tests/.artifacts/tap.png' })
+  await page.getByRole('button', { name: 'File this route' }).click()
+  await tab(page, 'Grid')
+  await expect(page.locator('.lines')).toContainText('Existing 230 kV lines')
+  await expect(page.locator('.panel')).toContainText('120 MW of 400 MW firm can reach Liberty Americus Campus')
+})
 
-  // Run out the construction schedule.
-  for (let q = 0; q < 22; q++) {
-    if (await page.locator('.hud').innerText().then((t) => t.includes('Energized'))) break
-    await clearHearing(page)
-    await page.getByRole('button', { name: 'End quarter' }).click()
-    await clearHeadlines(page)
-  }
-  await clearHearing(page)
+test('changes what is cut when the route style changes', async ({ page }) => {
+  await start(page)
+  await sitePlants(page, 1)
+  await drawRoute(page)
+  await page.getByRole('button', { name: 'Shortest' }).click()
+  const direct = Number(await page.getByTestId('plan-severed').innerText())
+  await page.getByRole('button', { name: 'Property lines' }).click()
+  await expect.poll(async () => Number(await page.getByTestId('plan-severed').innerText())).not.toBe(direct)
+})
 
-  await expect(page.locator('.hud')).toContainText('Energized')
-  await expect(page.locator('.logstrip')).toContainText('energized')
-  await page.screenshot({ path: 'tests/.artifacts/energized.png' })
+test('bends through a clicked point and can undo it', async ({ page }) => {
+  await start(page)
+  await sitePlants(page, 1)
+  await drawRoute(page)
+  const length = () => page.evaluate(() => (window as any).__game.getState().plan.lengthKm)
+  const before = await length()
+  await clickAt(page, 0.62, 0.25)
+  expect(await length()).toBeGreaterThan(before + 1)
+  await page.getByRole('button', { name: 'Remove last bend' }).click()
+  expect(await length()).toBeCloseTo(before, 3)
+})
+
+test('takes more land at a higher voltage', async ({ page }) => {
+  await start(page)
+  await sitePlants(page, 1)
+  await drawRoute(page)
+  const acres = async () => Number((await page.getByTestId('plan-acres').innerText()).replace(/\D/g, ''))
+  const before = await acres()
+  await page.getByRole('button', { name: /500 kV/ }).click()
+  expect(await acres()).toBeGreaterThan(before)
+})
+
+test('negotiates by group, then shows only the problems', async ({ page }) => {
+  await start(page)
+  await sitePlants(page, 3)
+  await drawRoute(page)
+  await page.getByRole('button', { name: 'File this route' }).click()
+  await expect(page.locator('.map-popover')).toContainText('Offer by group')
+  await expect(page.locator('.parcel')).toHaveCount(0)
+  const send = page.getByRole('button', { name: 'Send', exact: true })
+  for (let n = await send.count(); n > 0; n--) await send.first().click()
+  await endQuarter(page)
+  while (await answer(page)) await page.waitForTimeout(50)
+  const deals = Object.values((await state(page)).corridors[0].deals) as Array<{ status: string }>
+  expect(deals.filter((d) => d.status === 'accepted').length).toBeGreaterThan(3)
+  expect(await page.locator('.parcel').count()).toBe(deals.filter((d) => d.status === 'holdout').length)
+  await page.locator('.parcel').first().getByRole('button', { name: /Condemn/ }).click()
+  expect((await state(page)).record.condemnations).toBe(1)
+  await page.screenshot({ path: 'tests/.artifacts/land.png' })
+})
+
+test('a group can be offered to again, in the same quarter and the next', async ({ page }) => {
+  await start(page)
+  await sitePlants(page, 1)
+  await drawRoute(page)
+  await page.getByRole('button', { name: 'File this route' }).click()
+  const farms = page.locator('.group', { hasText: 'Working farm' })
+  const button = farms.getByRole('button')
+  await button.click()
+  await expect(button).toHaveText('Sent')
+  await expect(farms.locator('.sent')).toContainText('offers out at 1.60×')
+  await farms.locator('input').fill('1.8')
+  await expect(button).toHaveText('Change')
+  await button.click()
+  await expect(farms.locator('.sent')).toContainText('1.80×')
+
+  for (let q = 0; q < 3; q++) {
+    await endQuarter(page)
+    while (await answer(page)) await page.waitForTimeout(50)
+    if (await farms.count() === 0) break
+    await expect(button).toHaveText('Send')
+    await expect(button).toBeEnabled()
+    await button.click()
+    await expect(button).toHaveText('Sent')
+  }
+})
+
+test('plays the build phase through to operations', async ({ page }) => {
+  test.setTimeout(120_000)
+  await start(page)
+  await sitePlants(page, 3)
+  await drawRoute(page)
+  await page.getByRole('button', { name: /230 kV double/ }).click()
+  await page.getByRole('button', { name: 'File this route' }).click()
+  for (let q = 0; q < 25 && (await state(page)).phase === 'build'; q++) {
+    while (await answer(page)) await page.waitForTimeout(50)
+    if ((await state(page)).corridors[0].status === 'acquiring') {
+      if (await page.locator('.map-popover .land').count() === 0) {
+        await tab(page, 'Grid')
+        await page.locator('.line-pick').first().click()
+      }
+      if (q < 5) {
+        const send = page.getByRole('button', { name: 'Send', exact: true })
+        for (let n = await send.count(); n > 0; n--) await send.first().click()
+      } else {
+        const condemn = page.locator('.parcel').getByRole('button', { name: /Condemn/ })
+        while (await condemn.count()) await condemn.first().click()
+      }
+    }
+    const { approval } = (await state(page)).contract
+    if (approval < 60) {
+      await page.evaluate(() => {
+        const s = (window as any).__game.getState()
+        for (const id of ['fund', 'bill-credit', 'local-hiring', 'screening', 'meeting', 'roads']) s.runProgramme('13261', id)
+      })
+    }
+    await endQuarter(page)
+  }
+  const g = await state(page)
+  expect(g.phase).toBe('operate')
+  expect(g.energizedQuarter).not.toBeNull()
+  await expect(page.locator('.speeds')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'End quarter' })).toHaveCount(0)
 })

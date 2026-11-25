@@ -1,32 +1,30 @@
-/**
- * Economic dispatch, delivery limits, and who gets curtailed.
- *
- * Three things have to line up for a megawatt to arrive: something has to make
- * it, a wire has to carry it, and it has to be cheaper to make than to buy. When
- * they do not line up, somebody's power goes off, and the interesting question
- * is whose.
- */
-
-import type { GameState, Plant, Corridor } from '../types.ts'
+import type { GameState, Plant } from '../types.ts'
 import { plantType } from '../../data/plants.ts'
-import { lineClass } from '../../data/transmission.ts'
 import { solarFraction } from './load.ts'
 import type { SheddingPolicy } from './types.ts'
 import { TICK_MINUTES } from './types.ts'
 import type { LoadSlice } from './load.ts'
+import { FlowNet, addLines, homesNode, importNode, regionMw, sourceNode, CAMPUS } from './network.ts'
 
 /** Ambient above which thermal plants start losing output. */
 const DERATE_ONSET_C = 25
 /** Fraction of capacity lost per °C above the onset. */
 const DERATE_PER_C = 0.006
 
-/**
- * Available output from a plant right now.
- *
- * Solar follows the sun. Thermal plants lose capacity as the air warms, which is
- * unhelpfully correlated with the hottest hour of the year being the hour you
- * need them most.
- */
+/** Hours of full output a battery holds. */
+export const BATTERY_HOURS = 4
+/** Round-trip efficiency, charged on the way in. */
+export const BATTERY_EFFICIENCY = 0.86
+/** What stored energy is worth. Keeps batteries back until power is dear. */
+const BATTERY_DISPATCH_COST = 78
+/** Batteries recharge only from power at or below this cost. */
+const BATTERY_CHARGE_CEILING = 66
+
+export function batteryCapacityMwh(plant: Pick<Plant, 'nameplateMw'>): number {
+  return plant.nameplateMw * BATTERY_HOURS
+}
+
+/** Available output from a plant right now, MW. */
 export function availableMw(
   plant: Plant, tick: number, ambient: number, outOfService: boolean,
 ): number {
@@ -34,69 +32,128 @@ export function availableMw(
   const t = plantType(plant.typeId)
 
   if (t.id === 'solar') return plant.nameplateMw * solarFraction(tick)
-  if (t.id === 'battery') return plant.nameplateMw // limited by energy, handled below
-
+  if (t.id === 'battery') {
+    return Math.min(plant.nameplateMw, plant.socMwh / (TICK_MINUTES / 60))
+  }
   const derate = Math.max(0, ambient - DERATE_ONSET_C) * DERATE_PER_C
   return plant.nameplateMw * Math.max(0.6, 1 - derate)
 }
 
-/**
- * Transfer capability into the campus, accounting for damage.
- *
- * `derates` maps an asset id to the fraction of its rating still available. A
- * double-circuit line that has lost one circuit is at 0.5 and still carrying
- * half the campus; a single-circuit line in the same storm is at zero.
- */
-export function deliverableMw(
-  corridors: readonly Corridor[], derates: ReadonlyMap<string, number>,
-): number {
-  let total = 0
-  for (const c of corridors) {
-    if (c.status !== 'energized') continue
-    const fraction = derates.get(c.id) ?? 1
-    total += lineClass(c.classId).ratingMw * fraction
-  }
-  return total
+export function importLimitMw(state: GameState, ambient: number): number {
+  const squeeze = Math.min(0.5, Math.max(0, ambient - 30) * 0.05)
+  return regionMw(state) * (1 - squeeze)
 }
 
-/**
- * Wholesale price for an interval.
- *
- * Cheap most of the time and violently expensive exactly when everyone else is
- * short too, which is the property that makes leaning on the market instead of
- * building capacity a bad long-term plan.
- */
-export function marketPrice(tick: number, ambient: number, scarcity: number): number {
-  const base = 34 + 12 * Math.sin(tick / 91)
-  const heat = Math.max(0, ambient - 28) * 4.5
-  // Scarcity is the fraction of demand we cannot self-supply.
-  const spike = scarcity > 0 ? 90 * scarcity ** 1.6 + (scarcity > 0.35 ? 600 * (scarcity - 0.35) : 0) : 0
-  return Math.max(12, base + heat + spike)
+/** Wholesale price, $/MWh. Follows heat, with a slow swing for fuel. */
+export function marketPrice(tick: number, ambient: number): number {
+  const base = 36 + 10 * Math.sin(tick / 91)
+  const heat = Math.max(0, ambient - 27) * 9
+  return Math.max(14, base + heat)
 }
 
 export interface DispatchResult {
   generationMw: number
   marketMw: number
+  importLimitMw: number
+  /** Power put into batteries this interval. */
+  chargeMw: number
   fuelCost: number
   marketCost: number
   priceMwh: number
-  /** Total delivered to load. */
   servedMw: number
+  servedContractMw: number
+  servedCustomerMw: number
   unservedContractMw: number
   unservedCustomerMw: number
-  /** Fraction of corridor rating in use. */
+  /** MW on each line this interval, by corridor id ('tie' for the existing one). */
+  lineFlowMw: Record<string, number>
+  /** Busiest line into the campus as a fraction of its rating. */
   corridorLoading: number
-  /** True when the wire, not the generation, was the binding constraint. */
+  /** True when supply existed but could not get through. */
   corridorLimited: boolean
+  plantMw: Record<string, number>
 }
 
-/**
- * Settle one interval.
- *
- * Merit order first — cheapest generation runs — then the market fills whatever
- * is left, then the wire decides how much of it can actually arrive, then
- * whatever still cannot be delivered is curtailed according to policy.
- */
+interface Source { id: string; node: string; mw: number; cost: number; plant: Plant | null }
+
+function collectSources(
+  state: GameState, load: LoadSlice, tick: number, out: ReadonlySet<string>,
+): { sources: Source[]; price: number; importMw: number } {
+  const price = marketPrice(tick, load.ambientC)
+  const importMw = importLimitMw(state, load.ambientC)
+  const sources: Source[] = state.plants.map((p) => {
+    const t = plantType(p.typeId)
+    return {
+      id: p.id,
+      node: sourceNode(state, p),
+      mw: availableMw(p, tick, load.ambientC, out.has(p.id)) * (1 - Math.min(1, state.reserved?.[p.id] ?? 0)),
+      cost: t.id === 'battery' ? BATTERY_DISPATCH_COST : t.variableCostPerMwh,
+      plant: p,
+    }
+  }).filter((s) => s.mw > 1e-6)
+  sources.push({ id: 'market', node: importNode(state), mw: importMw, cost: price, plant: null })
+  sources.sort((a, b) => a.cost - b.cost)
+  return { sources, price, importMw }
+}
+
+/** Deliver up to the given amounts, homes or campus first. */
+function deliver(
+  state: GameState, sources: readonly Source[], derates: ReadonlyMap<string, number>,
+  campusMw: number, homesMw: number, first: 'homes' | 'campus',
+): { campus: number; homes: number } {
+  const net = new FlowNet()
+  addLines(net, state, derates)
+  for (const s of sources) net.arc('S', s.node, s.mw)
+  const run = (who: 'homes' | 'campus'): number => {
+    if (who === 'homes') {
+      net.arc(homesNode(state), 'T', homesMw)
+    } else {
+      net.arc(CAMPUS, 'T', campusMw)
+    }
+    return net.push('S', 'T')
+  }
+  if (first === 'homes') {
+    const homes = run('homes')
+    return { homes, campus: run('campus') }
+  }
+  const campus = run('campus')
+  return { campus, homes: run('homes') }
+}
+
+function split(
+  state: GameState, sources: readonly Source[], derates: ReadonlyMap<string, number>,
+  load: LoadSlice, policy: SheddingPolicy,
+): { campus: number; homes: number } {
+  const want = load.contractMw + load.customerMw
+  const all = deliver(state, sources, derates, load.contractMw, load.customerMw, 'homes')
+  if (all.campus + all.homes >= want - 1e-6) return all
+  if (policy === 'protect-homes') return all
+  if (policy === 'protect-contract') {
+    return deliver(state, sources, derates, load.contractMw, load.customerMw, 'campus')
+  }
+  let lo = 0
+  let hi = 1
+  for (let i = 0; i < 14; i++) {
+    const f = (lo + hi) / 2
+    const d = deliver(state, sources, derates, load.contractMw * f, load.customerMw * f, 'homes')
+    if (d.campus + d.homes >= want * f - 1e-6) lo = f
+    else hi = f
+  }
+  const base = { campus: load.contractMw * lo, homes: load.customerMw * lo }
+  const net = new FlowNet()
+  addLines(net, state, derates)
+  for (const s of sources) net.arc('S', s.node, s.mw)
+  net.arc(homesNode(state), 'T', base.homes)
+  net.arc(CAMPUS, 'T', base.campus)
+  net.push('S', 'T')
+  net.arc(homesNode(state), 'T', load.customerMw - base.homes)
+  const moreHomes = net.push('S', 'T')
+  net.arc(CAMPUS, 'T', load.contractMw - base.campus)
+  const moreCampus = net.push('S', 'T')
+  return { campus: base.campus + moreCampus, homes: base.homes + moreHomes }
+}
+
+/** Settle one interval. Updates battery charge on `state.plants`. */
 export function dispatch(
   state: GameState,
   load: LoadSlice,
@@ -106,82 +163,108 @@ export function dispatch(
   derates: ReadonlyMap<string, number> = new Map(),
 ): DispatchResult {
   const hours = TICK_MINUTES / 60
+  const { sources, price, importMw } = collectSources(state, load, tick, outAssets)
+  const served = split(state, sources, derates, load, policy)
 
-  // --- generation, cheapest first ---
-  const units = state.plants
-    .map((p) => ({
-      plant: p,
-      cost: plantType(p.typeId).variableCostPerMwh,
-      mw: availableMw(p, tick, load.ambientC, outAssets.has(p.id)),
-    }))
-    .filter((u) => u.mw > 0)
-    .sort((a, b) => a.cost - b.cost)
-
-  let remaining = load.totalMw
-  let generationMw = 0
-  let fuelCost = 0
-
-  for (const u of units) {
-    if (remaining <= 0) break
-    const take = Math.min(u.mw, remaining)
-    generationMw += take
-    fuelCost += take * hours * u.cost
-    remaining -= take
+  const net = new FlowNet()
+  const lines = addLines(net, state, derates)
+  net.arc(homesNode(state), 'T', served.homes)
+  net.arc(CAMPUS, 'T', served.campus)
+  const used = new Map<string, number>()
+  let remaining = served.homes + served.campus
+  for (const s of sources) {
+    if (remaining <= 1e-9) break
+    const h = net.arc('S', s.node, s.mw)
+    const got = net.push('S', 'T', remaining)
+    remaining -= got
+    used.set(s.id, got)
+    // Whatever was not needed is not available to later, dearer sources.
+    net.setResidual(h, 0)
   }
 
-  // --- the market covers the rest, at a price ---
-  const scarcity = load.totalMw > 0 ? Math.max(0, remaining) / load.totalMw : 0
-  const priceMwh = marketPrice(tick, load.ambientC, scarcity)
-  // Imports are themselves limited by the network; you cannot buy your way out
-  // of an empty wire.
-  const marketMw = Math.max(0, remaining)
-  const marketCost = marketMw * hours * priceMwh
-
-  // --- the wire ---
-  const capability = deliverableMw(state.corridors, derates)
-  const supplyMw = generationMw + marketMw
-  // Customer load in the surrounding counties is served off the existing
-  // distribution network; only the campus depends on the new corridor.
-  const contractDeliverable = Math.min(load.contractMw, capability)
-  const corridorLimited = contractDeliverable + 1e-9 < load.contractMw
-
-  // Supply is shared between the two loads; the corridor caps the campus's share.
-  const customerSupply = Math.min(load.customerMw, Math.max(0, supplyMw - contractDeliverable))
-  let servedContract = Math.min(contractDeliverable, supplyMw)
-  let servedCustomer = customerSupply
-
-  const totalDeliverable = servedContract + servedCustomer
-  const shortfall = load.totalMw - totalDeliverable
-
-  if (shortfall > 1e-9) {
-    // Whatever is short has to come off somebody. Policy decides whom.
-    const contractShort = load.contractMw - servedContract
-    const customerShort = load.customerMw - servedCustomer
-
-    if (policy === 'protect-contract' && customerShort < load.customerMw) {
-      // Take more from customers to top the campus back up, as far as the
-      // corridor and the supply allow.
-      const canRecover = Math.min(contractShort, servedCustomer, Math.max(0, contractDeliverable - servedContract))
-      servedContract += canRecover
-      servedCustomer -= canRecover
-    } else if (policy === 'protect-homes' && contractShort < load.contractMw) {
-      const canRecover = Math.min(customerShort, servedContract)
-      servedCustomer += canRecover
-      servedContract -= canRecover
+  // Recharge batteries from cheap power that nobody needed.
+  let chargeMw = 0
+  const chargeCostBySource = new Map<string, number>()
+  const shortBy = load.totalMw - served.homes - served.campus
+  if (shortBy <= 1e-6) {
+    const sinks: Array<{ plant: Plant; handle: number; cap: number }> = []
+    for (const p of state.plants) {
+      if (p.typeId !== 'battery' || p.status !== 'online' || outAssets.has(p.id)) continue
+      if ((used.get(p.id) ?? 0) > 1e-6) continue
+      const room = (batteryCapacityMwh(p) - p.socMwh) / BATTERY_EFFICIENCY / hours
+      const cap = Math.min(p.nameplateMw, Math.max(0, room))
+      if (cap > 1e-6) sinks.push({ plant: p, handle: net.arc(sourceNode(state, p), 'CHARGE', cap), cap })
     }
-    // 'proportional' leaves the natural split alone.
+    if (sinks.length > 0) {
+      for (const s of sources) {
+        if (s.plant?.typeId === 'battery' || s.cost > BATTERY_CHARGE_CEILING) continue
+        const spare = s.mw - (used.get(s.id) ?? 0)
+        if (spare <= 1e-6) continue
+        net.arc('S', s.node, spare)
+        const got = net.push('S', 'CHARGE')
+        if (got > 0) {
+          chargeMw += got
+          chargeCostBySource.set(s.id, got)
+        }
+      }
+      for (const k of sinks) {
+        const into = k.cap - net.residual(k.handle)
+        k.plant.socMwh = Math.min(
+          batteryCapacityMwh(k.plant), k.plant.socMwh + into * hours * BATTERY_EFFICIENCY,
+        )
+      }
+    }
   }
+
+  let generationMw = 0
+  let marketMw = 0
+  let fuelCost = 0
+  let marketCost = 0
+  const plantMw: Record<string, number> = {}
+  for (const s of sources) {
+    const mw = (used.get(s.id) ?? 0) + (chargeCostBySource.get(s.id) ?? 0)
+    if (!s.plant) {
+      marketMw = mw
+      marketCost = mw * hours * price
+      continue
+    }
+    generationMw += mw
+    plantMw[s.id] = mw
+    fuelCost += mw * hours * plantType(s.plant.typeId).variableCostPerMwh
+    if (s.plant.typeId === 'battery') {
+      s.plant.socMwh = Math.max(0, s.plant.socMwh - mw * hours)
+    }
+  }
+
+  const lineFlowMw: Record<string, number> = {}
+  let corridorLoading = 0
+  for (const l of lines) {
+    const flow = Math.abs(net.residual(l.handle + 1) - net.residual(l.handle)) / 2
+    lineFlowMw[l.id] = Math.max(lineFlowMw[l.id] ?? 0, flow)
+    if (l.capMw > 0) corridorLoading = Math.max(corridorLoading, flow / l.capMw)
+  }
+
+  const totalAvailable = sources.reduce((n, s) => n + s.mw, 0)
+  const unservedContractMw = Math.max(0, load.contractMw - served.campus)
+  const unservedCustomerMw = Math.max(0, load.customerMw - served.homes)
 
   return {
     generationMw,
     marketMw,
+    importLimitMw: importMw,
+    chargeMw,
     fuelCost,
     marketCost,
-    priceMwh,
-    servedMw: servedContract + servedCustomer,
-    unservedContractMw: Math.max(0, load.contractMw - servedContract),
-    unservedCustomerMw: Math.max(0, load.customerMw - servedCustomer),
-    corridorLoading: capability > 0 ? load.contractMw / capability : load.contractMw > 0 ? Infinity : 0,
-    corridorLimited,
+    priceMwh: price,
+    servedMw: served.campus + served.homes,
+    servedContractMw: served.campus,
+    servedCustomerMw: served.homes,
+    unservedContractMw,
+    unservedCustomerMw,
+    lineFlowMw,
+    corridorLoading,
+    corridorLimited:
+      unservedContractMw + unservedCustomerMw > 1e-6 && totalAvailable >= load.totalMw,
+    plantMw,
   }
 }

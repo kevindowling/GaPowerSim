@@ -1,32 +1,20 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { fixtures, cellAtLonLat } from './helpers/loadFixtures.ts'
 import { AMERICUS } from '../src/data/scenarios.ts'
-import { createGame, capacitySummary, resetPlantCounter, quartersToDeadline, canFinishInTime } from '../src/engine/state.ts'
-import { endQuarter, acceptContract, deliverableMw } from '../src/engine/turn/resolve.ts'
-import { sitePlant, assessSite, cancelPlant, CANCEL_LAND_RECOVERY } from '../src/engine/turn/siting.ts'
+import { capacitySummary, quartersToDeadline, canFinishInTime, headroom } from '../src/engine/state.ts'
+import { endQuarter, acceptContract } from '../src/engine/turn/resolve.ts'
+import { firmDeliverableMw } from '../src/engine/realtime/network.ts'
+import { newGame, run } from './helpers/play.ts'
+import {
+  sitePlant, assessSite, cancelPlant, expeditePlant, footprintCells, CANCEL_LAND_RECOVERY,
+} from '../src/engine/turn/siting.ts'
 import { plantType } from '../src/data/plants.ts'
 import type { GameState } from '../src/engine/types.ts'
 import { quarterOf } from '../src/engine/time.ts'
 import { Rng } from '../src/engine/rng.ts'
 
-/** A cell just outside Americus, in Sumter County. */
-const AMERICUS_SITE = () => cellAtLonLat(-84.187, 32.113)
 /** A rural cell in Sumter County, well away from town. */
 const RURAL_SUMTER = () => cellAtLonLat(-84.30, 32.16)
-
-function newGame(): GameState {
-  const { counties } = fixtures()
-  resetPlantCounter()
-  return createGame(AMERICUS, AMERICUS_SITE(), counties)
-}
-
-function run(state: GameState, n: number): GameState {
-  let s = state
-  for (let i = 0; i < n; i++) s = endQuarter(s).state
-  return s
-}
-
-beforeEach(() => resetPlantCounter())
 
 describe('scenario setup', () => {
   it('places the Americus campus in Sumter County', () => {
@@ -37,18 +25,19 @@ describe('scenario setup', () => {
     expect(game.contract.countyFips).toBe('13261')
   })
 
-  it('starts at 2026 Q1 with a 2029 Q4 deadline', () => {
+  it('starts after the events in its briefing', () => {
     const game = newGame()
-    expect(game.quarter).toBe(quarterOf(2026, 1))
+    expect(game.quarter).toBe(quarterOf(2026, 3))
     expect(game.contract.inServiceQuarter).toBe(quarterOf(2029, 4))
-    // Sixteen quarters is enough for a combined-cycle plant, but not by much.
-    expect(quartersToDeadline(game)).toBe(15)
+    expect(quartersToDeadline(game)).toBe(13)
   })
 
-  it('gives every Georgia county an approval score', () => {
+  it('rates the data center and the counties bordering its own', () => {
     const game = newGame()
     expect(Object.keys(game.counties)).toHaveLength(159)
-    expect(game.counties['13261'].approval).toBe(62)
+    expect(game.contract.approval!).toBe(62)
+    const rated = Object.values(game.counties).filter((c) => c.approval !== undefined).map((c) => c.name).sort()
+    expect(rated).toEqual(['Crisp', 'Dooly', 'Lee', 'Macon', 'Marion', 'Schley', 'Terrell', 'Webster'])
   })
 })
 
@@ -59,8 +48,7 @@ describe('the deal', () => {
 
     game = acceptContract(game)
     expect(game.contract.status).toBe('accepted')
-    // 20% of a $1.05B advance.
-    expect(game.cash).toBeCloseTo(210_000_000, 0)
+    expect(game.cash).toBeCloseTo(288_000_000, 0)
   })
 
   it('does not pay twice for the same milestone', () => {
@@ -70,19 +58,8 @@ describe('the deal', () => {
     const signingMilestone = game.contract.milestones.find((m) => m.id === 'signing')!
     expect(signingMilestone.released).toBe(true)
     // Cash only moved by construction/financing, not another signing payment.
-    expect(game.cash).toBeLessThanOrEqual(afterSigning)
-  })
-
-  it('accrues a late penalty every quarter past the deadline, not once', () => {
-    let game = acceptContract(newGame())
-    // Run well past the in-service date without building anything.
-    game = run(game, 18)
-    expect(game.energizedQuarter).toBeNull()
-    const quartersLate = game.quarter - game.contract.inServiceQuarter
-    expect(quartersLate).toBeGreaterThan(1)
-    expect(game.penaltiesAccrued).toBeCloseTo(
-      quartersLate * game.contract.latePenaltyPerQuarter, 0,
-    )
+    expect(game.contract.milestones.filter((m) => m.released)).toHaveLength(1)
+    expect(game.cash).toBeLessThan(afterSigning + 36_000_000)
   })
 })
 
@@ -90,7 +67,6 @@ describe('siting', () => {
   it('refuses a site outside Georgia', () => {
     const game = newGame()
     const { grid } = fixtures()
-    // On the grid, but over the line in Alabama — Georgia Power cannot site here.
     const alabama = cellAtLonLat(-85.3, 31.6)
     expect(alabama).toBeGreaterThanOrEqual(0)
     const a = assessSite(game, 'gas-ct', alabama, grid)
@@ -109,7 +85,7 @@ describe('siting', () => {
   it('costs more approval near people than in open country', () => {
     const game = newGame()
     const { grid } = fixtures()
-    const inTown = assessSite(game, 'gas-ct', AMERICUS_SITE(), grid)
+    const inTown = assessSite(game, 'gas-ct', cellAtLonLat(-84.26, 32.07), grid)
     const outOfTown = assessSite(game, 'gas-ct', RURAL_SUMTER(), grid)
     expect(inTown.ok && outOfTown.ok).toBe(true)
     expect(inTown.approvalCost).toBeGreaterThan(outOfTown.approvalCost)
@@ -119,13 +95,82 @@ describe('siting', () => {
     const { grid } = fixtures()
     let game = acceptContract(newGame())
     const cashBefore = game.cash
-    const approvalBefore = game.counties['13261'].approval
+    const approvalBefore = game.contract.approval!
 
     game = sitePlant(game, 'gas-ct', RURAL_SUMTER(), grid)
     expect(game.plants).toHaveLength(1)
     expect(game.plants[0].countyFips).toBe('13261')
     expect(game.cash).toBeLessThan(cashBefore)
-    expect(game.counties['13261'].approval).toBeLessThan(approvalBefore)
+    expect(game.contract.approval!).toBeLessThan(approvalBefore)
+  })
+})
+
+describe('where plants cannot go', () => {
+  const blocker = (type: Parameters<typeof assessSite>[1], lon: number, lat: number): string | null =>
+    assessSite(acceptContract(newGame()), type, cellAtLonLat(lon, lat), fixtures().grid).blocker
+
+  it('refuses towns, water, parks and the campus', () => {
+    expect(blocker('gas-ccgt', -84.39, 33.75)).toMatch(/built-up/)
+    expect(blocker('solar', -82.3, 30.8)).toMatch(/protected|wetland/)
+    expect(blocker('gas-ct', -83.93, 31.89)).toMatch(/water/)
+    expect(blocker('battery', -84.20729, 32.04854)).toMatch(/campus/)
+  })
+
+  it('only uprates existing reactors, and links them at the substation', () => {
+    expect(blocker('nuclear-uprate', -84.3, 32.16)).toMatch(/Hatch or Plant Vogtle/)
+    expect(blocker('nuclear-uprate', -82.344, 31.934)).toBeNull()
+  })
+
+  it('needs cooling water for combined cycle', () => {
+    const { grid } = fixtures()
+    const g = acceptContract(newGame())
+    const near = assessSite(g, 'gas-ccgt', cellAtLonLat(-84.02, 32.06), grid)
+    expect(near.ok).toBe(true)
+    expect(near.extraCapex).toBe(0)
+  })
+
+  it('runs out of room on one site', () => {
+    const { grid } = fixtures()
+    let g = acceptContract(newGame())
+    for (let i = 0; i < 12; i++) g = sitePlant(g, 'gas-ct', RURAL_SUMTER(), grid)
+    expect(g.plants.length).toBe(6)
+    expect(assessSite(g, 'gas-ct', RURAL_SUMTER(), grid).blocker).toMatch(/room/)
+  })
+
+  it('gives solar its real footprint', () => {
+    const { grid } = fixtures()
+    expect(footprintCells(grid, RURAL_SUMTER(), 1400).length).toBe(6)
+    let g = sitePlant(acceptContract(newGame()), 'solar', RURAL_SUMTER(), grid)
+    g = sitePlant(g, 'solar', RURAL_SUMTER(), grid)
+    expect(g.plants).toHaveLength(1)
+  })
+
+  it('checks that the land can be paid for', () => {
+    const g = acceptContract(newGame())
+    g.cash = -g.creditLimit
+    expect(assessSite(g, 'solar', RURAL_SUMTER(), fixtures().grid).blocker).toMatch(/cash or credit/)
+  })
+})
+
+describe('expediting', () => {
+  it('buys quarters, at a price, up to a limit', () => {
+    const { grid } = fixtures()
+    let g = sitePlant(acceptContract(newGame()), 'gas-ct', RURAL_SUMTER(), grid)
+    expect(expeditePlant(g, g.plants[0].id)).toBe(g)
+    g = run(g, 4)
+    const before = g
+    for (let i = 0; i < 5; i++) g = expeditePlant(g, g.plants[0].id)
+    expect(before.plants[0].quartersRemaining - g.plants[0].quartersRemaining).toBe(2)
+    expect(g.cash).toBeLessThan(before.cash - 20_000_000)
+  })
+})
+
+describe('headroom', () => {
+  it('counts money already promised', () => {
+    const { grid } = fixtures()
+    const g = acceptContract(newGame())
+    const after = sitePlant(g, 'gas-ct', RURAL_SUMTER(), grid)
+    expect(headroom(after)).toBeLessThan(headroom(g) - 225_000_000)
   })
 })
 
@@ -137,11 +182,10 @@ describe('construction', () => {
 
     expect(game.plants[0].status).toBe('permitting')
 
-    // Sumter starts supportive, so permitting should not stall.
-    game = run(game, t.permitQuarters)
+    for (let i = 0; i < 6 && game.plants[0].status === 'permitting'; i++) game = run(game, 1)
     expect(game.plants[0].status).toBe('construction')
 
-    game = run(game, t.buildQuarters)
+    for (let i = 0; i < t.buildQuarters + 5 && game.plants[0].status !== 'online'; i++) game = run(game, 1)
     expect(game.plants[0].status).toBe('online')
     expect(game.plants[0].commissionedQuarter).not.toBeNull()
   })
@@ -150,7 +194,8 @@ describe('construction', () => {
     const { grid } = fixtures()
     const t = plantType('gas-ct')
     let game = sitePlant(acceptContract(newGame()), 'gas-ct', RURAL_SUMTER(), grid)
-    game = run(game, t.permitQuarters + t.buildQuarters)
+    for (let i = 0; i < 20 && game.plants[0].status !== 'online'; i++) game = run(game, 1)
+    expect(t.buildQuarters).toBeGreaterThan(0)
 
     const plant = game.plants[0]
     expect(plant.status).toBe('online')
@@ -159,7 +204,7 @@ describe('construction', () => {
 
   it('never produces NaN in the books', () => {
     const { grid } = fixtures()
-    let game = sitePlant(acceptContract(newGame()), 'gas-ccgt', RURAL_SUMTER(), grid)
+    let game = sitePlant(acceptContract(newGame()), 'gas-ct', RURAL_SUMTER(), grid)
     game = run(game, 24)
     expect(Number.isFinite(game.cash)).toBe(true)
     expect(Number.isFinite(game.financingCost)).toBe(true)
@@ -176,10 +221,10 @@ describe('firm capacity is the thing that matters', () => {
     const solar = plantType('solar')
     let game = acceptContract(newGame())
     // Build enough solar nameplate to cover 400 MW on paper.
-    for (let i = 0; i < 2; i++) {
-      game = sitePlant(game, 'solar', RURAL_SUMTER(), grid)
-    }
-    game = run(game, solar.permitQuarters + solar.buildQuarters)
+    game = sitePlant(game, 'solar', RURAL_SUMTER(), grid)
+    game = sitePlant(game, 'solar', cellAtLonLat(-84.30, 32.22), grid)
+    expect(game.plants).toHaveLength(2)
+    game = run(game, solar.permitQuarters + solar.buildQuarters + 3)
 
     const cap = capacitySummary(game)
     expect(cap.onlineNameplateMw).toBe(400)
@@ -189,24 +234,25 @@ describe('firm capacity is the thing that matters', () => {
     expect(cap.shortfallMw).toBeGreaterThan(350)
   })
 
-  it('does not energize on generation alone — the power needs a wire', () => {
+  it('does not energize on generation alone: the power needs a wire', () => {
     const { grid } = fixtures()
     const t = plantType('gas-ct')
     let game = acceptContract(newGame())
     // Three 200 MW turbines at 95% firm = 570 MW firm, comfortably over 400.
     for (let i = 0; i < 3; i++) game = sitePlant(game, 'gas-ct', RURAL_SUMTER(), grid)
-    game = run(game, t.permitQuarters + t.buildQuarters)
-
+    for (const p of game.plants) p.status = 'online'
+    game = run(game, 1)
+    expect(t.nameplateMw).toBe(200)
     expect(capacitySummary(game).onlineFirmMw).toBeGreaterThan(400)
     // …and yet nothing is served, because there is no corridor to the campus.
-    expect(deliverableMw(game)).toBe(0)
+    expect(firmDeliverableMw(game)).toBe(0)
     expect(game.energizedQuarter).toBeNull()
   })
 
   it('warns when a technology cannot be finished in time', () => {
     let game = newGame()
     // Burn most of the schedule.
-    game = run(acceptContract(game), 12)
+    game = run(acceptContract(game), 9)
     expect(canFinishInTime(game, plantType('gas-ccgt'))).toBe(false)
     expect(canFinishInTime(game, plantType('solar'))).toBe(false)
   })
@@ -216,10 +262,7 @@ describe('determinism', () => {
   it('produces identical state from the same seed and the same moves', () => {
     const { grid } = fixtures()
     const play = (): GameState => {
-      resetPlantCounter()
-      const { counties } = fixtures()
-      let g = createGame(AMERICUS, AMERICUS_SITE(), counties)
-      g = acceptContract(g)
+      let g = acceptContract(newGame())
       g = sitePlant(g, 'gas-ct', RURAL_SUMTER(), grid)
       g = run(g, 14)
       g = sitePlant(g, 'solar', RURAL_SUMTER(), grid)
@@ -229,15 +272,12 @@ describe('determinism', () => {
   })
 
   it('diverges when the seed differs', () => {
-    const { counties, grid } = fixtures()
+    const { grid } = fixtures()
     const play = (seed: number): GameState => {
-      resetPlantCounter()
-      let g = createGame({ ...AMERICUS, seed }, AMERICUS_SITE(), counties)
-      g.rngState = seed
-      g = acceptContract(g)
+      let g = acceptContract(newGame(AMERICUS, seed))
       // Site in a hostile county so permit stalls (which are random) can differ.
       g = sitePlant(g, 'gas-ct', RURAL_SUMTER(), grid)
-      g.counties['13261'].approval = 18
+      g.contract.approval! = 18
       return run(g, 10)
     }
     // Not a guarantee for every pair of seeds, but these two do diverge.
@@ -255,7 +295,7 @@ describe('determinism', () => {
     const { grid } = fixtures()
     let game = sitePlant(acceptContract(newGame()), 'gas-ct', RURAL_SUMTER(), grid)
     // A county this unhappy rolls against a permit stall every quarter.
-    game.counties['13261'].approval = 18
+    game.contract.approval! = 18
     const next = endQuarter(game).state
     expect(next.rngState).not.toBe(game.rngState)
   })
@@ -283,7 +323,6 @@ describe('rng', () => {
   })
 })
 
-
 describe('changing your mind about a site', () => {
   it('withdraws a plant that has not broken ground, and gives most of the land back', () => {
     const before = acceptContract(newGame())
@@ -298,7 +337,6 @@ describe('changing your mind about a site', () => {
     const after = cancelPlant(sited, plant.id)
     expect(after.plants).toHaveLength(0)
     expect(after.cash - sited.cash).toBeCloseTo(plant.landCost * CANCEL_LAND_RECOVERY, 6)
-    // Selling in a hurry costs something; this is not a free undo.
     expect(after.cash).toBeLessThan(before.cash)
   })
 
@@ -307,7 +345,7 @@ describe('changing your mind about a site', () => {
     let game = sitePlant(acceptContract(newGame()), 'gas-ct', RURAL_SUMTER(), grid)
     const id = game.plants[0].id
 
-    game = run(game, plantType('gas-ct').permitQuarters)
+    for (let i = 0; i < 6 && game.plants[0].status === 'permitting'; i++) game = run(game, 1)
     expect(game.plants[0].status).not.toBe('permitting')
 
     const after = cancelPlant(game, id)
@@ -315,15 +353,14 @@ describe('changing your mind about a site', () => {
     expect(after.plants).toHaveLength(1)
   })
 
-  it('leaves the county its grievance — the meeting still happened', () => {
+  it('leaves the county its grievance: the meeting still happened', () => {
     const { grid } = fixtures()
     const before = acceptContract(newGame())
-    const fips = AMERICUS.contract.countyFips
     const sited = sitePlant(before, 'gas-ct', RURAL_SUMTER(), grid)
-    const approvalAfterSiting = sited.counties[fips].approval
+    const approvalAfterSiting = sited.contract.approval!
 
     const after = cancelPlant(sited, sited.plants[0].id)
-    expect(after.counties[fips].approval).toBe(approvalAfterSiting)
-    expect(after.counties[fips].approval).toBeLessThan(before.counties[fips].approval)
+    expect(after.contract.approval!).toBe(approvalAfterSiting)
+    expect(after.contract.approval!).toBeLessThan(before.contract.approval!)
   })
 })

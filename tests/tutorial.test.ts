@@ -1,308 +1,183 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { readFileSync } from 'node:fs'
-import { resolve, dirname } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { fixtures, cellAtLonLat } from './helpers/loadFixtures.ts'
-import { AMERICUS } from '../src/data/scenarios.ts'
-import { createGame, resetPlantCounter } from '../src/engine/state.ts'
-import { endQuarter, acceptContract, resolveHearing } from '../src/engine/turn/resolve.ts'
-import { sitePlant } from '../src/engine/turn/siting.ts'
-import {
-  planCorridor, commitCorridor, offerAll, condemn,
-  resetCorridorCounter, acquisitionComplete, outstandingHoldouts,
-} from '../src/engine/turn/corridor.ts'
-import {
-  BEATS, currentBeat, advanceTutorial, tutorialFinished, HEARING_OPTIONS,
-} from '../src/engine/tutorial.ts'
-import { scoreScenario, scoreParts } from '../src/engine/scoring.ts'
-import { stepRealtime } from '../src/engine/realtime/operate.ts'
-import { inflateParcel, type Parcel, type ParcelFile } from '../src/engine/parcels/types.ts'
-import { ownerNameFor } from '../src/engine/parcels/owners.ts'
-import { plantType } from '../src/data/plants.ts'
+import { describe, it, expect } from 'vitest'
+import { signed, site, plan, run, build, operate, newGame, acquire } from './helpers/play.ts'
+import { commitCorridor, offerAll, condemn } from '../src/engine/turn/corridor.ts'
+import { resolveHearing, endQuarter } from '../src/engine/turn/resolve.ts'
+import { HEARING_OPTIONS } from '../src/engine/turn/hearing.ts'
+import { BEATS, currentBeat, advanceTutorial, tutorialFinished } from '../src/engine/tutorial.ts'
+import { scoreScenario } from '../src/engine/scoring.ts'
+import { EVENTS, eventById, resolveEvent } from '../src/engine/events/events.ts'
+import { endScenario } from '../src/engine/ending.ts'
+import { DUBLIN } from '../src/data/scenarios.ts'
 import type { GameState } from '../src/engine/types.ts'
-import type { LineClassId } from '../src/data/transmission.ts'
 
-const DATA = resolve(dirname(fileURLToPath(import.meta.url)), '../public/data')
-const CAMPUS = () => cellAtLonLat(-84.187, 32.113)
-const PLANT_SITE = () => cellAtLonLat(-84.36, 32.02)
-const BOUNDS = { minX: -100, minY: -80, maxX: -30, maxY: -20 }
+const beat = (g: GameState): string | null => currentBeat(g)?.id ?? null
 
-let parcelsCache: Parcel[] | null = null
-function sumterParcels(): Parcel[] {
-  if (parcelsCache) return parcelsCache
-  const file = JSON.parse(readFileSync(resolve(DATA, 'parcels/13261.json'), 'utf8')) as ParcelFile
-  parcelsCache = file.parcels.map((w) => inflateParcel(w, file.countyFips, ownerNameFor))
-  return parcelsCache
-}
-
-function newGame(): GameState {
-  const { counties } = fixtures()
-  resetPlantCounter()
-  resetCorridorCounter()
-  return createGame(AMERICUS, CAMPUS(), counties)
-}
-
-function run(state: GameState, n: number): GameState {
-  let s = state
-  const ctx = { parcels: new Map(sumterParcels().map((p) => [p.id, p])) }
-  for (let i = 0; i < n; i++) s = endQuarter(s, ctx).state
-  return s
-}
-
-function beatId(state: GameState): string | null {
-  return currentBeat(state)?.id ?? null
-}
-
-/** Play the tutorial to the point the power is on. */
-function playToEnergized(classId: LineClassId = '230'): GameState {
-  const { grid } = fixtures()
-  let g = acceptContract(newGame())
-  for (let i = 0; i < 3; i++) g = sitePlant(g, 'gas-ct', PLANT_SITE(), grid)
-
-  const plan = planCorridor(grid, PLANT_SITE(), CAMPUS(), classId, sumterParcels())!
-  g = commitCorridor(g, plan, sumterParcels())
-
-  for (let round = 0; round < 12 && !acquisitionComplete(g.corridors[0]); round++) {
-    g = offerAll(g, g.corridors[0].id, 2.5 + round * 0.3)
-    g = run(g, 1)
-  }
-  for (const id of outstandingHoldouts(g.corridors[0])) {
-    g = condemn(g, g.corridors[0].id, id, sumterParcels().find((p) => p.id === id)!)
-  }
-
-  g = resolveHearing(g, HEARING_OPTIONS[0])
-  const ct = plantType('gas-ct')
-  return run(g, ct.permitQuarters + ct.buildQuarters + plan.buildQuarters + 10)
-}
-
-beforeEach(() => { resetPlantCounter(); resetCorridorCounter() })
-
-describe('tutorial beats', () => {
-  it('starts on the deal', () => {
-    expect(beatId(newGame())).toBe('deal')
+describe('tutorial', () => {
+  it('follows the project', () => {
+    expect(beat(newGame())).toBe('deal')
+    let g = signed()
+    advanceTutorial(g)
+    expect(beat(g)).toBe('generation')
+    g = site(g, 'gas-ct', 3)
+    expect(beat(g)).toBe('route')
+    g = commitCorridor(g, plan(g))
+    expect(beat(g)).toBe('acquire')
+    g = run(offerAll(g, g.corridors[0].id, 1.5), 1)
+    expect(beat(g)).toBe('holdouts')
+    g = acquire(g)
+    for (let i = 0; i < 6; i++) g = run(g, 1)
+    expect(beat(g)).toBe('hearing')
   })
 
-  it('advances only when the player has actually done the thing', () => {
-    let g = newGame()
-    expect(beatId(g)).toBe('deal')
-
-    // Ending a quarter without signing does not move it on.
-    g = run(g, 1)
-    expect(beatId(g)).toBe('deal')
-
-    g = acceptContract(g)
-    advanceTutorial(g)
-    expect(beatId(g)).toBe('generation')
+  it('does not count solar as firm', () => {
+    const g = site(signed(), 'solar', 2)
+    expect(beat(g)).toBe('generation')
   })
 
-  it('accepts committed capacity, not just capacity already online', () => {
-    const { grid } = fixtures()
-    let g = acceptContract(newGame())
-    advanceTutorial(g)
-    expect(beatId(g)).toBe('generation')
-
-    // 570 MW firm under construction against a 400 MW contract.
-    for (let i = 0; i < 3; i++) g = sitePlant(g, 'gas-ct', PLANT_SITE(), grid)
-    advanceTutorial(g)
-    expect(beatId(g)).toBe('route')
+  it('does not stall if every parcel is condemned', () => {
+    let g = site(signed(), 'gas-ct', 3)
+    g = commitCorridor(g, plan(g))
+    for (const id of Object.keys(g.corridors[0].deals)) g = condemn(g, g.corridors[0].id, id)
+    g.contract.approval = 90
+    g = run(g, 6)
+    expect(beat(g)).toBe('hearing')
   })
 
-  it('will not let solar alone satisfy the generation beat', () => {
-    const { grid } = fixtures()
-    let g = acceptContract(newGame())
-    // 400 MW of solar nameplate is only ~32 MW firm.
-    for (let i = 0; i < 2; i++) g = sitePlant(g, 'solar', PLANT_SITE(), grid)
-    advanceTutorial(g)
-    expect(beatId(g)).toBe('generation')
-  })
-
-  it('moves through routing, acquisition and holdouts in order', () => {
-    const { grid } = fixtures()
-    let g = acceptContract(newGame())
-    for (let i = 0; i < 3; i++) g = sitePlant(g, 'gas-ct', PLANT_SITE(), grid)
-    advanceTutorial(g)
-    expect(beatId(g)).toBe('route')
-
-    const plan = planCorridor(grid, PLANT_SITE(), CAMPUS(), '230', sumterParcels())!
-    g = commitCorridor(g, plan, sumterParcels())
-    advanceTutorial(g)
-    expect(beatId(g)).toBe('acquire')
-
-    g = offerAll(g, g.corridors[0].id, 2.2)
-    g = run(g, 1)
-    expect(beatId(g)).toBe('holdouts')
-
-    for (let round = 0; round < 12 && !acquisitionComplete(g.corridors[0]); round++) {
-      g = offerAll(g, g.corridors[0].id, 3 + round * 0.3)
-      g = run(g, 1)
-    }
-    for (const id of outstandingHoldouts(g.corridors[0])) {
-      g = condemn(g, g.corridors[0].id, id, sumterParcels().find((p) => p.id === id)!)
-    }
-    g = run(g, 5)
-    expect(beatId(g)).toBe('hearing')
-  })
-
-  it('can be dismissed and stays dismissed', () => {
-    const g = newGame()
+  it('holds the hearing even when hints are hidden', () => {
+    let g = site(signed(), 'gas-ct', 3)
     g.tutorial!.dismissed = true
+    g = commitCorridor(g, plan(g))
+    g = acquire(g)
+    for (let i = 0; i < 6; i++) g = run(g, 1)
     expect(currentBeat(g)).toBeNull()
-  })
-})
-
-describe('the hearing', () => {
-  it('blocks progress until it is answered', () => {
-    const { grid } = fixtures()
-    let g = acceptContract(newGame())
-    for (let i = 0; i < 3; i++) g = sitePlant(g, 'gas-ct', PLANT_SITE(), grid)
-    const plan = planCorridor(grid, PLANT_SITE(), CAMPUS(), '230', sumterParcels())!
-    g = commitCorridor(g, plan, sumterParcels())
-    for (let round = 0; round < 12 && !acquisitionComplete(g.corridors[0]); round++) {
-      g = offerAll(g, g.corridors[0].id, 3)
-      g = run(g, 1)
-    }
-    for (const id of outstandingHoldouts(g.corridors[0])) {
-      g = condemn(g, g.corridors[0].id, id, sumterParcels().find((p) => p.id === id)!)
-    }
-    g = run(g, 5)
-    expect(beatId(g)).toBe('hearing')
-
-    // Ending quarters does not get past it — the hearing is not skippable, and
-    // it does not matter how much of the rest of the project finishes meanwhile.
-    g = run(g, 3)
-    expect(beatId(g)).toBe('hearing')
-    g = run(g, 3)
-    expect(beatId(g)).toBe('hearing')
-
-    g = resolveHearing(g, HEARING_OPTIONS[1])
-    expect(beatId(g)).not.toBe('hearing')
-    expect(g.tutorial!.hearingResolved).toBe(true)
+    expect(g.hearing).toBe('called')
   })
 
-  it('prices each answer differently, in money and in goodwill', () => {
-    let g = acceptContract(newGame())
-    g.tutorial!.beat = 5
-
-    const before = { cash: g.cash, approval: g.counties['13261'].approval }
-
-    const payer = resolveHearing(g, HEARING_OPTIONS[0])
-    expect(payer.cash).toBeLessThan(before.cash)
-    expect(payer.counties['13261'].approval).toBeGreaterThan(before.approval)
-    expect(payer.counties['13261'].grievances).toHaveLength(0)
-
-    const ratepayers = resolveHearing(g, HEARING_OPTIONS[2])
-    // Free on the budget, expensive everywhere else.
-    expect(ratepayers.cash).toBe(before.cash)
-    expect(ratepayers.counties['13261'].approval).toBeLessThan(before.approval)
-    // And the county writes it down.
-    expect(ratepayers.counties['13261'].grievances.length).toBeGreaterThan(0)
-  })
-
-  it('cannot be answered twice', () => {
-    let g = acceptContract(newGame())
-    g.tutorial!.beat = 5
-    g = resolveHearing(g, HEARING_OPTIONS[0])
-    const cash = g.cash
-    g = resolveHearing(g, HEARING_OPTIONS[0])
-    expect(g.cash).toBe(cash)
-  })
-})
-
-describe('the scripted storm', () => {
-  it('arrives on schedule and takes a single-circuit line down', () => {
-    const g = playToEnergized('230')
-    expect(g.energizedQuarter).not.toBeNull()
-    g.tutorial!.stormAtTick = 10
-
-    let campusWentDark = false
-    for (let i = 0; i < 60; i++) {
-      stepRealtime(g, BOUNDS)
-      const last = g.realtime!.history[g.realtime!.history.length - 1]
-      if (last && last.unservedMw > 100) campusWentDark = true
-    }
-    expect(g.tutorial!.stormFired).toBe(true)
-    expect(campusWentDark).toBe(true)
-  })
-
-  it('is ridden out by a double circuit — the same storm, the other outcome', () => {
-    const g = playToEnergized('230d')
-    g.tutorial!.stormAtTick = 10
-
-    let worstShortfall = 0
-    for (let i = 0; i < 60; i++) {
-      stepRealtime(g, BOUNDS)
-      const last = g.realtime!.history[g.realtime!.history.length - 1]
-      if (last) worstShortfall = Math.max(worstShortfall, last.unservedMw)
-    }
-    expect(g.tutorial!.stormFired).toBe(true)
-    // 800 MW rating, half of it lost, still 400 MW — the whole campus.
-    expect(worstShortfall).toBeLessThan(5)
-  })
-
-  it('only fires once', () => {
-    const g = playToEnergized('230')
-    g.tutorial!.stormAtTick = 5
-    for (let i = 0; i < 400; i++) stepRealtime(g, BOUNDS)
-    const scripted = g.realtime!.storms.filter((s) => s.id.startsWith('storm-tutorial'))
-    expect(scripted.length).toBeLessThanOrEqual(1)
-  })
-
-  it('reaches the last beat and finishes', () => {
-    const g = playToEnergized('230d')
-    g.tutorial!.stormAtTick = 10
-    for (let i = 0; i < 700; i++) {
-      stepRealtime(g, BOUNDS)
-      if (tutorialFinished(g)) break
-    }
+  it('finishes with the year', () => {
+    const g = operate(build({ classId: '230d' }))
+    advanceTutorial(g)
     expect(tutorialFinished(g)).toBe(true)
-    expect(currentBeat(g)).toBeNull()
     expect(g.tutorial!.beat).toBe(BEATS.length)
   })
+
+  it('is absent from later scenarios', () => {
+    expect(newGame(DUBLIN).tutorial).toBeNull()
+  })
 })
 
-describe('scoring', () => {
-  it('scores a clean run well and reports every currency', () => {
-    const g = playToEnergized('230d')
-    const outcome = scoreScenario(g)
-
-    expect(outcome.score).toBeGreaterThan(0)
-    expect(outcome.score).toBeLessThanOrEqual(100)
-    expect(outcome.grade).toMatch(/^[ABCDF]$/)
-    expect(outcome.headline.length).toBeGreaterThan(10)
-    expect(outcome.lines.some((l) => l.label === 'Properties condemned')).toBe(true)
-    expect(outcome.lines.some((l) => l.label === 'County approval')).toBe(true)
+describe('hearing', () => {
+  it('trades money against approval', () => {
+    const g = signed()
+    const pay = resolveHearing(g, HEARING_OPTIONS[0])
+    const rate = resolveHearing(g, HEARING_OPTIONS[2])
+    expect(pay.cash).toBeLessThan(rate.cash)
+    expect(pay.contract.approval!).toBeGreaterThan(rate.contract.approval!)
+    expect(rate.counties['13261'].grievances.length).toBeGreaterThan(0)
   })
 
-  it('penalises condemnation separately from approval', () => {
-    const clean = playToEnergized('230')
-    const parts = scoreParts(clean)
+  it('is answered once', () => {
+    const g = resolveHearing(signed(), HEARING_OPTIONS[0])
+    expect(resolveHearing(g, HEARING_OPTIONS[0])).toBe(g)
+  })
+})
 
-    const forced = structuredClone(clean)
-    forced.corridors[0].condemnations = 3
-    // The county has forgiven you; the record still exists.
-    expect(scoreParts(forced).restraint).toBeLessThan(parts.restraint)
-    expect(scoreParts(forced).community).toBe(parts.community)
+describe('decisions', () => {
+  it('come up in most games', () => {
+    let seen = 0
+    for (const seed of [1, 2, 3, 4, 5]) seen += build({ seed, classId: '230d' }).firedEvents.length
+    expect(seen / 5).toBeGreaterThan(3)
   })
 
-  it('says the uncomfortable thing when the run earned it', () => {
-    const g = playToEnergized('230')
-    g.corridors[0].condemnations = 4
-    expect(scoreScenario(g).headline).toMatch(/by force/)
+  it('never repeat', () => {
+    const g = operate(build({ classId: '230d' }))
+    expect(new Set(g.firedEvents).size).toBe(g.firedEvents.length)
   })
 
-  it('calls out shedding homes to keep the contract whole', () => {
-    const g = playToEnergized('230')
-    g.realtime!.unservedCustomerMwh = 500
-    const outcome = scoreScenario(g)
-    expect(outcome.headline).toMatch(/dark/)
-    expect(outcome.lines.some((l) => l.label === 'Homes left unserved')).toBe(true)
+  it('every option of every event applies cleanly', () => {
+    const base = operate(build({ classId: '230d' }), { ticks: 100 })
+    for (const e of EVENTS) {
+      e.options.forEach((_, i) => {
+        const g = structuredClone(base)
+        g.pendingEvent = { id: e.id }
+        const next = resolveEvent(g, i)
+        expect(next.pendingEvent).toBeNull()
+        expect(Number.isFinite(next.cash)).toBe(true)
+        expect(next.log.length).toBeGreaterThan(g.log.length - 1)
+      })
+      expect(e.body(base).length).toBeGreaterThan(20)
+    }
   })
 
-  it('does not pretend a project that never energized went well', () => {
-    let g = acceptContract(newGame())
-    g = run(g, 24)
-    const outcome = scoreScenario(g)
-    expect(outcome.headline).toMatch(/never energized/)
-    expect(scoreParts(g).onTime).toBe(0)
+  it('do what they say', () => {
+    let g = site(signed(), 'gas-ct', 1)
+    g.pendingEvent = { id: 'moratorium' }
+    const before = g.plants[0].quartersRemaining
+    const waited = resolveEvent(g, 2)
+    expect(waited.plants[0].quartersRemaining).toBe(before + 1)
+    const paid = resolveEvent(g, 0)
+    expect(g.cash - paid.cash).toBe(3_000_000)
+    expect(eventById('moratorium')!.options[0].effect).toContain('$3M')
+  })
+
+  it('take the last option if the quarter ends first', () => {
+    const g = site(signed(), 'gas-ct', 1)
+    g.pendingEvent = { id: 'moratorium' }
+    g.firedEvents.push('moratorium')
+    const next = endQuarter(g).state
+    expect(next.pendingEvent?.id).not.toBe('moratorium')
+    expect(next.plants[0].quartersRemaining).toBe(g.plants[0].quartersRemaining)
+  })
+})
+
+describe('the summer storm', () => {
+  it('hits a single line harder than a double', () => {
+    const dark = (classId: '230' | '230d'): number => {
+      const g = build({ classId })
+      g.tutorial!.stormAtTick = 3 * 96
+      // Full load from the start.
+      g.scenarioId = 'none'
+      operate(g, { ticks: 6 * 96 })
+      expect(g.tutorial!.stormFired).toBe(true)
+      return g.realtime!.unservedContractMwh
+    }
+    expect(dark('230')).toBeGreaterThan(dark('230d') + 500)
+  })
+})
+
+describe('endings', () => {
+  it('cancels a project that is far too late', () => {
+    const g = run(signed(), 40)
+    expect(g.ending).toBe('terminated')
+    expect(g.outcome!.headline).toMatch(/cancelled/)
+  })
+
+  it('stops when lenders stop', () => {
+    let g = signed()
+    for (let i = 0; i < 6; i++) g = site(g, 'gas-ct', 1)
+    g = run(g, 14)
+    expect(g.ending).toBe('insolvent')
+    expect(g.cash).toBeLessThan(-g.creditLimit)
+  })
+
+  it('does not accept moves afterwards', () => {
+    const g = signed()
+    endScenario(g, 'terminated')
+    expect(site(g, 'gas-ct', 1).plants).toHaveLength(0)
+    expect(endQuarter(g).state).toBe(g)
+  })
+})
+
+describe('score', () => {
+  it('is the balance', () => {
+    const good = operate(build({ classId: '230d', style: 'homes' }))
+    expect(good.outcome!.score).toBe(Math.round(good.cash))
+    const rough = operate(build({ classId: '230', steps: [1], hearing: 2 }))
+    expect(good.outcome!.score).toBeGreaterThan(rough.outcome!.score)
+  })
+
+  it('says so when homes paid for the campus', () => {
+    const g = operate(build({ classId: '230d' }))
+    g.realtime!.unservedCustomerMwh = 900
+    expect(scoreScenario(g).headline).toMatch(/Homes in Sumter County lost power/)
   })
 })

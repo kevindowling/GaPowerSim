@@ -1,28 +1,14 @@
-/**
- * Transmission line classes.
- *
- * DATA STATUS: engineering-plausible figures for 2026 Georgia — thermal rating,
- * overnight cost per kilometre, right-of-way width — entered from general
- * knowledge of the technology rather than a citable source per field. Verified
- * against public sources in the M6 pass.
- *
- * The important design choice here is the double-circuit 230 kV option. A single
- * circuit carries the Americus load perfectly well and costs a third less. It
- * also means one storm, one broken structure, and the campus goes dark. Buying
- * redundancy is expensive, invisible, and looks like waste right up until the
- * night it isn't — which is exactly the bet the tutorial asks the player to make
- * six beats before the storm arrives.
- */
+// DATA STATUS: plausible 2026 figures, not yet checked against a source.
 
 export type LineClassId = '115' | '230' | '230d' | '500'
 
 export interface LineClass {
   id: LineClassId
+  shortName: string
   name: string
   kv: number
   /** Thermal capacity in MW. */
   ratingMw: number
-  /** Number of independent circuits — 2 survives losing one. */
   circuits: number
   /** Overnight cost per kilometre, dollars, on easy ground. */
   capexPerKm: number
@@ -37,6 +23,7 @@ export interface LineClass {
 export const LINE_CLASSES: readonly LineClass[] = [
   {
     id: '115',
+    shortName: '115 kV line',
     name: '115 kV single circuit',
     kv: 115,
     ratingMw: 150,
@@ -44,11 +31,12 @@ export const LINE_CLASSES: readonly LineClass[] = [
     capexPerKm: 1_100_000,
     rowHalfWidthKm: 0.015,
     buildQuartersPer25Km: 2,
-    blurb: 'Cheap and narrow. Not enough on its own for a campus this size.',
+    blurb: 'Too small for the whole campus. Useful as a second path.',
     verified: false,
   },
   {
     id: '230',
+    shortName: '230 kV line',
     name: '230 kV single circuit',
     kv: 230,
     ratingMw: 400,
@@ -56,11 +44,12 @@ export const LINE_CLASSES: readonly LineClass[] = [
     capexPerKm: 1_900_000,
     rowHalfWidthKm: 0.023,
     buildQuartersPer25Km: 3,
-    blurb: 'Exactly enough for 400 MW, and exactly one thing that has to not break.',
+    blurb: 'Carries 400 MW. A single fault takes all of it out.',
     verified: false,
   },
   {
     id: '230d',
+    shortName: '230 kV double',
     name: '230 kV double circuit',
     kv: 230,
     ratingMw: 800,
@@ -68,11 +57,12 @@ export const LINE_CLASSES: readonly LineClass[] = [
     capexPerKm: 2_900_000,
     rowHalfWidthKm: 0.028,
     buildQuartersPer25Km: 4,
-    blurb: 'Two circuits on shared structures. Costs half again as much and survives losing one.',
+    blurb: 'Two circuits on one set of towers. Losing one leaves 400 MW.',
     verified: false,
   },
   {
     id: '500',
+    shortName: '500 kV line',
     name: '500 kV single circuit',
     kv: 500,
     ratingMw: 1_500,
@@ -80,7 +70,7 @@ export const LINE_CLASSES: readonly LineClass[] = [
     capexPerKm: 4_200_000,
     rowHalfWidthKm: 0.031,
     buildQuartersPer25Km: 5,
-    blurb: 'Bulk transfer, wide right-of-way, and a tower line nobody fails to notice.',
+    blurb: 'Far more than this contract needs. Widest right-of-way.',
     verified: false,
   },
 ]

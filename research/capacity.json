@@ -1,0 +1,3589 @@
+{
+ "_meta": {
+  "compiled": "2026-11-24",
+  "conventions": "Year label N = winter N-1/N (e.g. winter 2027 = winter 2026/27) for winter rows, summer N for summer rows. Company target reserve margins in GPC balance tables (24.6/25.1% winter, 18.6/19.1% summer) are the GPC-level equivalents of the system 26%/20% targets. basis: stated = figure appears in source; derived = arithmetic on sourced figures; estimated = judgement or scaling.",
+  "gaps": [
+   "No public statement of current excess capacity found (10-Q, Q3 call, large load report).",
+   "Georgia Power-only 2026 actual peaks not published yet; EIA-861 for 2026 due autumn 2027.",
+   "No public load forecast newer than B2026 (Sept 2025) found; the next large update appears due with the 2027 certification filing.",
+   "Project-level certified costs are trade secret; only portfolio totals are public.",
+   "Large load rates and the minimum-revenue attachment are redacted.",
+   "Large-load year-by-year ramp for Georgia Power alone public only for 2028/29 and mid-2030s.",
+   "County names for plant sites not listed in the 10-Q are from general geography or left null."
+  ]
+ },
+ "1_capacity": {
+  "gpc_owned_by_fuel": {
+   "gas_oil": {
+    "value": 6251.92,
+    "unit": "MW nameplate",
+    "asOf": "2025-12-31",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.georgiapower.com/content/dam/georgia-power/pdfs/company-pdfs/facts-figures-2026.pdf",
+      "title": "Georgia Power 2026 Facts & Figures (data at 2025-12-31)",
+      "date": "2026"
+     },
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ]
+   },
+   "coal": {
+    "value": 3910.924,
+    "unit": "MW nameplate",
+    "asOf": "2025-12-31",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.georgiapower.com/content/dam/georgia-power/pdfs/company-pdfs/facts-figures-2026.pdf",
+      "title": "Georgia Power 2026 Facts & Figures (data at 2025-12-31)",
+      "date": "2026"
+     },
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ]
+   },
+   "nuclear": {
+    "value": 3066.706,
+    "unit": "MW nameplate",
+    "asOf": "2025-12-31",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.georgiapower.com/content/dam/georgia-power/pdfs/company-pdfs/facts-figures-2026.pdf",
+      "title": "Georgia Power 2026 Facts & Figures (data at 2025-12-31)",
+      "date": "2026"
+     },
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ]
+   },
+   "hydro": {
+    "value": 1112.072,
+    "unit": "MW nameplate",
+    "asOf": "2025-12-31",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.georgiapower.com/content/dam/georgia-power/pdfs/company-pdfs/facts-figures-2026.pdf",
+      "title": "Georgia Power 2026 Facts & Figures (data at 2025-12-31)",
+      "date": "2026"
+     },
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ],
+    "note": "10-K lists 1,126.412 (Tugalo 59.25 vs 45)"
+   },
+   "solar": {
+    "value": 368.106,
+    "unit": "MW nameplate",
+    "asOf": "2025-12-31",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.georgiapower.com/content/dam/georgia-power/pdfs/company-pdfs/facts-figures-2026.pdf",
+      "title": "Georgia Power 2026 Facts & Figures (data at 2025-12-31)",
+      "date": "2026"
+     },
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ]
+   },
+   "battery": {
+    "value": 65.0,
+    "unit": "MW nameplate",
+    "asOf": "2025-12-31",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.georgiapower.com/content/dam/georgia-power/pdfs/company-pdfs/facts-figures-2026.pdf",
+      "title": "Georgia Power 2026 Facts & Figures (data at 2025-12-31)",
+      "date": "2026"
+     },
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ],
+    "note": "Mossy Branch"
+   }
+  },
+  "gpc_owned_total": {
+   "value": 14774.728,
+   "unit": "MW nameplate",
+   "asOf": "2025-12-31",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://www.georgiapower.com/content/dam/georgia-power/pdfs/company-pdfs/facts-figures-2026.pdf",
+     "title": "Georgia Power 2026 Facts & Figures (data at 2025-12-31)",
+     "date": "2026"
+    },
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+     "title": "Southern Company Form 10-K FY2025",
+     "date": "2026-02"
+    }
+   ],
+   "note": "10-K total 14,789.068"
+  },
+  "gpc_owned_bess_added_2026": {
+   "value": 766,
+   "unit": "MW",
+   "asOf": "2026-10",
+   "basis": "derived",
+   "sources": [
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+     "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+     "date": "2026-11"
+    }
+   ],
+   "note": "Robins 128 + Moody 50 + McGrau Ford 1 265 + McGrau Ford 2 265 + Hammond 1 58"
+  },
+  "gpc_owned_total_now": {
+   "value": 15541,
+   "unit": "MW nameplate",
+   "asOf": "2026-11",
+   "basis": "derived",
+   "sources": [
+    {
+     "url": "https://www.georgiapower.com/content/dam/georgia-power/pdfs/company-pdfs/facts-figures-2026.pdf",
+     "title": "Georgia Power 2026 Facts & Figures (data at 2025-12-31)",
+     "date": "2026"
+    },
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+     "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+     "date": "2026-11"
+    }
+   ],
+   "note": "14,774.728 + 766; excludes retirements/derates, assumes no other 2026 additions"
+  },
+  "gpc_purchased_capacity_winter": {
+   "value": {
+    "2025": 5913,
+    "2026": 6012,
+    "2027": 6242,
+    "2028": 6503,
+    "2029": 5223,
+    "2030": 5330,
+    "2031": 3287,
+    "2032": 3287
+   },
+   "unit": "MW",
+   "asOf": "2025-05-05",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/222543/103696",
+     "title": "GA PSC Staff testimony, 2025 IRP Docket 56002, Exhibit STF-NHSW-5",
+     "date": "2025-05-05"
+    }
+   ],
+   "note": "2025 IRP vintage, territorial + imported PPAs, winter capacity; excludes planned ESS"
+  },
+  "gpc_dispatchable_dsm": {
+   "value": {
+    "2026": 652,
+    "2027": 656,
+    "2028": 656
+   },
+   "unit": "MW CT-equivalent",
+   "asOf": "2025-05-05",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/222543/103696",
+     "title": "GA PSC Staff testimony, 2025 IRP Docket 56002, Exhibit STF-NHSW-5",
+     "date": "2025-05-05"
+    }
+   ]
+  },
+  "gpc_demand_response_potential": {
+   "value": 1037.5,
+   "unit": "MW",
+   "asOf": "2025",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://www.eia.gov/electricity/data/eia861/zip/f8612025.zip",
+     "title": "EIA-861 2025 final: Operational_Data, Sales_Ult_Cust, Demand_Response",
+     "date": "2026-09-30"
+    }
+   ]
+  },
+  "gpc_total_firm_capacity_winter_2026_27": {
+   "value": 23553,
+   "unit": "MW",
+   "asOf": "2025-09-23",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+     "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+     "date": "2025-11-12"
+    }
+   ],
+   "note": "owned + PPAs + dispatchable DSM, winter 2027 row E"
+  },
+  "gpc_total_firm_capacity_summer_2027": {
+   "value": 24410,
+   "unit": "MW",
+   "asOf": "2025-09-23",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+     "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+     "date": "2025-11-12"
+    }
+   ]
+  },
+  "gpc_energy_mix_2025": {
+   "value": {
+    "gas_oil": 42,
+    "nuclear": 28,
+    "coal": 17,
+    "renewables": 6,
+    "hydro": 1,
+    "null_energy": 6
+   },
+   "unit": "percent",
+   "asOf": "2025",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://www.georgiapower.com/content/dam/georgia-power/pdfs/company-pdfs/facts-figures-2026.pdf",
+     "title": "Georgia Power 2026 Facts & Figures (data at 2025-12-31)",
+     "date": "2026"
+    }
+   ]
+  },
+  "gpc_fuel_cost_2025": {
+   "value": {
+    "nuclear": 0.89,
+    "coal": 4.31,
+    "gas_oil": 3.53,
+    "average": 2.72,
+    "purchased_power": 5.01
+   },
+   "unit": "cents/kWh",
+   "asOf": "2025",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://www.georgiapower.com/content/dam/georgia-power/pdfs/company-pdfs/facts-figures-2026.pdf",
+     "title": "Georgia Power 2026 Facts & Figures (data at 2025-12-31)",
+     "date": "2026"
+    },
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+     "title": "Southern Company Form 10-K FY2025",
+     "date": "2026-02"
+    }
+   ]
+  },
+  "southern_owned_by_fuel": {
+   "value": {
+    "gas": 23360.146,
+    "coal": 9023.212,
+    "nuclear": 4786.706,
+    "solar": 2933.006,
+    "hydro": 2794.491,
+    "wind": 2534.58,
+    "cogen": 611.938,
+    "battery": 225,
+    "fuel_cell": 27.5
+   },
+   "unit": "MW nameplate",
+   "asOf": "2025-12-31",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+     "title": "Southern Company Form 10-K FY2025",
+     "date": "2026-02"
+    }
+   ]
+  },
+  "southern_owned_total": {
+   "value": 46296.579,
+   "unit": "MW nameplate",
+   "asOf": "2025-12-31",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+     "title": "Southern Company Form 10-K FY2025",
+     "date": "2026-02"
+    }
+   ],
+   "note": "includes 12,647.88 MW Southern Power, much of it outside the Southeast (wind, western solar)"
+  },
+  "southern_southeast_owned_est": {
+   "value": 33649,
+   "unit": "MW nameplate",
+   "asOf": "2025-12-31",
+   "basis": "derived",
+   "sources": [
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+     "title": "Southern Company Form 10-K FY2025",
+     "date": "2026-02"
+    }
+   ],
+   "note": "46,296.579 - 12,647.880 = traditional operating companies + SEGCO, excludes Southern Power southeastern gas fleet"
+  },
+  "peaks": {
+   "gpc_summer_actual": {
+    "value": {
+     "2024": 16555,
+     "2025": 17119
+    },
+    "unit": "MW",
+    "asOf": "2025",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.eia.gov/electricity/data/eia861/archive/zip/f8612024.zip",
+      "title": "EIA-861 2024: Operational_Data",
+      "date": "2025-10"
+     },
+     {
+      "url": "https://www.eia.gov/electricity/data/eia861/zip/f8612025.zip",
+      "title": "EIA-861 2025 final: Operational_Data, Sales_Ult_Cust, Demand_Response",
+      "date": "2026-09-30"
+     }
+    ]
+   },
+   "gpc_winter_actual": {
+    "value": {
+     "2024": 16458,
+     "2025": 15957
+    },
+    "unit": "MW",
+    "asOf": "2025",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.eia.gov/electricity/data/eia861/archive/zip/f8612024.zip",
+      "title": "EIA-861 2024: Operational_Data",
+      "date": "2025-10"
+     },
+     {
+      "url": "https://www.eia.gov/electricity/data/eia861/zip/f8612025.zip",
+      "title": "EIA-861 2025 final: Operational_Data, Sales_Ult_Cust, Demand_Response",
+      "date": "2026-09-30"
+     }
+    ]
+   },
+   "gpc_forecast_vs_actual_2025": {
+    "value": {
+     "summer_fcst_B2026": 17288,
+     "summer_actual": 17119,
+     "winter_fcst_B2026": 16063,
+     "winter_actual": 15957
+    },
+    "unit": "MW",
+    "asOf": "2025",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224483/105760",
+      "title": "GA PSC Staff load forecast testimony Trokey/Drugan/Pol, Dockets 56298/56310",
+      "date": "2025-11-12"
+     },
+     {
+      "url": "https://www.eia.gov/electricity/data/eia861/zip/f8612025.zip",
+      "title": "EIA-861 2025 final: Operational_Data, Sales_Ult_Cust, Demand_Response",
+      "date": "2026-09-30"
+     }
+    ],
+    "note": "actuals 1.0% and 0.7% below forecast"
+   },
+   "gpc_2026_winter_peak_est": {
+    "value": 16400,
+    "unit": "MW",
+    "asOf": "2026-01-27",
+    "basis": "estimated",
+    "sources": [
+     {
+      "url": "https://www.eia.gov/electricity/data/eia861/zip/f8612025.zip",
+      "title": "EIA-861 2025 final: Operational_Data, Sales_Ult_Cust, Demand_Response",
+      "date": "2026-09-30"
+     },
+     {
+      "url": "https://www.eia.gov/electricity/gridmonitor/sixMonthFiles/EIA930_BALANCE_2025_Jan_Jun.csv",
+      "title": "EIA-930 hourly balance Jan-Jun 2025 (BA SOCO)",
+      "date": "2026-11-24 retrieved"
+     },
+     {
+      "url": "https://www.eia.gov/electricity/gridmonitor/sixMonthFiles/EIA930_BALANCE_2026_Jan_Jun.csv",
+      "title": "EIA-930 hourly balance Jan-Jun 2026 (BA SOCO)",
+      "date": "2026-11-24 retrieved"
+     }
+    ],
+    "note": "15,957 x 47,809/46,490 = 16,410; scaled by SOCO BA growth",
+    "confidence": "low-medium (+/-500)"
+   },
+   "gpc_2026_summer_peak_est": {
+    "value": 17600,
+    "unit": "MW",
+    "asOf": "2026-08-17",
+    "basis": "estimated",
+    "sources": [
+     {
+      "url": "https://www.eia.gov/electricity/data/eia861/zip/f8612025.zip",
+      "title": "EIA-861 2025 final: Operational_Data, Sales_Ult_Cust, Demand_Response",
+      "date": "2026-09-30"
+     },
+     {
+      "url": "https://www.eia.gov/electricity/gridmonitor/sixMonthFiles/EIA930_BALANCE_2025_Jul_Dec.csv",
+      "title": "EIA-930 hourly balance Jul-Dec 2025 (BA SOCO)",
+      "date": "2026-11-24 retrieved"
+     },
+     {
+      "url": "https://www.eia.gov/electricity/gridmonitor/sixMonthFiles/EIA930_BALANCE_2026_Jul_Dec.csv",
+      "title": "EIA-930 hourly balance Jul-Dec 2026 (BA SOCO)",
+      "date": "2026-11-24 retrieved"
+     }
+    ],
+    "note": "17,119 x 47,656/46,389 = 17,587; B2026 forecast 18,151",
+    "confidence": "low-medium (+/-500)"
+   },
+   "southern_system_max_2025": {
+    "value": 37006,
+    "unit": "MW",
+    "asOf": "2025-01-22",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ],
+    "note": "excludes MEAG, OPC, SEPA demand"
+   },
+   "southern_system_record_per_10k": {
+    "value": 38194,
+    "unit": "MW",
+    "asOf": "2024-01-17",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ],
+    "note": "AJC Jan 2026 reports 39,934 MW for the same day on a different basis"
+   },
+   "southern_system_reserve_margin_2025": {
+    "value": 20,
+    "unit": "percent",
+    "asOf": "2025",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ],
+    "note": "actual 2025 reserve margin"
+   },
+   "soco_ba_peaks": {
+    "value": {
+     "winter_2025": 46490,
+     "summer_2025": 46389,
+     "winter_2026": 47809,
+     "summer_2026": 47656
+    },
+    "unit": "MW",
+    "asOf": "2026-11-24",
+    "basis": "derived",
+    "sources": [
+     {
+      "url": "https://www.eia.gov/electricity/gridmonitor/sixMonthFiles/EIA930_BALANCE_2025_Jan_Jun.csv",
+      "title": "EIA-930 hourly balance Jan-Jun 2025 (BA SOCO)",
+      "date": "2026-11-24 retrieved"
+     },
+     {
+      "url": "https://www.eia.gov/electricity/gridmonitor/sixMonthFiles/EIA930_BALANCE_2025_Jul_Dec.csv",
+      "title": "EIA-930 hourly balance Jul-Dec 2025 (BA SOCO)",
+      "date": "2026-11-24 retrieved"
+     },
+     {
+      "url": "https://www.eia.gov/electricity/gridmonitor/sixMonthFiles/EIA930_BALANCE_2026_Jan_Jun.csv",
+      "title": "EIA-930 hourly balance Jan-Jun 2026 (BA SOCO)",
+      "date": "2026-11-24 retrieved"
+     },
+     {
+      "url": "https://www.eia.gov/electricity/gridmonitor/sixMonthFiles/EIA930_BALANCE_2026_Jul_Dec.csv",
+      "title": "EIA-930 hourly balance Jul-Dec 2026 (BA SOCO)",
+      "date": "2026-11-24 retrieved"
+     }
+    ],
+    "note": "hourly max by season from raw file; dates 2025-01-22 08h, 2025-07-28 16h, 2026-01-27 07h, 2026-08-17 16h; BA includes OPC/MEAG and other load. Not verified as all-time BA records."
+   }
+  }
+ },
+ "2_need_and_surplus": {
+  "target_reserve_margin_system": {
+   "value": {
+    "winter": 26,
+    "summer": 20
+   },
+   "unit": "percent",
+   "asOf": "2025-07-15",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/223329/104558",
+     "title": "2025 IRP Stipulation, Dockets 56002/56003",
+     "date": "2025-07-11"
+    }
+   ],
+   "note": "staff recommended 24.5% winter"
+  },
+  "target_reserve_margin_gpc": {
+   "value": {
+    "winter_2027": 24.6,
+    "winter_2028_on": 25.1,
+    "summer_2027": 18.6,
+    "summer_2028_on": 19.1
+   },
+   "unit": "percent",
+   "asOf": "2025-09-23",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+     "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+     "date": "2025-11-12"
+    }
+   ]
+  },
+  "load_forecast_B2026_winter": {
+   "value": {
+    "2025": 16063,
+    "2026": 16617,
+    "2027": 17507,
+    "2028": 19717,
+    "2029": 21975,
+    "2030": 23701,
+    "2031": 25065,
+    "2032": 25783
+   },
+   "unit": "MW",
+   "asOf": "2025-09-17",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224483/105760",
+     "title": "GA PSC Staff load forecast testimony Trokey/Drugan/Pol, Dockets 56298/56310",
+     "date": "2025-11-12"
+    },
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+     "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+     "date": "2025-11-12"
+    }
+   ]
+  },
+  "load_forecast_B2026_summer": {
+   "value": {
+    "2025": 17288,
+    "2026": 18151,
+    "2027": 19796,
+    "2028": 22101,
+    "2029": 24229,
+    "2030": 25845,
+    "2031": 26979,
+    "2032": 27554,
+    "2033": 28007,
+    "2035": 28499,
+    "2040": 29414,
+    "2045": 31221
+   },
+   "unit": "MW",
+   "asOf": "2025-09-17",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224483/105760",
+     "title": "GA PSC Staff load forecast testimony Trokey/Drugan/Pol, Dockets 56298/56310",
+     "date": "2025-11-12"
+    },
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+     "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+     "date": "2025-11-12"
+    }
+   ]
+  },
+  "company_before_new": {
+   "winter_capacity": {
+    "value": {
+     "2027": 23553,
+     "2028": 24250,
+     "2029": 24426,
+     "2030": 24536,
+     "2031": 22500,
+     "2032": 22581
+    },
+    "unit": "MW",
+    "asOf": "2025-09-23 company errata / 2025-11-12 staff exhibit",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ]
+   },
+   "winter_surplus": {
+    "value": {
+     "2027": 1739,
+     "2028": -422,
+     "2029": -3072,
+     "2030": -5121,
+     "2031": -8865,
+     "2032": -9683
+    },
+    "unit": "MW",
+    "asOf": "2025-09-23 company errata / 2025-11-12 staff exhibit",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ]
+   },
+   "summer_capacity": {
+    "value": {
+     "2027": 24410,
+     "2028": 25113,
+     "2029": 24777,
+     "2030": 23252,
+     "2031": 24338,
+     "2032": 24655
+    },
+    "unit": "MW",
+    "asOf": "2025-09-23 company errata / 2025-11-12 staff exhibit",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ]
+   },
+   "summer_surplus": {
+    "value": {
+     "2027": 936,
+     "2028": -1205,
+     "2029": -4076,
+     "2030": -7525,
+     "2031": -7790,
+     "2032": -8159
+    },
+    "unit": "MW",
+    "asOf": "2025-09-23 company errata / 2025-11-12 staff exhibit",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ]
+   }
+  },
+  "company_after_certified_9885MW": {
+   "winter_capacity": {
+    "value": {
+     "2027": 23553,
+     "2028": 25079,
+     "2029": 27379,
+     "2030": 29585,
+     "2031": 32117,
+     "2032": 32198
+    },
+    "unit": "MW",
+    "asOf": "2025-09-23 company errata / 2025-11-12 staff exhibit",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     },
+     {
+      "url": "https://psc.ga.gov/site/assets/files/9176/media_advisory_dec_19_decision.pdf",
+      "title": "GA PSC news release, certification vote",
+      "date": "2025-12-19"
+     }
+    ],
+    "note": "exhibit 'GPC END' case; the same resources were certified in full 2025-12-19. Winter L&R ratings with ELCC, not nameplate"
+   },
+   "winter_surplus": {
+    "value": {
+     "2027": 1739,
+     "2028": 406,
+     "2029": -119,
+     "2030": -73,
+     "2031": 752,
+     "2032": -66
+    },
+    "unit": "MW",
+    "asOf": "2025-09-23 company errata / 2025-11-12 staff exhibit",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ]
+   },
+   "summer_capacity": {
+    "value": {
+     "2027": 24410,
+     "2028": 25869,
+     "2029": 27090,
+     "2030": 30487,
+     "2031": 32696,
+     "2032": 33013
+    },
+    "unit": "MW",
+    "asOf": "2025-09-23 company errata / 2025-11-12 staff exhibit",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ]
+   },
+   "summer_surplus": {
+    "value": {
+     "2027": 936,
+     "2028": -450,
+     "2029": -1764,
+     "2030": -291,
+     "2031": 568,
+     "2032": 200
+    },
+    "unit": "MW",
+    "asOf": "2025-09-23 company errata / 2025-11-12 staff exhibit",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ]
+   }
+  },
+  "staff_contracts_only_before_new": {
+   "winter_peak": {
+    "value": {
+     "2027": 17020,
+     "2028": 18044,
+     "2029": 19166,
+     "2030": 19920,
+     "2031": 20559,
+     "2032": 20901
+    },
+    "unit": "MW",
+    "asOf": "2025-09-23 company errata / 2025-11-12 staff exhibit",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "note": "contracts signed as of 2025-10-08; now stale"
+   },
+   "winter_surplus": {
+    "value": {
+     "2027": 2733,
+     "2028": 2074,
+     "2029": 862,
+     "2030": 40,
+     "2031": -2786,
+     "2032": -3128
+    },
+    "unit": "MW",
+    "asOf": "2025-09-23 company errata / 2025-11-12 staff exhibit",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "note": "23.1/23.7% TRM, +135 MW Tenaska transmission"
+   },
+   "summer_surplus": {
+    "value": {
+     "2027": 1649,
+     "2028": 922,
+     "2029": -597,
+     "2030": -2888,
+     "2031": -2290,
+     "2032": -2209
+    },
+    "unit": "MW",
+    "asOf": "2025-09-23 company errata / 2025-11-12 staff exhibit",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ]
+   }
+  },
+  "staff_contracts_only_with_all_certified_winter_surplus": {
+   "value": {
+    "2027": 2733,
+    "2028": 2902,
+    "2029": 3815,
+    "2030": 5089,
+    "2031": 6831,
+    "2032": 6489
+   },
+   "unit": "MW",
+   "asOf": "2025-09-23 company errata / 2025-11-12 staff exhibit",
+   "basis": "derived",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+     "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+     "date": "2025-11-12"
+    }
+   ],
+   "note": "staff start surplus + company RFP and supplemental winter MW (0, 828, 2953, 5049, 9617, 9617). Upper bound: ignores contracts signed after 2025-10-08, incl. OpenAI 3,200 MW"
+  },
+  "staff_scenario2_before_new_winter_surplus": {
+   "value": {
+    "2027": 3148,
+    "2028": 1914,
+    "2029": -46,
+    "2030": -1600,
+    "2031": -4967,
+    "2032": -5622
+   },
+   "unit": "MW",
+   "asOf": "2025-09-23 company errata / 2025-11-12 staff exhibit",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+     "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+     "date": "2025-11-12"
+    }
+   ]
+  },
+  "winter_2025_26_position": {
+   "value": 781,
+   "unit": "MW surplus",
+   "asOf": "2025-05-05",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/222543/103696",
+     "title": "GA PSC Staff testimony, 2025 IRP Docket 56002, Exhibit STF-NHSW-5",
+     "date": "2025-05-05"
+    }
+   ],
+   "note": "IRP vintage: 21,829 capacity vs 16,892 x 1.246"
+  },
+  "winter_2025_26_position_updated": {
+   "value": 1124,
+   "unit": "MW surplus",
+   "asOf": "2025-09-17",
+   "basis": "derived",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/222543/103696",
+     "title": "GA PSC Staff testimony, 2025 IRP Docket 56002, Exhibit STF-NHSW-5",
+     "date": "2025-05-05"
+    },
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224483/105760",
+     "title": "GA PSC Staff load forecast testimony Trokey/Drugan/Pol, Dockets 56298/56310",
+     "date": "2025-11-12"
+    }
+   ],
+   "note": "21,829 - 16,617 x 1.246 = 1,124; capacity vintage older than load vintage"
+  },
+  "current_excess_statement": null,
+  "current_excess_estimate": {
+   "value": 1739,
+   "unit": "MW firm above target, winter 2026/27",
+   "asOf": "2026-11-24",
+   "basis": "derived",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+     "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+     "date": "2025-11-12"
+    },
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+     "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+     "date": "2026-11"
+    }
+   ],
+   "note": "23,553 - 17,507 x 1.246 (=21,814) = 1,739. Equals about 1,396 MW of extra peak load (1,739/1.246). Low case: -442 MW if Yates 8 (slipped from Q4 2026 to Q1 2027) was counted in row E = 1,297; high case: staff contracts-only load and 24.5% system TRM = 2,733. Binding season within the next 12 months is summer 2027: 24,410 - 19,796 x 1.186 = 936 (staff 1,649).",
+   "confidence": "medium",
+   "low": 1297,
+   "high": 2733,
+   "binding_summer_2027": 936,
+   "binding_summer_2027_staff": 1649,
+   "note_physical": "Above reserve target, not idle MW; the reserve itself is about 4,308 MW on top."
+  },
+  "new_resource_rfp_2032_33": {
+   "value": [
+    2000,
+    6000
+   ],
+   "unit": "MW",
+   "asOf": "2026-06-09",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+     "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+     "date": "2026-11"
+    },
+    {
+     "url": "https://southerncompany.mediaroom.com/2026-04-23-Georgia-Power-continues-to-plan-for-additional-generation-to-meet-the-energy-needs-of-a-growing-Georgia",
+     "title": "Georgia Power release: 2032-2033 RFP and CARES solar",
+     "date": "2026-04-23"
+    }
+   ],
+   "note": "RFP opened 2026-06-09; certification filing mid-2027"
+  },
+  "rfp_expected_size": {
+   "value": "near the top end of 2,000-6,000",
+   "unit": "MW",
+   "asOf": "2026-11-05",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://www.fool.com/earnings/call-transcripts/2026/11/05/southern-co-so-q3-2026-earnings-call-transcript/",
+     "title": "Southern Company Q3 2026 earnings call transcript",
+     "date": "2026-11-05"
+    }
+   ],
+   "note": "CFO Poroch on Georgia load forecast"
+  },
+  "ess_rfp_500": {
+   "value": 500,
+   "unit": "MW",
+   "asOf": "2026-02-11",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+     "title": "Southern Company Form 10-K FY2025",
+     "date": "2026-02"
+    }
+   ],
+   "note": "2022 IRP BESS RFP, COD by 2031"
+  },
+  "cares_2023_supplemental_solar": {
+   "value": 385,
+   "unit": "MW",
+   "asOf": "2026-04-23",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://southerncompany.mediaroom.com/2026-04-23-Georgia-Power-continues-to-plan-for-additional-generation-to-meet-the-energy-needs-of-a-growing-Georgia",
+     "title": "Georgia Power release: 2032-2033 RFP and CARES solar",
+     "date": "2026-04-23"
+    }
+   ],
+   "note": "certification requested; outcome not verified"
+  },
+  "decisions": [
+   {
+    "date": "2025-01-23",
+    "event": "PSC approves >100 MW large load rules",
+    "source": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/221165/102330"
+   },
+   {
+    "date": "2025-07-15",
+    "event": "2025 IRP approved by stipulation; up to 8,500 MW from 2029-31 RFP; 26/20% TRM; Scherer 3 to 2035, Gaston 1-4 to 2034; Vogtle 1-2 uprates yes, Hatch deferred",
+    "source": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/223329/104558"
+   },
+   {
+    "date": "2025-09-04",
+    "event": "200 MW Twiggs County BESS certified",
+    "source": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf"
+   },
+   {
+    "date": "2025-12-19",
+    "event": "9,885 MW certified 5-0; $8.50/month residential downward pressure 2029-31",
+    "source": "https://psc.ga.gov/site/assets/files/9176/media_advisory_dec_19_decision.pdf"
+   },
+   {
+    "date": "2026-02-18",
+    "event": "Reconsideration rejected 3-2 (Hubbard, Johnson dissent); date is the Wednesday before the 2026-02-23 report (derived)",
+    "source": "https://www.fox5atlanta.com/news/georgia-psc-declines-rethink-georgia-power-expansion-data-centers"
+   },
+   {
+    "date": "2026-03-25",
+    "event": "Fulton Superior Court appeal seeks reversal and decertification of at least 757 MW; pending",
+    "source": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf"
+   },
+   {
+    "date": "2026-06-09",
+    "event": "2032-33 RFP for 2,000-6,000 MW opened",
+    "source": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf"
+   },
+   {
+    "date": "2026-08-26",
+    "event": "OpenAI 3,200 MW contract cleared; downward pressure raised to at least $949M/yr, $15/month for 2029-31",
+    "source": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/228126/109297"
+   },
+   {
+    "date": "2026-10-06",
+    "event": "Hatch 1-2 uprates (49 MW) and zero-emission-credit tariff approved",
+    "source": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf"
+   },
+   {
+    "date": "2026-11-03",
+    "event": "Democrats win majority (3 of 5): Shelia Edwards (D5), Peter Hubbard re-elected (D3)",
+    "source": "https://www.ajc.com/business/2026/11/southern-co-profits-psc-changes/"
+   },
+   {
+    "date": "2026-12-15",
+    "event": "Pending: PSC decision on real-time-pricing fuel revenue method",
+    "source": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf"
+   }
+  ],
+  "sercse_context": {
+   "value": {
+    "2026_net_internal_demand_MW": 47028,
+    "2026_arm_pct": 40.1,
+    "2028_arm_pct": 33.7,
+    "2030_arm_pct": 26.5,
+    "reference_pct": 15
+   },
+   "unit": "mixed",
+   "asOf": "2026-01",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://www.nerc.com/globalassets/our-work/assessments/nerc_ltra_2025.pdf",
+     "title": "NERC 2025 Long-Term Reliability Assessment",
+     "date": "2026-01"
+    }
+   ],
+   "note": "whole SERC-Southeast area, summer; excludes resources certified 2025-12"
+  }
+ },
+ "3_large_load": {
+  "gpc_total_pipeline": {
+   "value": 89900,
+   "unit": "MW",
+   "asOf": "2026-09-30",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/229481/110424",
+     "title": "Georgia Power Q3 2026 Large Load Economic Development Report (public disclosure)",
+     "date": "2026-11-16"
+    }
+   ]
+  },
+  "gpc_large_load_pipeline": {
+   "value": 84800,
+   "unit": "MW",
+   "asOf": "2026-09-30",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/229481/110424",
+     "title": "Georgia Power Q3 2026 Large Load Economic Development Report (public disclosure)",
+     "date": "2026-11-16"
+    }
+   ]
+  },
+  "gpc_pipeline_2028_29": {
+   "value": {
+    "total": 24400,
+    "large_load": 20300
+   },
+   "unit": "MW",
+   "asOf": "2026-09-30",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/229481/110424",
+     "title": "Georgia Power Q3 2026 Large Load Economic Development Report (public disclosure)",
+     "date": "2026-11-16"
+    }
+   ]
+  },
+  "gpc_committed": {
+   "value": 16100,
+   "unit": "MW",
+   "asOf": "2026-09-30",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/229481/110424",
+     "title": "Georgia Power Q3 2026 Large Load Economic Development Report (public disclosure)",
+     "date": "2026-11-16"
+    }
+   ],
+   "note": "32 customers; RFS or contract"
+  },
+  "gpc_committed_2028_29": {
+   "value": 8600,
+   "unit": "MW",
+   "asOf": "2026-09-30",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/229481/110424",
+     "title": "Georgia Power Q3 2026 Large Load Economic Development Report (public disclosure)",
+     "date": "2026-11-16"
+    }
+   ]
+  },
+  "gpc_broken_ground": {
+   "value": {
+    "mid_2030s": 10600,
+    "winter_2028_29": 7100
+   },
+   "unit": "MW",
+   "asOf": "2026-09-30",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/229481/110424",
+     "title": "Georgia Power Q3 2026 Large Load Economic Development Report (public disclosure)",
+     "date": "2026-11-16"
+    }
+   ],
+   "note": "11 ramping, 15 broken ground, 6 pending"
+  },
+  "gpc_post_quarter_filings": {
+   "value": 2200,
+   "unit": "MW",
+   "asOf": "2026-11-16",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/229481/110424",
+     "title": "Georgia Power Q3 2026 Large Load Economic Development Report (public disclosure)",
+     "date": "2026-11-16"
+    }
+   ],
+   "note": "amendments and new contracts filed after Q3"
+  },
+  "pipeline_changes_q3": {
+   "value": {
+    "entered": 8700,
+    "exited": 3200,
+    "net_modified": -800
+   },
+   "unit": "MW",
+   "asOf": "2026-09-30",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/229481/110424",
+     "title": "Georgia Power Q3 2026 Large Load Economic Development Report (public disclosure)",
+     "date": "2026-11-16"
+    }
+   ]
+  },
+  "history": {
+   "value": {
+    "2025Q4": {
+     "pipeline": 69100,
+     "committed": 11900
+    },
+    "2026Q1": {
+     "pipeline": 76200,
+     "committed": 12400
+    },
+    "2026Q2": {
+     "pipeline": 84800,
+     "committed": 15500
+    },
+    "2026Q3": {
+     "pipeline": 89900,
+     "committed": 16100
+    }
+   },
+   "unit": "MW",
+   "asOf": "2026-09-30",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/226607/107887",
+     "title": "Georgia Power Q1 2026 Large Load Economic Development Report (public disclosure)",
+     "date": "2026-05-15"
+    },
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/229481/110424",
+     "title": "Georgia Power Q3 2026 Large Load Economic Development Report (public disclosure)",
+     "date": "2026-11-16"
+    }
+   ],
+   "note": "2025Q4 and 2026Q2 committed are derived by subtracting stated increments"
+  },
+  "data_center_share": {
+   "value": "more than 99% of large commercial announced load",
+   "unit": "percent",
+   "asOf": "2025-11-12",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224483/105760",
+     "title": "GA PSC Staff load forecast testimony Trokey/Drugan/Pol, Dockets 56298/56310",
+     "date": "2025-11-12"
+    }
+   ],
+   "note": "share of Large Commercial class only, not of all large load"
+  },
+  "so_contracted": {
+   "value": 21,
+   "unit": "GW",
+   "asOf": "2026-11-05",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/content_files/SO-2026-Q3-Earnings-Call-Final.pdf",
+     "title": "Southern Company Q3 2026 earnings slides",
+     "date": "2026-11-05"
+    }
+   ],
+   "note": "33 projects; by type: 13.5 hyperscaler, 5.5 large developer, 1.5 industrial or small developer"
+  },
+  "so_contracted_by_company": {
+   "value": {
+    "Georgia Power": 14.5,
+    "Alabama Power": 5.5,
+    "Mississippi Power": 0.5
+   },
+   "unit": "GW",
+   "asOf": "2026-11-05",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/content_files/SO-2026-Q3-Earnings-Call-Final.pdf",
+     "title": "Southern Company Q3 2026 earnings slides",
+     "date": "2026-11-05"
+    }
+   ],
+   "note": "slide 12; rounded, sums to 20.5"
+  },
+  "so_late_stage_finalizing": {
+   "value": {
+    "late": 5,
+    "finalizing": 2
+   },
+   "unit": "GW",
+   "asOf": "2026-11-05",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/content_files/SO-2026-Q3-Earnings-Call-Final.pdf",
+     "title": "Southern Company Q3 2026 earnings slides",
+     "date": "2026-11-05"
+    }
+   ]
+  },
+  "so_prospective": {
+   "value": 75,
+   "unit": "GW+",
+   "asOf": "2026-11-05",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/content_files/SO-2026-Q3-Earnings-Call-Final.pdf",
+     "title": "Southern Company Q3 2026 earnings slides",
+     "date": "2026-11-05"
+    }
+   ],
+   "note": "100+ projects; CEO: 'Probably not' landing all"
+  },
+  "so_10q_contracts": {
+   "value": {
+    "psc_reviewed": 16,
+    "pending": 4
+   },
+   "unit": "GW",
+   "asOf": "2026-09-30",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+     "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+     "date": "2026-11"
+    }
+   ]
+  },
+  "so_contracted_ramp": {
+   "value": {
+    "2028": 10,
+    "2030": 17,
+    "mid_2030s": 21
+   },
+   "unit": "GW",
+   "asOf": "2026-11-05",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/content_files/SO-2026-Q3-Earnings-Call-Final.pdf",
+     "title": "Southern Company Q3 2026 earnings slides",
+     "date": "2026-11-05"
+    }
+   ],
+   "note": "system; announced ramps"
+  },
+  "so_combined_ramp": {
+   "value": {
+    "2028": 11,
+    "2030": 21,
+    "mid_2030s": 28
+   },
+   "unit": "GW",
+   "asOf": "2026-11-05",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/content_files/SO-2026-Q3-Earnings-Call-Final.pdf",
+     "title": "Southern Company Q3 2026 earnings slides",
+     "date": "2026-11-05"
+    }
+   ],
+   "note": "contracted + finalizing + late stage"
+  },
+  "data_center_usage_growth": {
+   "value": {
+    "Q3": 59,
+    "YTD": 52
+   },
+   "unit": "percent",
+   "asOf": "2026-09-30",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/content_files/SO-2026-Q3-Earnings-Call-Final.pdf",
+     "title": "Southern Company Q3 2026 earnings slides",
+     "date": "2026-11-05"
+    }
+   ]
+  },
+  "openai_effingham": {
+   "value": {
+    "mw": 3200,
+    "flexible_dr_mw": 1000,
+    "phases": "2028-2032"
+   },
+   "unit": "MW",
+   "asOf": "2026-08-26",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://www.georgiapower.com/news-hub/press-releases/contract-openai-approved-part-portfolio-delivering-950-million-annual-savings.html",
+     "title": "Georgia Power release: OpenAI contract approved",
+     "date": "2026-08-26"
+    },
+    {
+     "url": "https://cleanenergy.org/news/will-the-new-openai-data-center-raise-georgia-power-bills/",
+     "title": "SACE: OpenAI data center (advocacy)",
+     "date": "2026-08"
+    }
+   ],
+   "note": "phase window from SACE"
+  },
+  "sales_growth_2026_2030": {
+   "value": 10,
+   "unit": "percent/yr approx",
+   "asOf": "2026-11-05",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/content_files/SO-2026-Q3-Earnings-Call-Final.pdf",
+     "title": "Southern Company Q3 2026 earnings slides",
+     "date": "2026-11-05"
+    }
+   ],
+   "note": "slide text: projected electric sales growth of ~10% from 2026 to 2030; annual vs cumulative not stated in extracted text",
+   "confidence": "low"
+  }
+ },
+ "4_resources": {
+  "certified_total": {
+   "value": 9885,
+   "unit": "MW",
+   "asOf": "2025-12-19",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://psc.ga.gov/site/assets/files/9176/media_advisory_dec_19_decision.pdf",
+     "title": "GA PSC news release, certification vote",
+     "date": "2025-12-19"
+    },
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+     "title": "Southern Company Form 10-K FY2025",
+     "date": "2026-02"
+    }
+   ]
+  },
+  "projects": [
+   {
+    "name": "Robins BESS",
+    "county": "Houston",
+    "type": "BESS",
+    "ownership": "GPC",
+    "value": 128,
+    "unit": "MW nameplate",
+    "asOf": "2026-09-30",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     },
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "inService": "2026-03"
+   },
+   {
+    "name": "Moody BESS",
+    "county": "Lowndes",
+    "type": "BESS",
+    "ownership": "GPC",
+    "value": 50,
+    "unit": "MW nameplate",
+    "asOf": "2026-09-30",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     },
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "inService": "2026-04"
+   },
+   {
+    "name": "McGrau Ford Phase 1 BESS",
+    "county": "Cherokee",
+    "type": "BESS",
+    "ownership": "GPC",
+    "value": 265,
+    "unit": "MW nameplate",
+    "asOf": "2026-09-30",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     },
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "inService": "2026-08"
+   },
+   {
+    "name": "McGrau Ford Phase 2 BESS",
+    "county": "Cherokee",
+    "type": "BESS",
+    "ownership": "GPC",
+    "value": 265,
+    "unit": "MW nameplate",
+    "asOf": "2026-09-30",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     },
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "inService": "2026-08"
+   },
+   {
+    "name": "Hammond Phase 1 BESS",
+    "county": "Floyd",
+    "type": "BESS",
+    "ownership": "GPC",
+    "value": 58,
+    "unit": "MW nameplate",
+    "asOf": "2026-09-30",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     },
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "inService": "2026-10"
+   },
+   {
+    "name": "Mossy Branch BESS",
+    "county": "Talbot",
+    "type": "BESS",
+    "ownership": "GPC",
+    "value": 65,
+    "unit": "MW nameplate",
+    "asOf": "2026-09-30",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.georgiapower.com/content/dam/georgia-power/pdfs/company-pdfs/facts-figures-2026.pdf",
+      "title": "Georgia Power 2026 Facts & Figures (data at 2025-12-31)",
+      "date": "2026"
+     },
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ],
+    "inService": "in service by 2025-12-31"
+   },
+   {
+    "name": "Yates 8 CT",
+    "county": "Coweta",
+    "type": "CT",
+    "ownership": "GPC",
+    "value": 442,
+    "unit": "MW nameplate",
+    "asOf": "2026-09-30",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     },
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "note": "slipped from Q4 2026",
+    "inService": "2027Q1"
+   },
+   {
+    "name": "Yates 9 CT",
+    "county": "Coweta",
+    "type": "CT",
+    "ownership": "GPC",
+    "value": 442,
+    "unit": "MW nameplate",
+    "asOf": "2026-09-30",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     },
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "inService": "2027Q2"
+   },
+   {
+    "name": "Yates 10 CT",
+    "county": "Coweta",
+    "type": "CT",
+    "ownership": "GPC",
+    "value": 442,
+    "unit": "MW nameplate",
+    "asOf": "2026-09-30",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     },
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "inService": "2027Q3"
+   },
+   {
+    "name": "Twiggs County BESS",
+    "county": "Twiggs",
+    "type": "BESS",
+    "ownership": "GPC",
+    "value": 200,
+    "unit": "MW nameplate",
+    "asOf": "2026-09-30",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     },
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "inService": "2027Q4"
+   },
+   {
+    "name": "Wadley BESS",
+    "county": "Jefferson",
+    "type": "BESS",
+    "ownership": "GPC",
+    "value": 260,
+    "unit": "MW nameplate",
+    "asOf": "2026-09-30",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     },
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "inService": "2027Q4"
+   },
+   {
+    "name": "Bowen BESS 1",
+    "county": "Bartow",
+    "type": "BESS",
+    "ownership": "GPC",
+    "value": 250,
+    "unit": "MW nameplate",
+    "asOf": "2026-09-30",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     },
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "inService": "2028Q4"
+   },
+   {
+    "name": "Bowen BESS 2",
+    "county": "Bartow",
+    "type": "BESS",
+    "ownership": "GPC",
+    "value": 250,
+    "unit": "MW nameplate",
+    "asOf": "2026-09-30",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     },
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "inService": "2029Q4"
+   },
+   {
+    "name": "South Hall BESS",
+    "county": "Hall",
+    "type": "BESS",
+    "ownership": "GPC",
+    "value": 250,
+    "unit": "MW nameplate",
+    "asOf": "2026-09-30",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     },
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "inService": "2028Q4"
+   },
+   {
+    "name": "Wansley BESS",
+    "county": "Heard/Carroll",
+    "type": "BESS",
+    "ownership": "GPC",
+    "value": 500,
+    "unit": "MW nameplate",
+    "asOf": "2026-09-30",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     },
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "inService": "2028Q4"
+   },
+   {
+    "name": "Yates BESS 1",
+    "county": "Coweta",
+    "type": "BESS",
+    "ownership": "GPC",
+    "value": 320,
+    "unit": "MW nameplate",
+    "asOf": "2026-09-30",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     },
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "inService": "2028Q4"
+   },
+   {
+    "name": "Yates BESS 2",
+    "county": "Coweta",
+    "type": "BESS",
+    "ownership": "GPC",
+    "value": 250,
+    "unit": "MW nameplate",
+    "asOf": "2026-09-30",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     },
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "inService": "2028Q4"
+   },
+   {
+    "name": "Thomson BESS",
+    "county": "McDuffie",
+    "type": "BESS",
+    "ownership": "GPC",
+    "value": 500,
+    "unit": "MW nameplate",
+    "asOf": "2026-09-30",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     },
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "inService": "2029Q4"
+   },
+   {
+    "name": "Hammond Phase 2 BESS",
+    "county": "Floyd",
+    "type": "BESS",
+    "ownership": "GPC",
+    "value": 193,
+    "unit": "MW nameplate",
+    "asOf": "2026-09-30",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     },
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "inService": "2030Q4"
+   },
+   {
+    "name": "McIntosh BESS",
+    "county": "Effingham",
+    "type": "BESS",
+    "ownership": "GPC",
+    "value": 250,
+    "unit": "MW nameplate",
+    "asOf": "2026-09-30",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     },
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "inService": "2030Q4"
+   },
+   {
+    "name": "Laurens County Solar+BESS",
+    "county": "Laurens",
+    "type": "solar+BESS",
+    "ownership": "GPC",
+    "value": 200,
+    "unit": "MW nameplate",
+    "asOf": "2026-09-30",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     },
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "inService": "2028Q4"
+   },
+   {
+    "name": "Plant Mitchell Solar+BESS",
+    "county": "Mitchell/Dougherty",
+    "type": "solar+BESS",
+    "ownership": "GPC",
+    "value": 150,
+    "unit": "MW nameplate",
+    "asOf": "2026-09-30",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     },
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "inService": "2028Q4"
+   },
+   {
+    "name": "Bowen 7 CC",
+    "county": "Bartow",
+    "type": "CC",
+    "ownership": "GPC",
+    "value": 741,
+    "unit": "MW nameplate",
+    "asOf": "2026-09-30",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     },
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "inService": "2029Q4"
+   },
+   {
+    "name": "Bowen 8 CC",
+    "county": "Bartow",
+    "type": "CC",
+    "ownership": "GPC",
+    "value": 741,
+    "unit": "MW nameplate",
+    "asOf": "2026-09-30",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     },
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "inService": "2030Q2"
+   },
+   {
+    "name": "Wansley 10 CC",
+    "county": "Heard",
+    "type": "CC",
+    "ownership": "GPC",
+    "value": 727,
+    "unit": "MW nameplate",
+    "asOf": "2026-09-30",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     },
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "inService": "2029Q4"
+   },
+   {
+    "name": "Wansley 11 CC",
+    "county": "Heard",
+    "type": "CC",
+    "ownership": "GPC",
+    "value": 727,
+    "unit": "MW nameplate",
+    "asOf": "2026-09-30",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     },
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "inService": "2030Q2"
+   },
+   {
+    "name": "McIntosh 12 CC",
+    "county": "Effingham",
+    "type": "CC",
+    "ownership": "GPC",
+    "value": 757,
+    "unit": "MW nameplate",
+    "asOf": "2026-09-30",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     },
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "inService": "2030Q4"
+   },
+   {
+    "name": "Mid-Georgia Cogen",
+    "county": null,
+    "type": "CC",
+    "ownership": "PPA",
+    "value": 317,
+    "unit": "MW nominal",
+    "asOf": "2025-12-19",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     },
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ],
+    "note": "20 yr",
+    "inService": "2028-06"
+   },
+   {
+    "name": "Dahlberg 4",
+    "county": "Jackson",
+    "type": "CT",
+    "ownership": "PPA",
+    "value": 74,
+    "unit": "MW nominal",
+    "asOf": "2025-12-19",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     },
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ],
+    "note": "10 yr, Southern Power; 10-Q says affiliate PPAs of 638/74 MW 'commenced in June 2026' (likely accounting commencement)",
+    "inService": "2030-06"
+   },
+   {
+    "name": "Harris 1",
+    "county": "Autauga AL",
+    "type": "CC",
+    "ownership": "PPA",
+    "value": 658,
+    "unit": "MW nominal",
+    "asOf": "2025-12-19",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     },
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ],
+    "note": "15 yr, Southern Power; 638 MW per 10-Q",
+    "inService": "2030-06"
+   },
+   {
+    "name": "Sandersville",
+    "county": "Washington",
+    "type": "CT",
+    "ownership": "PPA",
+    "value": 146,
+    "unit": "MW nominal",
+    "asOf": "2025-12-19",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     },
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ],
+    "note": "15 yr",
+    "inService": "2030-12"
+   },
+   {
+    "name": "Tenaska Heard",
+    "county": "Heard",
+    "type": "CT",
+    "ownership": "PPA",
+    "value": 930,
+    "unit": "MW nominal",
+    "asOf": "2025-12-19",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     },
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ],
+    "note": "20 yr",
+    "inService": "2030-06"
+   },
+   {
+    "name": "Mississippi Power extension",
+    "county": null,
+    "type": "system",
+    "ownership": "PPA",
+    "value": 50,
+    "unit": "MW nominal",
+    "asOf": "2025-12-19",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     },
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ],
+    "inService": "2029 only"
+   },
+   {
+    "name": "NEER Decatur BESS",
+    "county": "Decatur",
+    "type": "BESS",
+    "ownership": "PPA",
+    "value": 200,
+    "unit": "MW nominal",
+    "asOf": "2025-12-19",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     },
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ],
+    "note": "25 yr",
+    "inService": "2027-12"
+   },
+   {
+    "name": "NEER Dougherty BESS",
+    "county": "Dougherty",
+    "type": "BESS",
+    "ownership": "PPA",
+    "value": 120,
+    "unit": "MW nominal",
+    "asOf": "2025-12-19",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     },
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ],
+    "note": "25 yr",
+    "inService": "2027-12"
+   },
+   {
+    "name": "NEER Washington BESS",
+    "county": "Washington",
+    "type": "BESS",
+    "ownership": "PPA",
+    "value": 150,
+    "unit": "MW nominal",
+    "asOf": "2025-12-19",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     },
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ],
+    "note": "25 yr",
+    "inService": "2027-12"
+   },
+   {
+    "name": "NEER White Oak BESS",
+    "county": null,
+    "type": "BESS",
+    "ownership": "PPA",
+    "value": 76,
+    "unit": "MW nominal",
+    "asOf": "2025-12-19",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     },
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ],
+    "note": "25 yr",
+    "inService": "2027-12"
+   },
+   {
+    "name": "NEER White Pine BESS",
+    "county": null,
+    "type": "BESS",
+    "ownership": "PPA",
+    "value": 100,
+    "unit": "MW nominal",
+    "asOf": "2025-12-19",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     },
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ],
+    "note": "25 yr",
+    "inService": "2027-12"
+   }
+  ],
+  "county_note": "County names for company plants are general geography unless part of the project name or 10-K location column; treat as estimated.",
+  "uprates": [
+   {
+    "name": "Vogtle 1-2 (GPC share)",
+    "value": 47,
+    "unit": "MW",
+    "asOf": "2026-10-06",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     }
+    ],
+    "note": "54 MW in 2025 IRP/10-K; CODs Q1 2028-Q2 2031"
+   },
+   {
+    "name": "Hatch 1-2 (GPC share)",
+    "value": 49,
+    "unit": "MW",
+    "asOf": "2026-10-06",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+      "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+      "date": "2026-11"
+     }
+    ],
+    "note": "approved 2026-10-06; CODs Q1 2028-Q2 2031"
+   },
+   {
+    "name": "McIntosh CC 10-11",
+    "value": 194,
+    "unit": "MW",
+    "asOf": "2025-07-15",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ],
+    "note": "by 2028"
+   },
+   {
+    "name": "McIntosh CT 1-8",
+    "value": 74,
+    "unit": "MW",
+    "asOf": "2025-07-15",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ],
+    "note": "by 2033"
+   },
+   {
+    "name": "Additional gas uprates AL+GA",
+    "value": 400,
+    "unit": "MW",
+    "asOf": "2026-11-05",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/content_files/SO-2026-Q3-Earnings-Call-Final.pdf",
+      "title": "Southern Company Q3 2026 earnings slides",
+      "date": "2026-11-05"
+     }
+    ],
+    "note": "four units across AL and GA, 2029-30"
+   }
+  ],
+  "coal_gas_extensions": [
+   {
+    "name": "Scherer 3",
+    "value": 614,
+    "unit": "MW",
+    "asOf": "2025-07-15",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ],
+    "note": "through at least 2035; 75% share"
+   },
+   {
+    "name": "Gaston 1-4",
+    "value": 500,
+    "unit": "MW",
+    "asOf": "2025-07-15",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ],
+    "note": "through 2034; 50% via SEGCO"
+   },
+   {
+    "name": "Bowen 1-4",
+    "value": 3160,
+    "unit": "MW",
+    "asOf": "2025-07-15",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ],
+    "note": "ELG controls and gas co-firing approved; Bowen 1-2 assumed to run through at least 2035; IRP base case drops about 3,500 MW owned capacity in 2036"
+   },
+   {
+    "name": "Scherer 1-2",
+    "value": 137,
+    "unit": "MW",
+    "asOf": "2025-07-15",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ],
+    "note": "8.4% share"
+   },
+   {
+    "name": "Scherer 3 wholesale to retail",
+    "value": 187,
+    "unit": "MW",
+    "asOf": "2025-07-15",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+      "title": "Southern Company Form 10-K FY2025",
+      "date": "2026-02"
+     }
+    ],
+    "note": "phased from 2026"
+   }
+  ],
+  "vogtle_3_4_share": {
+   "value": 1106,
+   "unit": "MW",
+   "asOf": "2025-12-31",
+   "basis": "derived",
+   "sources": [
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+     "title": "Southern Company Form 10-K FY2025",
+     "date": "2026-02"
+    }
+   ],
+   "note": "2 x 553 MW at 45.7%; in service 2023-07-31 and 2024-04-29"
+  },
+  "hydro_modernization": {
+   "value": "Tallulah, Yonah, Bartletts Ferry 5-6, North Highlands approved; $25M studies Goat Rock and Morgan Falls",
+   "unit": "text",
+   "asOf": "2025-07",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/223329/104558",
+     "title": "2025 IRP Stipulation, Dockets 56002/56003",
+     "date": "2025-07-11"
+    }
+   ]
+  },
+  "renewables": {
+   "value": {
+    "utility_scale_rfp": 1000,
+    "dg_rfp": 100,
+    "customer_subscribed_rfp_max": 3000
+   },
+   "unit": "MW",
+   "asOf": "2025-07",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/223329/104558",
+     "title": "2025 IRP Stipulation, Dockets 56002/56003",
+     "date": "2025-07-11"
+    }
+   ]
+  },
+  "expiring": [
+   {
+    "name": "Mississippi Power PPA",
+    "value": 750,
+    "unit": "MW",
+    "asOf": "2024-2028",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ],
+    "note": "50 MW extended through 2029"
+   },
+   {
+    "name": "Santa Rosa Energy Center PPA",
+    "value": 230,
+    "unit": "MW",
+    "asOf": "to 2028-12-31",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+      "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+      "date": "2025-11-12"
+     }
+    ]
+   }
+  ],
+  "mcdonough": null
+ },
+ "5_imports": {
+  "itcs_into_sercse_total": {
+   "value": {
+    "summer": 4900,
+    "winter": 6525
+   },
+   "unit": "MW",
+   "asOf": "2024-08",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://www.nerc.com/globalassets/initiatives/itcs/itcs_part_1_results.pdf",
+     "title": "NERC Interregional Transfer Capability Study Part 1",
+     "date": "2024-08"
+    }
+   ],
+   "note": "11% and 15% of peak"
+  },
+  "itcs_interfaces_into_sercse": {
+   "value": {
+    "SERC-Central(TVA)": {
+     "summer": 1095,
+     "winter": 5387
+    },
+    "SERC-East(Duke/Dominion SC/Santee)": {
+     "summer": 1703,
+     "winter": 3536
+    },
+    "SERC-Florida": {
+     "summer": 1322,
+     "winter": 0
+    },
+    "MISO-South": {
+     "summer": 3600,
+     "winter": 3392
+    }
+   },
+   "unit": "MW",
+   "asOf": "2024-08",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://www.nerc.com/globalassets/initiatives/itcs/itcs_part_1_results.pdf",
+     "title": "NERC Interregional Transfer Capability Study Part 1",
+     "date": "2024-08"
+    }
+   ],
+   "note": "simulated capability, area-level, not firm ATC"
+  },
+  "itcs_interfaces_out_of_sercse": {
+   "value": {
+    "SERC-Central": {
+     "summer": 6579,
+     "winter": 4639
+    },
+    "SERC-East": {
+     "summer": 2397,
+     "winter": 3669
+    },
+    "SERC-Florida": {
+     "summer": 2958,
+     "winter": 1807
+    },
+    "MISO-South": {
+     "summer": 1638,
+     "winter": 4028
+    }
+   },
+   "unit": "MW",
+   "asOf": "2024-08",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://www.nerc.com/globalassets/initiatives/itcs/itcs_part_1_results.pdf",
+     "title": "NERC Interregional Transfer Capability Study Part 1",
+     "date": "2024-08"
+    }
+   ]
+  },
+  "observed_soco_interchange_2026": {
+   "value": {
+    "mean_net_export": 1452,
+    "max_net_export": 5031,
+    "max_net_import": 469
+   },
+   "unit": "MW",
+   "asOf": "2026-01..11-22 approx",
+   "basis": "derived",
+   "sources": [
+    {
+     "url": "https://www.eia.gov/electricity/gridmonitor/sixMonthFiles/EIA930_BALANCE_2026_Jan_Jun.csv",
+     "title": "EIA-930 hourly balance Jan-Jun 2026 (BA SOCO)",
+     "date": "2026-11-24 retrieved"
+    },
+    {
+     "url": "https://www.eia.gov/electricity/gridmonitor/sixMonthFiles/EIA930_BALANCE_2026_Jul_Dec.csv",
+     "title": "EIA-930 hourly balance Jul-Dec 2026 (BA SOCO)",
+     "date": "2026-11-24 retrieved"
+    }
+   ],
+   "note": "positive = export"
+  },
+  "observed_by_neighbor_2026": {
+   "value": {
+    "TVA": {
+     "p0.1_import": 2255,
+     "p99.9_export": 1710,
+     "mean": -605
+    },
+    "DUK": {
+     "p0.1_import": 1312,
+     "p99.9_export": 836,
+     "mean": -152
+    },
+    "FPL": {
+     "p0.1_import": 1300,
+     "p99.9_export": 1682,
+     "mean": 353
+    },
+    "MISO": {
+     "p0.1_import": 900,
+     "p99.9_export": 1261,
+     "mean": 174
+    },
+    "SCEG": {
+     "p0.1_import": -534,
+     "p99.9_export": 2000,
+     "mean": 1248
+    },
+    "SC": {
+     "p0.1_import": 0,
+     "p99.9_export": 1187,
+     "mean": 630
+    },
+    "FPC": {
+     "p0.1_import": 355,
+     "p99.9_export": 262,
+     "mean": -61
+    },
+    "TAL": {
+     "p0.1_import": 23,
+     "p99.9_export": 239,
+     "mean": 81
+    },
+    "SEPA": {
+     "p0.1_import": 684,
+     "p99.9_export": 115,
+     "mean": -219
+    }
+   },
+   "unit": "MW",
+   "asOf": "2026",
+   "basis": "derived",
+   "sources": [
+    {
+     "url": "https://www.eia.gov/electricity/gridmonitor/sixMonthFiles/EIA930_INTERCHANGE_2026_Jan_Jun.csv",
+     "title": "EIA-930 hourly interchange (BA SOCO; also 2026_Jul_Dec file)",
+     "date": "2026-11-24 retrieved"
+    }
+   ],
+   "note": "hourly flow quantiles; negative p0.1_import means never net importing"
+  },
+  "power_pool": {
+   "value": "Single integrated system dispatched by SCS under the Intercompany Interchange Contract; each company keeps its lowest cost energy and sells excess to the pool",
+   "unit": "text",
+   "asOf": "2025-12-31",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+     "title": "Southern Company Form 10-K FY2025",
+     "date": "2026-02"
+    }
+   ]
+  },
+  "into_southern_price": {
+   "value": {
+    "2025": 41.41,
+    "2026": 47.14,
+    "2027": 42.0,
+    "2026_quarters": [
+     54.46,
+     34.74,
+     52.64,
+     46.72
+    ]
+   },
+   "unit": "$/MWh",
+   "asOf": "2026-11",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://www.eia.gov/outlooks/steo/tables/pdf/7atab.pdf",
+     "title": "EIA STEO Table 7a",
+     "date": "2026-11-05"
+    }
+   ],
+   "note": "EIA 'SERC index, Into Southern'; column order inferred (Q1-Q4 2025, 2026, 2027, then annual). Q4 2026 and 2027 are forecasts"
+  },
+  "seem_clearing_price": {
+   "value": 28,
+   "unit": "$/MWh",
+   "asOf": "2026-03",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://www.potomaceconomics.com/wp-content/uploads/2026/06/SEEM-Audit-Report-2026_3.pdf",
+     "title": "SEEM Audit Report March 2026",
+     "date": "2026-06"
+    }
+   ],
+   "note": "monthly average; 106,000 MWh/month 12-month average volume"
+  },
+  "gpc_sales_for_resale": {
+   "value": 9.53,
+   "unit": "TWh",
+   "asOf": "2025",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://www.eia.gov/electricity/data/eia861/zip/f8612025.zip",
+     "title": "EIA-861 2025 final: Operational_Data, Sales_Ult_Cust, Demand_Response",
+     "date": "2026-09-30"
+    }
+   ]
+  },
+  "gpc_avg_resale_price": {
+   "value": 56.4,
+   "unit": "$/MWh",
+   "asOf": "2025",
+   "basis": "derived",
+   "sources": [
+    {
+     "url": "https://www.eia.gov/electricity/data/eia861/zip/f8612025.zip",
+     "title": "EIA-861 2025 final: Operational_Data, Sales_Ult_Cust, Demand_Response",
+     "date": "2026-09-30"
+    }
+   ],
+   "note": "$537.3M / 9.533 TWh; includes capacity revenue"
+  }
+ },
+ "6_tariff_and_cost": {
+  "rule_scope": {
+   "value": 100,
+   "unit": "MW threshold",
+   "asOf": "2025-01-23",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/221165/102330",
+     "title": "GA PSC Order Approving Revisions to Rules and Regulations, Docket 44280",
+     "date": "2025-01-28"
+    }
+   ],
+   "note": "new customers; minimum billing and longer terms; full contract filed within 30 days"
+  },
+  "contract_terms": {
+   "value": {
+    "min_years_data_center": 15,
+    "min_years_other": 10,
+    "min_bill": "at least 100% of annual incremental cost to serve",
+    "termination": "remaining incremental cost over contract life",
+    "collateral": "tied to termination payment and credit",
+    "collateral_2030_usd_b": 25,
+    "weighted_avg_years_post_Q2_2025": 21
+   },
+   "unit": "mixed",
+   "asOf": "2026-11-05",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/content_files/SO-2026-Q3-Earnings-Call-Final.pdf",
+     "title": "Southern Company Q3 2026 earnings slides",
+     "date": "2026-11-05"
+    }
+   ],
+   "note": "Southern-system framework for 17 GW of 21 GW; the 4 GW of older contracts average 5 years"
+  },
+  "legacy_contracts": {
+   "value": 4,
+   "unit": "GW",
+   "asOf": "2026-11-05",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/content_files/SO-2026-Q3-Earnings-Call-Final.pdf",
+     "title": "Southern Company Q3 2026 earnings slides",
+     "date": "2026-11-05"
+    }
+   ],
+   "note": "18 projects, 5-year average length"
+  },
+  "downward_pressure": {
+   "value": {
+    "2029_2031_min_usd_m_per_yr": 949,
+    "residential_usd_month": 15
+   },
+   "unit": "mixed",
+   "asOf": "2026-08-26",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/228126/109297",
+     "title": "Joint Statement of PSC Staff and Georgia Power, Docket 44280",
+     "date": "2026-08-26"
+    },
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+     "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+     "date": "2026-11"
+    }
+   ]
+  },
+  "avg_revenue_2025": {
+   "value": {
+    "residential": 16.28,
+    "commercial": 12.42,
+    "industrial": 7.77,
+    "total": 12.43
+   },
+   "unit": "cents/kWh",
+   "asOf": "2025",
+   "basis": "derived",
+   "sources": [
+    {
+     "url": "https://www.eia.gov/electricity/data/eia861/zip/f8612025.zip",
+     "title": "EIA-861 2025 final: Operational_Data, Sales_Ult_Cust, Demand_Response",
+     "date": "2026-09-30"
+    }
+   ],
+   "note": "revenue / sales, includes fuel and riders"
+  },
+  "pll18_base_300MW_85LF": {
+   "value": {
+    "usd_per_kw_month": 29.67,
+    "cents_per_kwh": 4.78
+   },
+   "unit": "base only",
+   "asOf": "2025-04",
+   "basis": "derived",
+   "sources": [
+    {
+     "url": "https://www.georgiapower.com/content/dam/georgia-power/pdfs/business-pdfs/tariffs/2025/pll-18.pdf",
+     "title": "Georgia Power PLL-18 tariff",
+     "date": "2025-04"
+    }
+   ],
+   "note": "300 MW, 620.5 h use; excludes fuel, ECCR, DSM, franchise; tariff closed to new 100+ MW customers after 2025-02-01"
+  },
+  "pll18_min_bill": {
+   "value": 13.63,
+   "unit": "$/kW-month",
+   "asOf": "2025-04",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://www.georgiapower.com/content/dam/georgia-power/pdfs/business-pdfs/tariffs/2025/pll-18.pdf",
+     "title": "Georgia Power PLL-18 tariff",
+     "date": "2025-04"
+    }
+   ]
+  },
+  "large_load_all_in_est": {
+   "value": [
+    7.5,
+    9.0
+   ],
+   "unit": "cents/kWh",
+   "asOf": "2026",
+   "basis": "estimated",
+   "sources": [
+    {
+     "url": "https://www.georgiapower.com/content/dam/georgia-power/pdfs/business-pdfs/tariffs/2025/pll-18.pdf",
+     "title": "Georgia Power PLL-18 tariff",
+     "date": "2025-04"
+    },
+    {
+     "url": "https://www.georgiapower.com/content/dam/georgia-power/pdfs/company-pdfs/facts-figures-2026.pdf",
+     "title": "Georgia Power 2026 Facts & Figures (data at 2025-12-31)",
+     "date": "2026"
+    },
+    {
+     "url": "https://www.eia.gov/electricity/data/eia861/zip/f8612025.zip",
+     "title": "EIA-861 2025 final: Operational_Data, Sales_Ult_Cust, Demand_Response",
+     "date": "2026-09-30"
+    }
+   ],
+   "note": "PLL base 4.78 + 2025 avg fuel 2.72 = 7.5; upper bound allows riders and incremental-cost pricing. Actual contract prices redacted.",
+   "confidence": "low"
+  },
+  "breakeven_capacity_revenue": {
+   "value": 28.7,
+   "unit": "$/kW-month",
+   "asOf": "2031",
+   "basis": "derived",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+     "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+     "date": "2025-11-12"
+    }
+   ],
+   "note": "$3.4B/yr incremental revenue requirement / 9,886 MW / 12"
+  },
+  "incremental_revenue_requirement": {
+   "value": 3.4,
+   "unit": "$B/yr",
+   "asOf": "2031",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+     "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+     "date": "2025-11-12"
+    }
+   ],
+   "note": "about $20/MWh over 165.7 TWh; excludes new-load transmission"
+  },
+  "certified_cost_portfolio": {
+   "value": {
+    "certified_2025_owned_plus_transmission_usd_b": 16.7,
+    "all_construction_usd_b": 19.5
+   },
+   "unit": "$B excl. AFUDC",
+   "asOf": "2025-12-31",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+     "title": "Southern Company Form 10-K FY2025",
+     "date": "2026-02"
+    },
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+     "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+     "date": "2026-11"
+    }
+   ]
+  },
+  "owned_cost_average": {
+   "value": 2299,
+   "unit": "$/kW",
+   "asOf": "2025-12",
+   "basis": "derived",
+   "sources": [
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+     "title": "Southern Company Form 10-K FY2025",
+     "date": "2026-02"
+    },
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769",
+     "title": "GA PSC Staff testimony Newsome/Hayet/Wellborn, Dockets 56298/56310, incl. Exhibits STF-NHW-4/5",
+     "date": "2025-11-12"
+    }
+   ],
+   "note": "16.7B / (7,065 + 200 MW Twiggs); mixed CC, BESS, solar+BESS incl. related transmission"
+  },
+  "owned_generation_benchmark": {
+   "value": 2000,
+   "unit": "$/kW (plus)",
+   "asOf": "2026-11-05",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/content_files/SO-2026-Q3-Earnings-Call-Final.pdf",
+     "title": "Southern Company Q3 2026 earnings slides",
+     "date": "2026-11-05"
+    },
+    {
+     "url": "https://www.fool.com/earnings/call-transcripts/2026/11/05/southern-co-so-q3-2026-earnings-call-transcript/",
+     "title": "Southern Company Q3 2026 earnings call transcript",
+     "date": "2026-11-05"
+    }
+   ],
+   "note": "$2B+ per GW company-owned"
+  },
+  "spent_to_date": {
+   "value": 5.0,
+   "unit": "$B excl. AFUDC",
+   "asOf": "2026-09-30",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/content_files/f0042b7d-9cd5-45a9-be82-0f8f3b55e3a9.pdf",
+     "title": "Southern Company Form 10-Q, quarter ended 2026-09-30",
+     "date": "2026-11"
+    }
+   ]
+  },
+  "bess_epc_range": {
+   "value": [
+    450,
+    600
+   ],
+   "unit": "$/kW-AC (4h)",
+   "asOf": "2025",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://www.energy-storage.news/peach-state-power-play-georgias-blueprint-for-grid-scale-energy-storage/",
+     "title": "Energy-Storage.News Georgia storage article",
+     "date": "2025"
+    }
+   ],
+   "note": "trade press, preliminary EPC only"
+  },
+  "ct_cc_bess_solar_unit_costs": null,
+  "ppa_additional_sum": {
+   "value": {
+    "stipulated": 2.65
+   },
+   "unit": "$/kW-year",
+   "asOf": "2025-12-09",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224772/106009",
+     "title": "Certification Stipulation, Dockets 56298/56310",
+     "date": "2025-12-09"
+    }
+   ]
+  },
+  "ppa_capacity_price": null,
+  "gpc_capex": {
+   "value": {
+    "2026": 10.1,
+    "2027": 12.7,
+    "2028": 12.1,
+    "2029": 9.8,
+    "2030": 7.7
+   },
+   "unit": "$B",
+   "asOf": "2026-02",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+     "title": "Southern Company Form 10-K FY2025",
+     "date": "2026-02"
+    }
+   ]
+  },
+  "so_capex": {
+   "value": {
+    "2026": 15.9,
+    "2027": 18.5,
+    "2028": 17.1,
+    "2029": 14.6,
+    "2030": 12.0,
+    "total_base": 81,
+    "total_with_identified": 85,
+    "upside": 100
+   },
+   "unit": "$B",
+   "asOf": "2026-11-05",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/doc_financials/2025/q4/978d3eb6-1b36-4ea1-8686-480789bca55a.pdf",
+     "title": "Southern Company Form 10-K FY2025",
+     "date": "2026-02"
+    },
+    {
+     "url": "https://s27.q4cdn.com/273397814/files/content_files/SO-2026-Q3-Earnings-Call-Final.pdf",
+     "title": "Southern Company Q3 2026 earnings slides",
+     "date": "2026-11-05"
+    }
+   ]
+  }
+ },
+ "7_transmission": {
+  "ten_year_miles": {
+   "value": 1000,
+   "unit": "miles (more than)",
+   "asOf": "2025-07",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://www.georgiapower.com/content/dam/georgia-power/pdfs/about/2025-irp-one-page-summary.pdf",
+     "title": "Georgia Power 2025 IRP summary",
+     "date": "2025-07"
+    }
+   ],
+   "note": "new transmission across more than 1,000 miles; 500/230 kV split not public"
+  },
+  "gpc_line_miles": {
+   "value": 10770,
+   "unit": "miles",
+   "asOf": "2025-12-31",
+   "basis": "stated",
+   "sources": [
+    {
+     "url": "https://www.georgiapower.com/content/dam/georgia-power/pdfs/company-pdfs/facts-figures-2026.pdf",
+     "title": "Georgia Power 2026 Facts & Figures (data at 2025-12-31)",
+     "date": "2026"
+    }
+   ]
+  },
+  "projects": [
+   {
+    "name": "Big Tazewell-Farley 500 kV",
+    "inService": "2028Q4 line complete; ITS need 2030-06-01",
+    "value": 102,
+    "unit": "miles",
+    "asOf": "2026-11",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.georgiapower.com/about/grid-reliability/grid-improvements/grid-projects/transmission-projects/big-tazewell-farley.html",
+      "title": "Big Tazewell-Farley 500 kV project page",
+      "date": "2026-11-24 retrieved"
+     },
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/222492/103596",
+      "title": "2025 IRP testimony exhibit, response STF-DEA-4-6 (2024 GA ITS Ten-Year Plan need dates)",
+      "date": "2025-05"
+     }
+    ]
+   },
+   {
+    "name": "Ashley Park-Wansley 500 kV",
+    "inService": "2028Q2",
+    "value": 35,
+    "unit": "miles",
+    "asOf": "2025-12-08",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://southerncompany.mediaroom.com/2025-12-08-South-Metro-Atlanta-communities-to-benefit-from-new-transmission-infrastructure-projects-including-Ashley-Park-Wansley-line",
+      "title": "Ashley Park-Wansley release",
+      "date": "2025-12-08"
+     }
+    ]
+   },
+   {
+    "name": "Ashley Park 500/230 substation and 230 kV lines",
+    "inService": "spring 2026",
+    "value": 10,
+    "unit": "miles (more than)",
+    "asOf": "2025-12-08",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://southerncompany.mediaroom.com/2025-12-08-South-Metro-Atlanta-communities-to-benefit-from-new-transmission-infrastructure-projects-including-Ashley-Park-Wansley-line",
+      "title": "Ashley Park-Wansley release",
+      "date": "2025-12-08"
+     }
+    ]
+   },
+   {
+    "name": "Hatch-Wadley Primary 500 kV",
+    "inService": "need 2031-06-01",
+    "value": null,
+    "unit": "miles",
+    "asOf": "2025-05",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/222492/103596",
+      "title": "2025 IRP testimony exhibit, response STF-DEA-4-6 (2024 GA ITS Ten-Year Plan need dates)",
+      "date": "2025-05"
+     },
+     {
+      "url": "https://www.georgiapower.com/about/grid-reliability/grid-improvements/grid-projects/transmission-projects.html",
+      "title": "Georgia Power transmission projects page",
+      "date": "2026-11-24 retrieved"
+     }
+    ]
+   },
+   {
+    "name": "McGrau Ford-Middle Fork 500 kV (page lists Cash Creek-McGrau Ford)",
+    "inService": "need 2033-06-01",
+    "value": null,
+    "unit": "miles",
+    "asOf": "2025-05",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/222492/103596",
+      "title": "2025 IRP testimony exhibit, response STF-DEA-4-6 (2024 GA ITS Ten-Year Plan need dates)",
+      "date": "2025-05"
+     },
+     {
+      "url": "https://www.georgiapower.com/about/grid-reliability/grid-improvements/grid-projects/transmission-projects.html",
+      "title": "Georgia Power transmission projects page",
+      "date": "2026-11-24 retrieved"
+     }
+    ]
+   },
+   {
+    "name": "GTC Dresden-Talbot 500 kV",
+    "inService": "need 2029-06-01",
+    "value": null,
+    "unit": "miles",
+    "asOf": "2025-05",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/222492/103596",
+      "title": "2025 IRP testimony exhibit, response STF-DEA-4-6 (2024 GA ITS Ten-Year Plan need dates)",
+      "date": "2025-05"
+     }
+    ]
+   },
+   {
+    "name": "GTC Talbot 2-Tazewell 500 kV",
+    "inService": "need 2030-06-01",
+    "value": null,
+    "unit": "miles",
+    "asOf": "2025-05",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/222492/103596",
+      "title": "2025 IRP testimony exhibit, response STF-DEA-4-6 (2024 GA ITS Ten-Year Plan need dates)",
+      "date": "2025-05"
+     }
+    ]
+   },
+   {
+    "name": "Butler-Thomaston 230 kV conversion",
+    "inService": "need 2029-06-01",
+    "value": null,
+    "unit": "miles",
+    "asOf": "2025-05",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/222492/103596",
+      "title": "2025 IRP testimony exhibit, response STF-DEA-4-6 (2024 GA ITS Ten-Year Plan need dates)",
+      "date": "2025-05"
+     }
+    ]
+   },
+   {
+    "name": "Norcross-South Hall 500 kV upgrade",
+    "inService": null,
+    "value": null,
+    "unit": "miles",
+    "asOf": "2026-11",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.georgiapower.com/about/grid-reliability/grid-improvements/grid-projects/transmission-projects.html",
+      "title": "Georgia Power transmission projects page",
+      "date": "2026-11-24 retrieved"
+     }
+    ]
+   },
+   {
+    "name": "Callaway Road-Thomson Primary 500 kV",
+    "inService": null,
+    "value": null,
+    "unit": "miles",
+    "asOf": "2026-11",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.georgiapower.com/about/grid-reliability/grid-improvements/grid-projects/transmission-projects.html",
+      "title": "Georgia Power transmission projects page",
+      "date": "2026-11-24 retrieved"
+     }
+    ]
+   },
+   {
+    "name": "Effingham County 500 kV",
+    "inService": null,
+    "value": null,
+    "unit": "miles",
+    "asOf": "2026-11",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.georgiapower.com/about/grid-reliability/grid-improvements/grid-projects/transmission-projects.html",
+      "title": "Georgia Power transmission projects page",
+      "date": "2026-11-24 retrieved"
+     }
+    ]
+   },
+   {
+    "name": "Hills Bridge-Speedway 500/230 kV",
+    "inService": null,
+    "value": null,
+    "unit": "miles",
+    "asOf": "2026-11",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.georgiapower.com/about/grid-reliability/grid-improvements/grid-projects/transmission-projects.html",
+      "title": "Georgia Power transmission projects page",
+      "date": "2026-11-24 retrieved"
+     }
+    ]
+   },
+   {
+    "name": "Grassy Hollow-Great Valley 230 kV",
+    "inService": null,
+    "value": null,
+    "unit": "miles",
+    "asOf": "2026-11",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.georgiapower.com/about/grid-reliability/grid-improvements/grid-projects/transmission-projects.html",
+      "title": "Georgia Power transmission projects page",
+      "date": "2026-11-24 retrieved"
+     }
+    ]
+   },
+   {
+    "name": "Conyers-Klondike 230 kV",
+    "inService": null,
+    "value": null,
+    "unit": "miles",
+    "asOf": "2026-11",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.georgiapower.com/about/grid-reliability/grid-improvements/grid-projects/transmission-projects.html",
+      "title": "Georgia Power transmission projects page",
+      "date": "2026-11-24 retrieved"
+     }
+    ]
+   },
+   {
+    "name": "Tomochichi-Towaliga River 230 kV",
+    "inService": null,
+    "value": null,
+    "unit": "miles",
+    "asOf": "2026-11",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.georgiapower.com/about/grid-reliability/grid-improvements/grid-projects/transmission-projects.html",
+      "title": "Georgia Power transmission projects page",
+      "date": "2026-11-24 retrieved"
+     }
+    ]
+   },
+   {
+    "name": "Decatur-Scottdale 115 kV upgrade",
+    "inService": null,
+    "value": null,
+    "unit": "miles",
+    "asOf": "2026-11",
+    "basis": "stated",
+    "sources": [
+     {
+      "url": "https://www.georgiapower.com/about/grid-reliability/grid-improvements/grid-projects/transmission-projects.html",
+      "title": "Georgia Power transmission projects page",
+      "date": "2026-11-24 retrieved"
+     }
+    ]
+   }
+  ],
+  "plan_cost": null
+ },
+ "year_table": [
+  {
+   "year": 2026,
+   "winter": {
+    "peak": 16617,
+    "required": 20705,
+    "cap_before": 21829,
+    "margin_after": 1124,
+    "basis": "derived",
+    "note": "capacity is Jan 2025 IRP vintage"
+   },
+   "summer": {
+    "peak": 18151,
+    "required": null,
+    "cap_before": null
+   },
+   "source": [
+    "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/222543/103696",
+    "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224483/105760"
+   ]
+  },
+  {
+   "year": 2027,
+   "winter": {
+    "peak": 17507,
+    "required": 21815,
+    "cap_before": 23553,
+    "cap_after_certified": 23553,
+    "margin_after": 1739
+   },
+   "summer": {
+    "peak": 19796,
+    "required": 23474,
+    "cap_before": 24410,
+    "cap_after_certified": 24410,
+    "margin_after": 936
+   },
+   "basis": "stated",
+   "source": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769"
+  },
+  {
+   "year": 2028,
+   "winter": {
+    "peak": 19717,
+    "required": 24672,
+    "cap_before": 24250,
+    "cap_after_certified": 25079,
+    "margin_after": 406
+   },
+   "summer": {
+    "peak": 22101,
+    "required": 26319,
+    "cap_before": 25113,
+    "cap_after_certified": 25869,
+    "margin_after": -450
+   },
+   "basis": "stated",
+   "source": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769"
+  },
+  {
+   "year": 2029,
+   "winter": {
+    "peak": 21975,
+    "required": 27498,
+    "cap_before": 24426,
+    "cap_after_certified": 27379,
+    "margin_after": -119
+   },
+   "summer": {
+    "peak": 24229,
+    "required": 28854,
+    "cap_before": 24777,
+    "cap_after_certified": 27090,
+    "margin_after": -1764
+   },
+   "basis": "stated",
+   "source": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769"
+  },
+  {
+   "year": 2030,
+   "winter": {
+    "peak": 23701,
+    "required": 29658,
+    "cap_before": 24536,
+    "cap_after_certified": 29585,
+    "margin_after": -73
+   },
+   "summer": {
+    "peak": 25845,
+    "required": 30777,
+    "cap_before": 23252,
+    "cap_after_certified": 30487,
+    "margin_after": -291
+   },
+   "basis": "stated",
+   "source": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769"
+  },
+  {
+   "year": 2031,
+   "winter": {
+    "peak": 25065,
+    "required": 31365,
+    "cap_before": 22500,
+    "cap_after_certified": 32117,
+    "margin_after": 752
+   },
+   "summer": {
+    "peak": 26979,
+    "required": 32128,
+    "cap_before": 24338,
+    "cap_after_certified": 32696,
+    "margin_after": 568
+   },
+   "basis": "stated",
+   "source": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769"
+  },
+  {
+   "year": 2032,
+   "winter": {
+    "peak": 25783,
+    "required": 32264,
+    "cap_before": 22581,
+    "cap_after_certified": 32198,
+    "margin_after": -66
+   },
+   "summer": {
+    "peak": 27554,
+    "required": 32813,
+    "cap_before": 24655,
+    "cap_after_certified": 33013,
+    "margin_after": 200
+   },
+   "basis": "stated",
+   "source": "https://services.psc.ga.gov/api/v1/External/Public/Get/Document/DownloadFile/224506/105769"
+  }
+ ]
+}

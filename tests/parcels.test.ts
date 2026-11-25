@@ -8,11 +8,10 @@ import {
 } from '../src/engine/geo/polygon.ts'
 import { takingFor, computeTakings, ROW_HALF_WIDTH_KM } from '../src/engine/parcels/takings.ts'
 import {
-  acceptanceProbability, newDeal, resolveOffer, CONTAGION_PER_CONDEMNATION,
+  acceptanceProbability, newDeal, resolveOffer, reservationMultiple,
 } from '../src/engine/parcels/negotiation.ts'
 import { inflateParcel, type Parcel, type ParcelFile } from '../src/engine/parcels/types.ts'
 import { ownerNameFor } from '../src/engine/parcels/owners.ts'
-import { Rng } from '../src/engine/rng.ts'
 
 const DATA = resolve(dirname(fileURLToPath(import.meta.url)), '../public/data')
 
@@ -34,8 +33,6 @@ function squareParcel(sideKm: number, over: Partial<Parcel> = {}): Parcel {
 
 describe('polygon geometry', () => {
   it('actually performs boolean operations', () => {
-    // Guards against the library being imported in a way that silently yields
-    // no functions, which is exactly how this broke once.
     const a: Poly[] = [[[[0, 0], [4, 0], [4, 4], [0, 4], [0, 0]]]]
     const b: Poly[] = [[[[1, -1], [2, -1], [2, 5], [1, 5], [1, -1]]]]
     expect(multiPolyArea(intersect(a, b))).toBeCloseTo(4, 6)
@@ -54,7 +51,6 @@ describe('polygon geometry', () => {
   it('fills the corner of a dog-leg instead of leaving a notch', () => {
     const straight = multiPolyArea(corridorBuffer([[0, 0], [20, 0]], 0.05))
     const bent = multiPolyArea(corridorBuffer([[0, 0], [10, 0], [10, 10]], 0.05))
-    // Same total length; the bend adds the rounded joint rather than losing area.
     expect(bent).toBeGreaterThan(straight * 0.99)
   })
 
@@ -136,79 +132,72 @@ describe('takings', () => {
   })
 })
 
-describe('negotiation', () => {
+describe('what an owner will take', () => {
   const parcel = squareParcel(1)
   const taking = takingFor(parcel, corridorBuffer([[-2, 0], [2, 0]], 0.023))!
+  const ctx = { seed: 7, countyApproval: 55, condemnations: 0, bestPaid: 0 }
+  const chance = (p: Parcel, t = taking, c = ctx, m = 1.6) =>
+    acceptanceProbability(p, t, newDeal(p), c, m)
 
-  it('is more willing at a higher offer', () => {
-    const low = newDeal(parcel)
-    const high = { ...newDeal(parcel), offerMultiple: 3 }
-    expect(acceptanceProbability(parcel, taking, high, 55, 0))
-      .toBeGreaterThan(acceptanceProbability(parcel, taking, low, 55, 0))
-  })
-
-  it('ranks archetypes the way the design intends', () => {
-    const at = (archetype: Parcel['archetype']) => {
-      const p = squareParcel(1, { archetype })
-      const t = takingFor(p, corridorBuffer([[-2, 0], [2, 0]], 0.023))!
-      return acceptanceProbability(p, t, newDeal(p), 55, 0)
-    }
+  it('ranks owner types', () => {
+    const at = (archetype: Parcel['archetype']) => chance(squareParcel(1, { archetype }))
     expect(at('timber')).toBeGreaterThan(at('row-crop'))
     expect(at('row-crop')).toBeGreaterThan(at('homestead'))
     expect(at('homestead')).toBeGreaterThan(at('church'))
-    // Protected land is not for sale at any price.
     expect(at('historic')).toBe(0)
   })
 
-  it('marks protected land as blocked from the start', () => {
+  it('blocks protected land from the start', () => {
     expect(newDeal(squareParcel(1, { archetype: 'historic' })).status).toBe('blocked')
   })
 
-  it('hardens every remaining holdout after a condemnation — the contagion', () => {
-    const deal = newDeal(parcel)
-    const clean = acceptanceProbability(parcel, taking, deal, 55, 0)
-    const afterOne = acceptanceProbability(parcel, taking, deal, 55, 1)
-    const afterThree = acceptanceProbability(parcel, taking, deal, 55, 3)
-
-    expect(afterOne).toBeLessThan(clean)
-    expect(afterOne - clean).toBeCloseTo(-CONTAGION_PER_CONDEMNATION, 6)
-    expect(afterThree).toBeLessThan(afterOne)
+  it('gets harder with condemnations, a hostile county, or a severed field', () => {
+    expect(chance(parcel, taking, { ...ctx, condemnations: 2 })).toBeLessThan(chance(parcel))
+    expect(chance(parcel, taking, { ...ctx, countyApproval: 15 })).toBeLessThan(chance(parcel))
+    const edge = takingFor(parcel, corridorBuffer([[-2, 0.477], [2, 0.477]], 0.023))!
+    expect(chance(parcel)).toBeLessThan(chance(parcel, edge))
   })
 
-  it('is harder in a county that already resents you', () => {
-    const deal = newDeal(parcel)
-    expect(acceptanceProbability(parcel, taking, deal, 20, 0))
-      .toBeLessThan(acceptanceProbability(parcel, taking, deal, 80, 0))
+  it('makes a high price the going rate for everyone else', () => {
+    expect(chance(parcel, taking, { ...ctx, bestPaid: 4 })).toBeLessThan(chance(parcel))
+    const price = (bestPaid: number) => reservationMultiple(parcel, taking, { ...ctx, bestPaid })
+    expect(price(5)).toBeGreaterThan(price(0))
   })
 
-  it('is harder on a severed parcel than an edge clip', () => {
-    const severed = takingFor(parcel, corridorBuffer([[-2, 0], [2, 0]], 0.023))!
-    const clipped = takingFor(parcel, corridorBuffer([[-2, 0.477], [2, 0.477]], 0.023))!
-    const deal = newDeal(parcel)
-    expect(acceptanceProbability(parcel, severed, deal, 55, 0))
-      .toBeLessThan(acceptanceProbability(parcel, clipped, deal, 55, 0))
-  })
-
-  it('pays out on acceptance and records a refusal otherwise', () => {
-    const rng = new Rng(11)
-    let accepted = 0
-    let refused = 0
-    for (let i = 0; i < 200; i++) {
-      const deal = { ...newDeal(parcel), offerMultiple: 1.5 }
-      const r = resolveOffer(parcel, taking, deal, 55, 0, rng)
-      if (r.accepted) {
-        accepted++
-        expect(deal.status).toBe('accepted')
-        expect(r.amount).toBeCloseTo(taking.appraisedTotal * 1.5, 6)
-      } else {
-        refused++
-        expect(deal.status).toBe('holdout')
-        expect(deal.refusals).toBe(1)
-      }
+  it('gives the same answer to the same offer every time', () => {
+    for (let i = 0; i < 60; i++) {
+      const p = squareParcel(1, { id: `owner-${i}` })
+      const price = reservationMultiple(p, taking, ctx)
+      if (!Number.isFinite(price)) continue
+      const low = { ...newDeal(p), offerMultiple: price - 0.01 }
+      expect(resolveOffer(p, taking, low, ctx).accepted).toBe(false)
+      expect(resolveOffer(p, taking, low, ctx).accepted).toBe(false)
+      const enough = { ...newDeal(p), offerMultiple: price + 0.01 }
+      expect(resolveOffer(p, taking, enough, ctx).accepted).toBe(true)
     }
-    // Both outcomes must be reachable, or the mechanic has no tension.
-    expect(accepted).toBeGreaterThan(0)
-    expect(refused).toBeGreaterThan(0)
+  })
+
+  it('rules out anything at or below what was refused', () => {
+    const deal = { ...newDeal(parcel), refusedAt: 2, refusals: 1 }
+    expect(acceptanceProbability(parcel, taking, deal, ctx, 2)).toBe(0)
+    expect(acceptanceProbability(parcel, taking, deal, ctx, 3)).toBeGreaterThan(0)
+  })
+
+  it('estimates odds that match what owners actually do', () => {
+    const n = 4000
+    let yes = 0
+    for (let i = 0; i < n; i++) {
+      const p = squareParcel(1, { id: `sample-${i}` })
+      if (reservationMultiple(p, taking, ctx) <= 1.9) yes++
+    }
+    expect(yes / n).toBeCloseTo(chance(parcel, taking, ctx, 1.9), 1)
+  })
+
+  it('has some owners who never sell', () => {
+    const homes = Array.from({ length: 300 }, (_, i) => squareParcel(0.2, { id: `h${i}`, archetype: 'homestead' }))
+    const never = homes.filter((p) => reservationMultiple(p, taking, ctx) === Infinity).length
+    expect(never).toBeGreaterThan(5)
+    expect(never).toBeLessThan(80)
   })
 })
 
@@ -254,8 +243,6 @@ describe('the vendored Sumter cadastre', () => {
   it('has a realistic mix of rural tracts and town lots', () => {
     const acres = file.parcels.map((p) => p.acres).sort((a, b) => a - b)
     const big = acres.filter((a) => a > 50)
-    // Most of the acreage sits in a minority of large tracts, as it does in a
-    // real rural county.
     const bigAcreage = big.reduce((s, a) => s + a, 0)
     const totalAcreage = acres.reduce((s, a) => s + a, 0)
     expect(bigAcreage / totalAcreage).toBeGreaterThan(0.6)

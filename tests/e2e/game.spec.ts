@@ -1,181 +1,93 @@
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect } from '@playwright/test'
+import { start, tab, clickAt, sitePlants, endQuarter, state } from './helpers.ts'
 
-/**
- * The M1 loop end to end, in a real browser: read the offer, sign it, site a
- * plant on the map, and push quarters until the power is on.
- */
-
-async function signContract(page: Page): Promise<void> {
-  await page.getByRole('button', { name: 'Sign the contract' }).click()
-  await expect(page.locator('.briefing')).toHaveCount(0)
-}
-
-/** Dismiss the end-of-quarter summary if one appeared. */
-async function clearHeadlines(page: Page): Promise<void> {
-  const cont = page.getByRole('button', { name: 'Continue' })
-  if (await cont.count()) await cont.click()
-}
-
-/** Zoom the map in on the campus marker so map clicks land in Sumter County. */
-async function zoomToCampus(page: Page): Promise<void> {
-  const canvas = page.locator('canvas.map-canvas')
-  const box = (await canvas.boundingBox())!
-  // The campus sits in south-west Georgia; aim there, then zoom about that point.
-  const target = { x: box.x + box.width * 0.42, y: box.y + box.height * 0.66 }
-  await page.mouse.move(target.x, target.y)
-  for (let i = 0; i < 6; i++) {
-    await page.mouse.wheel(0, -400)
-    await page.waitForTimeout(120)
-  }
-}
-
-test('shows the offer before anything is committed', async ({ page }) => {
-  await page.goto('/')
-  const briefing = page.locator('.briefing')
-  await expect(briefing).toBeVisible()
-  await expect(briefing).toContainText('400 MW')
-  await expect(briefing).toContainText('2029 Q4')
-  // Americus is a real, sourced project — and the card separates what is
-  // reported from what we invented to make a game, rather than blurring them.
-  await expect(briefing).toContainText('real project')
-  await expect(briefing).toContainText('invented')
-  await expect(briefing.locator('.briefing-sources a').first()).toHaveAttribute(
-    'href',
-    /americustimesrecorder\.com/,
-  )
-
-  // No capital has moved yet.
-  await expect(page.locator('.hud')).toContainText('$0')
+test('opens as the company, and Liberty shows its terms and sources before it is signed', async ({ page }) => {
+  await page.goto('/?seed=7')
+  const d = page.locator('dialog.briefing')
+  await expect(d).toContainText('2034 Q4')
+  await expect(d).toContainText('invented')
+  await expect(d).not.toContainText('Liberty')
+  await expect(page.locator('.hud')).toContainText('$2.51B')
+  await d.getByRole('button', { name: 'Start', exact: true }).click()
+  await tab(page, 'Customers')
+  await page.locator('.panel').getByRole('button', { name: 'Liberty Americus Campus' }).click()
+  const card = page.locator('.inspector')
+  await expect(card).toContainText('400 MW')
+  await expect(card).toContainText('These terms are invented')
+  await expect(card.locator('.sources a').first()).toHaveAttribute('href', /americustimesrecorder\.com/)
 })
 
-test('signing releases the first milestone payment', async ({ page }) => {
-  await page.goto('/')
-  await signContract(page)
-  // 20% of a $1.05B advance.
-  await expect(page.locator('.hud')).toContainText('$210M')
-  await expect(page.locator('.milestones li').first()).toHaveClass(/done/)
+test('signing pays the first milestone', async ({ page }) => {
+  await start(page)
+  await expect(page.locator('.hud')).toContainText('$288M')
 })
 
-test('siting a plant costs approval and starts the clock', async ({ page }) => {
-  await page.goto('/')
-  await signContract(page)
-  await zoomToCampus(page)
-
-  await page.getByRole('button', { name: /Gas combustion turbine/ }).click()
-  await expect(page.locator('.panel-hint')).toContainText('click the map')
-
-  const canvas = page.locator('canvas.map-canvas')
-  const box = (await canvas.boundingBox())!
-  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
-
-  // A plant now exists and the fleet lists it.
-  await expect(page.locator('.fleet li')).toHaveCount(1)
-  await expect(page.locator('.fleet-meta').first()).toContainText('permitting')
-  await page.screenshot({ path: 'tests/.artifacts/sited.png' })
+test('sites a plant and starts its permit', async ({ page }) => {
+  await start(page)
+  await sitePlants(page, 1)
+  await expect(page.locator('.sited')).toContainText('Permitting')
+  await expect(page.locator('.sited')).toContainText('No line to the campus yet')
+  const g = await state(page)
+  expect(g.contract.approval).toBeLessThan(62)
 })
 
-test('quarters advance and the deadline closes in', async ({ page }) => {
-  await page.goto('/')
-  await signContract(page)
-  await expect(page.locator('.hud')).toContainText('2026 Q1')
-
-  await page.getByRole('button', { name: 'End quarter' }).click()
-  await clearHeadlines(page)
-  await expect(page.locator('.hud')).toContainText('2026 Q2')
+test('says why a site is refused', async ({ page }) => {
+  await start(page)
+  await page.getByRole('button', { name: /Battery storage/ }).click()
+  await clickAt(page, 0.5, 0.5)
+  await expect(page.locator('.map-tip')).toContainText('The campus is here')
+  expect((await state(page)).plants).toHaveLength(0)
 })
 
-test('generation alone does not serve the load — it needs a wire', async ({ page }) => {
-  test.setTimeout(120_000)
-  await page.goto('/')
-  await signContract(page)
-  await zoomToCampus(page)
-
-  const canvas = page.locator('canvas.map-canvas')
-  const box = (await canvas.boundingBox())!
-
-  // Three 200 MW turbines at 95% firm is 570 MW — comfortably over the 400 MW
-  // contracted, and still worth nothing without a corridor to the campus.
-  for (let i = 0; i < 3; i++) {
-    await page.getByRole('button', { name: /Gas combustion turbine/ }).click()
-    await page.mouse.click(
-      box.x + box.width * (0.44 + i * 0.04),
-      box.y + box.height * (0.5 + i * 0.03),
-    )
-    await page.waitForTimeout(120)
-  }
-  await expect(page.locator('.fleet li')).toHaveCount(3)
-
-  // Permitting plus construction for a CT is eleven quarters.
-  for (let q = 0; q < 12; q++) {
-    await page.getByRole('button', { name: 'End quarter' }).click()
-    await clearHeadlines(page)
-  }
-
-  await expect(page.locator('.logstrip')).toContainText('is online')
-  // Plants are running, and the contract is still not served.
-  await expect(page.locator('.hud')).not.toContainText('Energized')
-  await page.screenshot({ path: 'tests/.artifacts/generation-only.png' })
+test('withdraws a plant and returns part of the land cost', async ({ page }) => {
+  await start(page)
+  await sitePlants(page, 1)
+  const before = await state(page)
+  await page.locator('.sidebar').getByRole('button', { name: /Withdraw/ }).click()
+  const after = await state(page)
+  expect(after.plants).toHaveLength(0)
+  expect(after.cash).toBeGreaterThan(before.cash)
+  expect(after.cash).toBeLessThan(before.cash + before.plants[0].landCost)
 })
 
-test('warns that solar cannot serve a round-the-clock load', async ({ page }) => {
-  await page.goto('/')
-  await signContract(page)
-  const solar = page.getByRole('button', { name: /Utility-scale solar/ })
-  // The card states firm capacity next to nameplate, which is the whole lesson.
-  await expect(solar).toContainText('16 MW firm')
-  await expect(solar).toContainText('200 MW nameplate')
+test('ends quarters without a dialog for every one', async ({ page }) => {
+  await start(page)
+  await endQuarter(page)
+  await expect(page.locator('.hud')).toContainText('2026 Q4')
 })
 
-
-test('a plant put in the wrong place can be moved', async ({ page }) => {
-  await page.goto('/')
-  await signContract(page)
-
-  const box = (await page.locator('canvas').boundingBox())!
-  await page.locator('.plant-card').first().click()
-  await page.mouse.click(box.x + box.width * 0.45, box.y + box.height * 0.5)
-
-  const sited = page.locator('.sited').first()
-  await expect(sited).toContainText('Permitting')
-
-  const before = await page.evaluate(() => {
-    const g = (window as unknown as { __game: any }).__game.getState().game
-    return { cash: g.cash, cell: g.plants[0].cell, land: g.plants[0].landCost }
-  })
-
-  // Siting used to be a one-way door: no undo, no move, nothing in the UI even
-  // hinting the placement was final.
-  await sited.getByRole('button', { name: 'Move' }).click()
-  await expect(page.locator('.sited')).toHaveCount(0)
-
-  const refunded = await page.evaluate(() => {
-    const g = (window as unknown as { __game: any }).__game.getState().game
-    return g.cash
-  })
-  // Most of the land comes back, but not all of it — this is not a free undo.
-  expect(refunded).toBeGreaterThan(before.cash)
-  expect(refunded).toBeLessThan(before.cash + before.land)
-
-  await page.locator('.plant-card').first().click()
-  await page.mouse.click(box.x + box.width * 0.58, box.y + box.height * 0.4)
-  const moved = await page.evaluate(() => {
-    const g = (window as unknown as { __game: any }).__game.getState().game
-    return { n: g.plants.length, cell: g.plants[0].cell }
-  })
-  expect(moved.n).toBe(1)
-  expect(moved.cell).not.toBe(before.cell)
+test('groups units on one site', async ({ page }) => {
+  await start(page)
+  await sitePlants(page, 3)
+  const cells = new Set((await state(page)).plants.map((p: { cell: number }) => p.cell))
+  expect(cells.size).toBe(1)
 })
 
-test('the map layers say what they are for', async ({ page }) => {
-  await page.goto('/')
-  await signContract(page)
+test('keeps the game across a reload', async ({ page }) => {
+  await start(page)
+  await sitePlants(page, 2)
+  await page.reload()
+  await expect(page.locator('dialog.briefing')).toHaveCount(0)
+  await expect(page.locator('.sited')).toHaveCount(2)
+})
 
-  const controls = page.locator('.map-controls')
-  await expect(controls).toContainText('Map layer')
+test('the menu starts a new game without a choice of contract', async ({ page }) => {
+  await start(page)
+  await sitePlants(page, 1)
+  await page.getByRole('button', { name: 'Menu' }).click()
+  const menu = page.locator('dialog.menu')
+  await expect(menu).not.toContainText(/Dublin|Americus/)
+  await menu.getByRole('button', { name: 'New game' }).click()
+  await expect(page.locator('dialog.briefing')).toContainText('You are Georgia Power')
+  await page.getByRole('button', { name: 'Start', exact: true }).click()
+  await expect(page.locator('.hud')).toContainText('$2.51B')
+  expect((await state(page)).plants.length).toBe(0)
+})
 
-  // An unlabelled row of three words gave no reason to press any of them.
-  await expect(page.locator('.controls-help')).toContainText('Switch layers')
+test('explains the map layers', async ({ page }) => {
+  await start(page)
+  await page.getByRole('button', { name: 'Layers' }).click()
   await page.getByRole('button', { name: 'Land value' }).click()
-  await expect(page.locator('.controls-help')).toContainText('right-of-way')
+  await expect(page.locator('.layers')).toContainText('right-of-way cost')
   await expect(page.locator('.ramp-landValue')).toBeVisible()
 })

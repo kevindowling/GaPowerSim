@@ -1,17 +1,3 @@
-/**
- * Polygon geometry for right-of-way takings.
- *
- * Everything here works in projected kilometres, and because the projection is
- * equal-area (see projection.ts), an area computed in this space is a true area
- * on the ground. That is what lets the game quote a taking in real acres.
- *
- * Boolean operations use `polygon-clipping`, which is robust about the awkward
- * cases that matter here: a corridor clipping a parcel's corner, and a corridor
- * cutting a parcel clean in half.
- */
-
-// Default import, not a namespace import: the package is CommonJS, and
-// `import * as pc` yields a module object whose functions are not callable.
 import pc from 'polygon-clipping'
 
 /** [x, y] in projected km. */
@@ -87,14 +73,6 @@ export function centroid(poly: Poly): Point {
   return [x / (3 * a), y / (3 * a)]
 }
 
-// --- boolean ops ---------------------------------------------------------
-
-/**
- * Boolean ops can legitimately fail on a degenerate sliver, and one bad parcel
- * should not take down a turn. But a blanket catch also hides the case where the
- * library is not working at all — which is a bug, not a sliver — so failures are
- * counted and surfaced rather than silently swallowed.
- */
 let clipFailures = 0
 
 export function clipFailureCount(): number {
@@ -134,8 +112,6 @@ export function union(polys: MultiPoly[]): MultiPoly {
   )
 }
 
-// --- corridor buffering --------------------------------------------------
-
 /** Points around a circle, used to round the joints of a corridor. */
 function disc(center: Point, radius: number, segments = 12): Ring {
   const ring: Ring = []
@@ -147,14 +123,6 @@ function disc(center: Point, radius: number, segments = 12): Ring {
   return ring
 }
 
-/**
- * The right-of-way: a centerline swept to a half-width.
- *
- * Built as the union of one quad per segment plus a disc at each interior
- * vertex, so that a corridor which changes direction has a properly filled
- * corner rather than a notch. Unioning rather than summing the pieces is what
- * keeps the area honest where they overlap — and area is compensation.
- */
 export function corridorBuffer(centerline: Point[], halfWidthKm: number): MultiPoly {
   if (centerline.length < 2 || halfWidthKm <= 0) return []
 
@@ -179,8 +147,6 @@ export function corridorBuffer(centerline: Point[], halfWidthKm: number): MultiP
     ]]])
   }
 
-  // Round the interior corners. Without these a dog-leg leaves a wedge of
-  // untaken land inside the right-of-way, which would under-report the taking.
   for (let i = 1; i < centerline.length - 1; i++) {
     pieces.push([[disc(centerline[i], halfWidthKm)]])
   }

@@ -1,30 +1,6 @@
-/**
- * Aerial imagery and road centrelines — the two layers that make the corridor
- * puzzle legible as a real place rather than a cost surface.
- *
- * Both are optional. The game has always run on vendored terrain and county
- * vectors, and it still does when these files are absent; they layer on top.
- * That matters because neither dataset can be fetched from every environment,
- * and a missing basemap must degrade to "no imagery" rather than a broken map.
- *
- * Like every other dataset here, these are static files produced at build time
- * and committed. Nothing is fetched from a tile server at runtime — the embed
- * makes zero external requests, and a licence that requires per-request
- * attribution to a live host would break that promise.
- */
-
 export const IMAGERY_VERSION = 1
 export const ROADS_VERSION = 1
 
-/**
- * One aerial image, already reprojected to the game's Albers space by the
- * fetch script, so the renderer can blit it axis-aligned in world kilometres.
- *
- * Bounds are projected km, not degrees. A lon/lat rectangle is not a rectangle
- * in Albers, so storing degrees here and drawing them as a rect would skew the
- * image against the parcels underneath it. The script measures that skew and
- * refuses to vendor an image where it is visible.
- */
 export interface ImageryTile {
   /** File name within `public/data/basemap/`. */
   file: string
@@ -49,10 +25,6 @@ export interface ImageryManifest {
   tiles: ImageryTile[]
 }
 
-/**
- * Road classes, coarse on purpose. The game cares whether a corridor is
- * crossing an interstate or a farm track, not what the speed limit is.
- */
 export type RoadClass = 0 | 1 | 2 | 3 | 4
 
 export const ROAD_CLASS_NAMES: Record<RoadClass, string> = {
@@ -66,6 +38,7 @@ export const ROAD_CLASS_NAMES: Record<RoadClass, string> = {
 /** A road centreline. Coordinates are lon/lat pairs; the loader projects them. */
 export interface RoadWire {
   c: RoadClass
+  n?: string
   p: [number, number][]
 }
 
@@ -82,23 +55,12 @@ export interface RoadsFile {
 /** A road in projected world kilometres, ready to draw. */
 export interface Road {
   cls: RoadClass
+  name: string | null
   points: [number, number][]
 }
 
-// --- hydrology -----------------------------------------------------------
-
 export const HYDROLOGY_VERSION = 1
 
-/**
- * Water is not scenery in this game.
- *
- * It is the sharpest local objection to the Americus project — Sumter is
- * farm country and the fight there is about the aquifer, not the grid. It is
- * a hard constraint on thermal generation, which has to be able to reject
- * heat somewhere. And it is what makes a corridor expensive: crossing a river
- * is a structure and a Section 404 permit, and a wetland crossing is a
- * schedule risk long before it is a cost.
- */
 export type WaterKind =
   /** Named river or major stream. */
   | 'river'
@@ -106,7 +68,6 @@ export type WaterKind =
   | 'stream'
   /** Lake, pond or impoundment. */
   | 'lake'
-  /** Reservoir — a lake somebody built, usually for cooling or supply. */
   | 'reservoir'
   /** Swamp, marsh or bog. Passable, permit-triggering, and slow. */
   | 'wetland'
@@ -149,4 +110,37 @@ export interface WaterBody {
   kind: 'lake' | 'reservoir' | 'wetland'
   name: string | null
   ring: [number, number][]
+}
+
+export const GIS_VERSION = 1
+
+export type LandKind = 'wood' | 'farm' | 'orchard' | 'town' | 'industry' | 'cemetery'
+
+export interface GisFile {
+  version: number
+  scope: string
+  scopeName: string
+  source: string
+  attribution: string
+  license: string
+  power: Array<{ kv: number; p: [number, number][] }>
+  rail: Array<{ p: [number, number][] }>
+  parks: Array<{ n: string; p: [number, number][] }>
+  substations: Array<{ kv: number; n?: string; at: [number, number] }>
+  land: Array<{ k: LandKind; p: [number, number][] }>
+  /** lon, lat, 1 if a church. */
+  buildings: Array<[number, number, number]>
+}
+
+/** Projected, ready to draw and route against. */
+export interface Gis {
+  scope: string
+  attribution: string
+  power: Array<{ kv: number; points: [number, number][] }>
+  rail: Array<{ points: [number, number][] }>
+  parks: Array<{ name: string; ring: [number, number][] }>
+  substations: Array<{ kv: number; name: string | null; x: number; y: number }>
+  land: Array<{ kind: LandKind; ring: [number, number][] }>
+  buildings: [number, number][]
+  churches: [number, number][]
 }

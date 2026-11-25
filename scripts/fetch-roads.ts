@@ -1,49 +1,4 @@
-/**
- * fetch-roads.ts — road centrelines for a county, from OpenStreetMap.
- *
- * Roads are the layer that turns the corridor puzzle from an abstract cost
- * surface into a place. Real transmission lines follow road and rail corridors
- * where they can, because the right-of-way is already linear and already
- * disturbed; where they cannot, they cross them, and every crossing is a
- * structure and a permit. A player who can see the roads can see why a route
- * that looks longer is cheaper.
- *
- * TWO TIERS, because the map is statewide but the puzzle is local.
- *
- *   state    Interstates and highways for the whole of Georgia, in one file
- *            small enough to load at startup. This is the layer that makes the
- *            statewide view legible — where the corridors of the state already
- *            run, and which counties a campaign can plausibly reach.
- *   county   Every road down to farm tracks, for one county, loaded only when
- *            the player is working there. A rural county's full network is
- *            larger than the statewide major-road file on its own, so this
- *            cannot be the thing that loads at startup.
- *
- * Sumter is the tutorial, not the extent of the game, so the statewide tier is
- * the default and the per-county tier is the detail pass on top of it.
- *
- * Ways to run this:
- *
- *   npm run fetch:roads -- --state
- *       Interstates and highways for all of Georgia.
- *
- *   npm run fetch:roads -- --county 13261 --name Sumter
- *       Full detail for one county.
- *
- *   ... --file <path.geojson>
- *       Reads a GeoJSON FeatureCollection of LineStrings you downloaded
- *       elsewhere — an Overpass export, a Geofabrik extract clipped with
- *       ogr2ogr, anything with `highway` tags. Use this when egress is
- *       restricted. Works with either tier.
- *
- * Output: public/data/roads/state.json or <fips>.json, committed to the repo.
- * Nothing is fetched at runtime.
- *
- * LICENSING — this matters and is not optional. OpenStreetMap data is ODbL-1.0.
- * Using it requires attributing "© OpenStreetMap contributors", and the
- * attribution is carried in the output file and rendered in the UI rather than
- * left to a README nobody reads.
- */
+// OpenStreetMap data is ODbL-1.0. Output files carry the attribution.
 
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
@@ -60,14 +15,8 @@ const OVERPASS_URL = process.env.OVERPASS_URL ?? null
 const ATTRIBUTION = '© OpenStreetMap contributors'
 const LICENSE = 'ODbL-1.0'
 
-/** Coordinate precision. 5 dp is about a metre — finer than the game can draw. */
 const COORD_DP = 5
 
-/**
- * OSM highway tags collapsed to the four classes the game distinguishes.
- * Anything unlisted is dropped: footpaths and driveways are noise at this scale
- * and would triple the file size for nothing.
- */
 function classify(highway: string): RoadClass | null {
   switch (highway) {
     case 'motorway': case 'motorway_link': return 0
@@ -104,18 +53,8 @@ function parseArgs(): Args {
   return { county, file, name, state }
 }
 
-/**
- * The statewide tier keeps only the classes worth seeing at statewide zoom.
- * Including local streets here would multiply the file by roughly twenty for
- * detail that is sub-pixel until the player has already zoomed into a county.
- */
 const STATE_CLASSES: ReadonlySet<RoadClass> = new Set<RoadClass>([0, 1])
 
-/**
- * Douglas–Peucker, in degrees. The tolerance is deliberately coarse: at the
- * zoom where roads appear, a 15 m deviation is well under a pixel, and the
- * saving over raw OSM geometry is large.
- */
 function simplify(points: [number, number][], tolDeg: number): [number, number][] {
   if (points.length < 3) return points
   const keep = new Uint8Array(points.length)
@@ -157,8 +96,6 @@ function round(points: [number, number][]): [number, number][] {
   const out: [number, number][] = []
   for (const [lon, lat] of points) {
     const p: [number, number] = [Math.round(lon * f) / f, Math.round(lat * f) / f]
-    // Rounding can collapse adjacent vertices; dropping the duplicates here
-    // keeps the file honest about how many points it actually contains.
     const last = out[out.length - 1]
     if (!last || last[0] !== p[0] || last[1] !== p[1]) out.push(p)
   }
@@ -166,21 +103,15 @@ function round(points: [number, number][]): [number, number][] {
 }
 
 async function fromOverpass(fips: string, statewide: boolean): Promise<unknown> {
-  // Overpass knows US counties by their FIPS via the `ref:fips` tag on the
-  // administrative relation; querying by area keeps the download scoped.
-  //
-  // The statewide query filters to major classes inside Overpass rather than
-  // downloading everything and discarding it here — Georgia's full road network
-  // is hundreds of megabytes, and asking for it would be rude as well as slow.
   const query = statewide
     ? `
 [out:json][timeout:900];
-area["boundary"="administrative"]["admin_level"="4"]["ref:fips"="13"]->.state;
+area["boundary"="administrative"]["admin_level"="4"]["ISO3166-2"="US-GA"]->.state;
 way(area.state)["highway"~"^(motorway|trunk|primary)(_link)?$"];
 out geom;`
     : `
 [out:json][timeout:300];
-area["boundary"="administrative"]["admin_level"="6"]["ref:fips"="${fips}"]->.county;
+area["boundary"="administrative"]["admin_level"="6"]["nist:fips_code"="${fips}"]->.county;
 way(area.county)["highway"];
 out geom;`
   return overpassQuery(query, {
@@ -248,8 +179,6 @@ async function main(): Promise<void> {
     source = `OpenStreetMap via Overpass${OVERPASS_URL ? ` (${OVERPASS_URL})` : ''}`
   }
 
-  // The statewide tier drops everything below a highway, whichever way the data
-  // arrived — a --file extract may well carry the lot.
   if (args.state) wires = wires.filter((w) => STATE_CLASSES.has(w.c))
 
   if (wires.length === 0) {
@@ -273,8 +202,6 @@ async function main(): Promise<void> {
     roads.push({ c: w.c, p })
   }
 
-  // Deterministic order, so re-running produces a reviewable diff rather than
-  // shuffled noise.
   roads.sort((a, b) => (a.c - b.c) || (a.p[0][0] - b.p[0][0]) || (a.p[0][1] - b.p[0][1]))
 
   const file: RoadsFile = {

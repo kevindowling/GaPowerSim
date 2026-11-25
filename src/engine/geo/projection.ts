@@ -1,22 +1,7 @@
-/**
- * Albers Equal Area Conic projection tuned for Georgia.
- *
- * Output units are kilometres on a plane with +x east and +y north, origin near
- * the geographic centre of the state. Equal-area matters here because the game
- * measures things in acres and square kilometres — parcel takings, plant
- * footprints, corridor right-of-way — and an equal-area projection lets us do
- * that arithmetic directly in projected space without a per-latitude correction.
- *
- * Pure maths, no dependencies: this module is imported by both the build-time
- * scripts and the runtime engine.
- */
-
 const R = 6371.0088 // IUGG mean Earth radius, km
 
 const DEG = Math.PI / 180
 
-// Standard parallels chosen to bracket Georgia's latitude range (~30.3°–35.0°N),
-// which keeps scale distortion across the state well under a percent.
 const PHI1 = 31.5 * DEG
 const PHI2 = 34.5 * DEG
 const PHI0 = 32.5 * DEG

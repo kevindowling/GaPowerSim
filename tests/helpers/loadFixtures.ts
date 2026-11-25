@@ -1,11 +1,3 @@
-/**
- * Loads the real vendored map data from disk for engine tests.
- *
- * Tests run against the actual Georgia data rather than a toy fixture, so a
- * broken data build fails the unit suite too — and siting assertions are about
- * real counties in real places.
- */
-
 import { readFileSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -47,11 +39,6 @@ export function fixtures(): { counties: CountiesFile; grid: HexGrid } {
   return cached
 }
 
-/**
- * Grid cell index for a longitude/latitude, or -1 if the point falls off the
- * grid. The bounds check matters: without it an out-of-range column silently
- * wraps into the next row and returns a cell somewhere else entirely.
- */
 export function cellAtLonLat(lon: number, lat: number): number {
   const { grid } = fixtures()
   const [x, y] = project(lon, lat)

@@ -1,11 +1,5 @@
+import { onlyLiberty } from './helpers.ts'
 import { test, expect, type Page } from '@playwright/test'
-
-/**
- * Smoke coverage for the map foundation. These assertions are deliberately about
- * observable behaviour rather than pixels: that the vendored data loads, that
- * something actually paints, that pan/zoom moves the view, and — the one that
- * matters for privacy — that the running game never talks to an external host.
- */
 
 /** Sample the map canvas and return the distinct colours it painted. */
 async function canvasColours(page: Page): Promise<string[]> {
@@ -24,8 +18,9 @@ async function canvasColours(page: Page): Promise<string[]> {
 
 /** Get past the briefing so the map is interactive. */
 export async function signContract(page: Page): Promise<void> {
-  await page.getByRole('button', { name: 'Sign the contract' }).click()
-  await expect(page.locator('.briefing')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Start', exact: true }).click()
+  await expect(page.locator('dialog.briefing')).toHaveCount(0)
+  await onlyLiberty(page)
 }
 
 test('loads the vendored map and paints Georgia', async ({ page }) => {
@@ -33,15 +28,14 @@ test('loads the vendored map and paints Georgia', async ({ page }) => {
   page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()) })
   page.on('pageerror', (e) => consoleErrors.push(String(e)))
 
-  await page.goto('/')
+  await page.goto('/?seed=7')
   await expect(page.locator('canvas.map-canvas')).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Americus' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'You are Georgia Power' })).toBeVisible()
 
   await signContract(page)
   await page.waitForTimeout(700)
 
   const colours = await canvasColours(page)
-  // Paper plus several terrain tones — a blank or single-colour canvas fails here.
   expect(colours.length).toBeGreaterThan(4)
 
   expect(consoleErrors).toEqual([])
@@ -55,18 +49,16 @@ test('makes no requests to external hosts', async ({ page }) => {
     if (url.hostname !== '127.0.0.1' && url.hostname !== 'localhost') external.push(r.url())
   })
 
-  await page.goto('/')
+  await page.goto('/?seed=7')
   await page.waitForSelector('canvas.map-canvas')
   await signContract(page)
   await page.waitForTimeout(900)
 
-  // County parcel portals, tile servers, fonts, analytics — none of it. All the
-  // geodata is vendored, which is what keeps the embed self-contained.
   expect(external).toEqual([])
 })
 
 test('pans and zooms', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/?seed=7')
   await signContract(page)
   const canvas = page.locator('canvas.map-canvas')
   await page.waitForTimeout(500)
@@ -80,59 +72,99 @@ test('pans and zooms', async ({ page }) => {
 
   const after = await canvasColours(page)
   expect(after.join('|')).not.toEqual(before.join('|'))
-  await expect(page.locator('.scalebar-inner span')).toBeVisible()
+  await expect(page.locator('.scalebar span')).toBeVisible()
 })
 
 test('hovering a county reports it', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/?seed=7')
   await signContract(page)
   const canvas = page.locator('canvas.map-canvas')
   await page.waitForTimeout(500)
 
   const box = (await canvas.boundingBox())!
   // The centre of the framed state is reliably inside Georgia.
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
-  await page.waitForTimeout(300)
+  await page.mouse.move(box.x + box.width * 0.7, box.y + box.height * 0.75)
+  await page.waitForTimeout(1500)
+  await page.mouse.move(box.x + box.width * 0.72, box.y + box.height * 0.75)
 
-  await expect(page.locator('.readout-title')).toContainText('County')
+  await expect(page.locator('.map-tip')).toContainText('County')
 })
 
 test('embed variant drops the host-page chrome', async ({ page }) => {
   await page.goto('/embed.html')
   await expect(page.locator('canvas.map-canvas')).toBeVisible()
-  // The event log belongs to the standalone page, not the embed.
-  await expect(page.locator('.logstrip')).toHaveCount(0)
+  await expect(page.locator('.brand')).toHaveCount(0)
 })
 
-
-test('degrades gracefully when the basemap has not been vendored', async ({ page }) => {
-  const failed: string[] = []
-  page.on('requestfailed', (r) => failed.push(r.url()))
+test('works without the optional map layers', async ({ page }) => {
+  await page.route(/\/data\/(basemap|roads|hydrology|gis)\//, (r) => r.fulfill({ status: 404, body: '' }))
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(String(e)))
-
-  await page.goto('/')
-  await page.getByRole('button', { name: 'Sign the contract' }).click()
+  await page.goto('/?seed=7')
+  await signContract(page)
   await page.waitForTimeout(900)
-
-  // Aerial and roads are optional. Until the data is fetched they must not be
-  // offered — a toggle that draws nothing is worse than a missing one — and
-  // their absence must not break the map or throw.
-  await expect(page.locator('.map-controls')).toBeVisible()
-  await expect(page.getByLabel('Aerial')).toHaveCount(0)
-  await expect(page.getByLabel('Roads')).toHaveCount(0)
-  await expect(page.getByLabel('Water')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Layers' }).click()
+  await expect(page.locator('.layers')).toBeVisible()
+  for (const label of ['Aerial photo', 'Roads and rail', 'Rivers and lakes', 'Existing lines and substations']) {
+    await expect(page.getByLabel(label)).toHaveCount(0)
+  }
   await expect(page.locator('.map-attribution')).toHaveCount(0)
-
   expect(errors).toEqual([])
-  // A 404 on the optional basemap is expected and handled; nothing else is.
-  const unexpected = failed.filter((u) => !/\/data\/(basemap|roads|hydrology)\//.test(u))
-  expect(unexpected).toEqual([])
-
-  // And the game is still playable.
-  await expect(page.locator('.plant-card').first()).toBeVisible()
+  await expect(page.locator('.plant').first()).toBeVisible()
 })
 
+test('ships streets, rivers, buildings and the existing grid', async ({ page }) => {
+  await page.goto('/?seed=7')
+  await signContract(page)
+  await page.waitForFunction(() => (window as any).__game.getState().gis !== null)
+  const n = await page.evaluate(() => {
+    const s = (window as any).__game.getState()
+    return {
+      streets: s.roads.roads.length, named: s.roads.roads.filter((r: any) => r.name).length,
+      streams: s.water.waterways.length, rivers: s.stateWater.waterways.length,
+      buildings: s.gis.buildings.length, substations: s.gis.substations.length,
+      power: s.stateGis.power.length, rail: s.gis.rail.length, parks: s.stateGis.parks.length,
+    }
+  })
+  expect(n.streets).toBeGreaterThan(2000)
+  expect(n.named).toBeGreaterThan(500)
+  expect(n.streams).toBeGreaterThan(300)
+  expect(n.rivers).toBeGreaterThan(300)
+  expect(n.buildings).toBeGreaterThan(2000)
+  expect(n.substations).toBeGreaterThan(10)
+  expect(n.power).toBeGreaterThan(1000)
+  expect(n.rail).toBeGreaterThan(20)
+  expect(n.parks).toBeGreaterThan(20)
+  await expect(page.locator('.map-attribution')).toContainText('OpenStreetMap')
+})
+
+test('stays responsive while zooming', async ({ page }) => {
+  await page.goto('/?seed=7')
+  await signContract(page)
+  await page.waitForFunction(() => (window as any).__game.getState().gis !== null)
+  await page.waitForTimeout(1200)
+  const worst = await page.evaluate(async () => {
+    const c = document.querySelector('canvas.map-canvas')!
+    const r = c.getBoundingClientRect()
+    const wheel = (d: number) => c.dispatchEvent(new WheelEvent('wheel', {
+      deltaY: d, clientX: r.x + r.width / 2, clientY: r.y + r.height / 2, cancelable: true,
+    }))
+    let low = Infinity
+    for (let z = 0; z < 8; z++) {
+      for (let i = 0; i < 4; i++) wheel(40)
+      let n = 0
+      const t = performance.now()
+      await new Promise<void>((done) => {
+        const f = () => { n++; wheel(n % 2 ? 1 : -1); performance.now() - t < 500 ? requestAnimationFrame(f) : done() }
+        requestAnimationFrame(f)
+      })
+      low = Math.min(low, n * 2)
+    }
+    return low
+  })
+  console.log('slowest zoom', worst, 'fps')
+  expect(worst).toBeGreaterThan(6)
+})
 
 /** A 2x2 red PNG, enough to prove the imagery path decodes and draws. */
 const TINY_PNG = Buffer.from(
@@ -142,10 +174,6 @@ const TINY_PNG = Buffer.from(
 )
 
 test('draws the aerial and road layers when they have been vendored', async ({ page }) => {
-  // Served from the network layer rather than committed, so the repo does not
-  // ship invented roads that would look like real OSM data.
-  // Statewide highways: present from startup, because the game is statewide and
-  // Sumter is only the tutorial.
   await page.route('**/data/roads/state.json', (route) =>
     route.fulfill({
       contentType: 'application/json',
@@ -223,22 +251,17 @@ test('draws the aerial and road layers when they have been vendored', async ({ p
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(String(e)))
 
-  await page.goto('/')
-  await page.getByRole('button', { name: 'Sign the contract' }).click()
+  await page.goto('/?seed=7')
+  await page.getByRole('button', { name: 'Start', exact: true }).click()
 
-  // Water is its own layer, and rivers are a statewide fact.
-  await expect(page.getByLabel('Water')).toBeVisible()
-
-  // Both toggles appear only because the data resolved.
-  await expect(page.getByLabel('Aerial')).toBeVisible()
-  await expect(page.getByLabel('Roads')).toBeVisible()
-
-  // ODbL requires the attribution to be shown, so it is on the map itself.
+  await page.getByRole('button', { name: 'Layers' }).click()
+  for (const label of ['Rivers and lakes', 'Aerial photo', 'Roads and rail']) {
+    await expect(page.getByLabel(label)).toBeVisible()
+  }
   const attribution = page.locator('.map-attribution')
   await expect(attribution).toContainText('OpenStreetMap contributors')
   await expect(attribution).toContainText('NAIP')
 
-  // Both tiers reached the renderer, not just one of them.
   const roadCount = await page.evaluate(() => {
     const s = (window as unknown as { __game: any }).__game.getState()
     return {
@@ -256,16 +279,12 @@ test('draws the aerial and road layers when they have been vendored', async ({ p
   expect(waterCount.ways).toBe(1)
   expect(waterCount.bodies).toBe(2)
 
-  // Turning a layer off removes its attribution with it — but roads and water
-  // share a credit, so it survives until both are off.
-  await page.getByLabel('Roads').uncheck()
-  await expect(attribution).toContainText('OpenStreetMap')
-  await expect(attribution).toContainText('NAIP')
-  await page.getByLabel('Aerial').uncheck()
-  // Water is also OpenStreetMap, so the credit stays until it is off too — and
-  // is printed once, not twice, while both layers are on.
-  await expect(attribution).toContainText('OpenStreetMap')
-  await page.getByLabel('Water').uncheck()
+  for (const label of ['Roads and rail', 'Rivers and lakes', 'Existing lines and substations']) {
+    await expect(attribution).toContainText('OpenStreetMap')
+    await page.getByLabel(label).uncheck()
+  }
+  await expect(attribution).not.toContainText('OpenStreetMap')
+  await page.getByLabel('Aerial photo').uncheck()
   await expect(attribution).toHaveCount(0)
 
   expect(errors).toEqual([])

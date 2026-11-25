@@ -1,27 +1,3 @@
-/**
- * build-synthetic-parcels.ts — a stand-in cadastre.
- *
- * WHY THIS EXISTS: the eminent-domain mechanic is built to run on real surveyed
- * parcel boundaries fetched by scripts/fetch-parcels.ts. That fetch needs egress
- * to county ArcGIS/qPublic servers, which the sandbox this was developed in
- * blocks. Rather than leave the central mechanic unbuilt and untested, this
- * generates a cadastre with the SAME SCHEMA and realistic structure, flagged
- * `synthetic: true` so the game can tell the player it is a stand-in.
- *
- * When real parcels are fetched for a county, they overwrite this file and every
- * downstream system — routing, takings, severance, negotiation, condemnation —
- * keeps working unchanged, because none of it knows or cares where the geometry
- * came from.
- *
- * The structure is not arbitrary. Georgia was surveyed into square land lots,
- * so rural parcels here really are largely rectangular and axis-aligned, and
- * they subdivide into smaller lots as you approach a town. Recursive splitting
- * with a density-driven stopping rule reproduces that pattern closely enough to
- * make routing decisions meaningful.
- *
- * Run: npm run build:parcels
- */
-
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -39,10 +15,6 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 /** Counties to generate. Sumter is the Americus scenario's playfield. */
 const TARGET_COUNTIES = ['13261']
 
-/**
- * Typical parcel size by how built-up the ground is. Rural southwest Georgia
- * runs to large planted-pine and row-crop tracts; in town it is house lots.
- */
 function targetAcres(density: number, rng: Rng): number {
   if (density < 0.04) return rng.range(90, 260)  // open country
   if (density < 0.12) return rng.range(35, 110)  // scattered farms
@@ -96,15 +68,6 @@ function sampleAt(grid: Grid, x: number, y: number): { density: number; landValu
   return { density: grid.population[idx] / 255, landValue: grid.landValue[idx] || 2600 }
 }
 
-/**
- * Mean density across a rectangle rather than at its centre.
- *
- * Sampling the centroid makes a whole square-mile block inherit whatever is
- * under its midpoint: one block whose centre lands on the edge of Americus gets
- * subdivided into house lots across all 640 acres of it, most of which is
- * farmland. Averaging over the rectangle keeps the town/country boundary where
- * it actually is.
- */
 function meanDensity(grid: Grid, r: Rect): number {
   let sum = 0
   let n = 0
@@ -117,11 +80,6 @@ function meanDensity(grid: Grid, r: Rect): number {
   return sum / n
 }
 
-/**
- * Split a rectangle down until each piece is about the right size for where it
- * sits. Splitting the longer side keeps parcels from degenerating into slivers;
- * jittering the split point keeps the result from looking like graph paper.
- */
 function subdivide(rect: Rect, grid: Grid, rng: Rng, out: Rect[], depth = 0): void {
   const target = targetAcres(meanDensity(grid, rect), rng)
 
@@ -194,8 +152,6 @@ function main(): void {
       for (const poly of clipped) {
         if (km2ToAcres(polyArea(poly)) < 0.1) continue
 
-        // Flat rings rounded to 10 m, with the duplicate closing point dropped —
-        // the loader closes rings on the way back in.
         const rings: number[][] = poly.map((ring) => {
           const flat: number[] = []
           const n = ring.length > 1
@@ -209,10 +165,6 @@ function main(): void {
           return flat
         })
 
-        // Acreage is measured from the ROUNDED geometry, not the pre-rounded
-        // shape, so the stored acres and the stored polygon agree. Compensation
-        // is computed from acreage, and a file that disagrees with itself would
-        // quietly misprice every taking.
         const roundedPoly: Poly = rings.map((flat) => {
           const ring: Array<[number, number]> = []
           for (let i = 0; i < flat.length; i += 2) ring.push([flat[i], flat[i + 1]])
@@ -224,15 +176,18 @@ function main(): void {
 
         const [cx, cy] = centroid(roundedPoly)
         const { density, landValue } = sampleAt(grid, cx, cy)
-        const archetype = classifyParcel({ acres, landUse: null, rng })
+        let archetype = classifyParcel({ acres, landUse: null, rng })
+        // Separate stream, so this does not move any boundary.
+        const extra = new Rng(deriveSeed(0x5e71a1, `${fips}-${parcels.length + 1}`)).next()
+        if (archetype === 'church' && extra < 0.12) archetype = 'historic'
+        else if (archetype === 'row-crop' && acres < 60 && extra < 0.05) archetype = 'industrial'
+        else if (archetype === 'row-crop' && extra < 0.04) archetype = 'public'
 
         parcels.push({
           id: `${fips}-${parcels.length + 1}`,
           rings,
           acres: Math.round(acres * 10) / 10,
           archetype,
-          // Small lots carry more value per acre than open farmland, and the
-          // hex land-value layer already encodes most of that gradient.
           assessedPerAcre: Math.round(
             landValue * (acres < 5 ? rng.range(1.6, 2.6) : rng.range(0.85, 1.2)) * (1 + density),
           ),

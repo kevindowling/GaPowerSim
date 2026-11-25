@@ -1,26 +1,12 @@
-/**
- * Generation technology catalogue.
- *
- * DATA STATUS: these are engineering-plausible figures for 2026 Georgia —
- * overnight capital cost, construction duration, heat rate, capacity factor,
- * forced-outage rate, land and water use — assembled from general knowledge of
- * the technologies rather than from a citable source per field. They are the
- * right order of magnitude and the relationships between them are sound, which
- * is what the game's decisions turn on. Every record is `verified: false` until
- * the M6 accuracy pass reconciles it against EIA and Georgia Power filings.
- *
- * The one number that matters most for the Americus tutorial is the gap between
- * nameplate capacity and firm capacity: a data center runs at ~85% load factor
- * around the clock, and solar's ~25% capacity factor cannot serve that no matter
- * how much of it you build. That lesson is encoded in `capacityFactor` and
- * `firmCapacityFraction`.
- */
+// DATA STATUS: plausible 2026 figures, not yet checked against EIA or Georgia Power filings.
 
 export type PlantKind = 'gas-ct' | 'gas-ccgt' | 'solar' | 'battery' | 'nuclear-uprate'
 
 export interface PlantType {
   id: PlantKind
   name: string
+  /** Used to number units: "Gas turbine 2". */
+  shortName: string
   blurb: string
   /** Nameplate capacity of one unit, MW. */
   nameplateMw: number
@@ -32,10 +18,6 @@ export interface PlantType {
   permitQuarters: number
   /** Expected annual energy as a fraction of nameplate. */
   capacityFactor: number
-  /**
-   * How much of nameplate counts toward serving firm load at peak. This is the
-   * number that decides whether a portfolio can actually keep a data center up.
-   */
   firmCapacityFraction: number
   /** Btu/kWh. Zero for non-thermal. */
   heatRate: number
@@ -61,8 +43,9 @@ export interface PlantType {
 export const PLANT_TYPES: readonly PlantType[] = [
   {
     id: 'gas-ct',
+    shortName: 'Gas turbine',
     name: 'Gas combustion turbine',
-    blurb: 'Fast to build, quick to start, expensive to run. The unit you build when the deadline is the binding constraint.',
+    blurb: 'Fastest firm capacity. High fuel cost.',
     nameplateMw: 200,
     capexPerKw: 1_150,
     buildQuarters: 8,
@@ -82,11 +65,12 @@ export const PLANT_TYPES: readonly PlantType[] = [
   },
   {
     id: 'gas-ccgt',
+    shortName: 'Combined cycle',
     name: 'Combined-cycle gas plant',
-    blurb: 'The workhorse for round-the-clock load: efficient and cheap to run, but three and a half years to build and thirsty.',
+    blurb: 'Half the fuel cost of a turbine. Takes nearly four years and needs water.',
     nameplateMw: 550,
     capexPerKw: 1_320,
-    buildQuarters: 14,
+    buildQuarters: 11,
     permitQuarters: 4,
     capacityFactor: 0.62,
     firmCapacityFraction: 0.94,
@@ -103,15 +87,14 @@ export const PLANT_TYPES: readonly PlantType[] = [
   },
   {
     id: 'solar',
+    shortName: 'Solar farm',
     name: 'Utility-scale solar',
-    blurb: 'Cheap energy and an easy permit, but it produces when the sun decides. Seven acres per megawatt adds up fast.',
+    blurb: 'Free energy by day. Needs about two square miles.',
     nameplateMw: 200,
     capexPerKw: 1_250,
     buildQuarters: 6,
     permitQuarters: 2,
     capacityFactor: 0.25,
-    // Solar contributes almost nothing to a 3am peak, which is exactly when a
-    // data center is still drawing full load.
     firmCapacityFraction: 0.08,
     heatRate: 0,
     variableCostPerMwh: 0,
@@ -126,8 +109,9 @@ export const PLANT_TYPES: readonly PlantType[] = [
   },
   {
     id: 'battery',
+    shortName: 'Battery',
     name: 'Battery storage (4-hour)',
-    blurb: 'Shifts energy by hours, not days. Firms up solar until the fourth hour, then it is empty.',
+    blurb: 'Four hours at full output, then it must recharge. Counts for at most 20% of the contract.',
     nameplateMw: 100,
     capexPerKw: 1_400,
     buildQuarters: 5,
@@ -147,8 +131,9 @@ export const PLANT_TYPES: readonly PlantType[] = [
   },
   {
     id: 'nuclear-uprate',
+    shortName: 'Uprate',
     name: 'Nuclear uprate',
-    blurb: 'Squeeze more out of a reactor that already exists. Small, slow, expensive per megawatt — and utterly firm.',
+    blurb: 'Added output at Plant Hatch or Plant Vogtle. Arrives through the local substation.',
     nameplateMw: 60,
     capexPerKw: 3_400,
     buildQuarters: 12,

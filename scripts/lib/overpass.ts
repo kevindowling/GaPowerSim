@@ -1,27 +1,3 @@
-/**
- * A polite, resilient Overpass client.
- *
- * Both the roads and hydrology pipelines talk to Overpass, and the first
- * version of that call was wrong in three ways that only showed up against the
- * real service:
- *
- *   1. It posted the query as a bare request body. Node's fetch labels a string
- *      body `text/plain`, and overpass-api.de answers **406 Not Acceptable**.
- *      The canonical form is form-encoded as `data=<query>`.
- *   2. It sent no User-Agent. The OSM operations policy requires a descriptive
- *      one, and the front end rejects anonymous automated traffic — the other
- *      way to earn a 406.
- *   3. It treated every non-2xx as fatal and told the reader it was probably an
- *      egress block. Overpass rate-limits with 429 and times out with 504
- *      constantly; both are worth retrying, and neither means what that message
- *      said. Reporting a 406 as "your network is blocked" sent me looking in
- *      entirely the wrong place.
- *
- * So: correct encoding, an honest User-Agent, backoff on the transient
- * statuses, failover across mirrors, and error text that names the actual
- * problem.
- */
-
 /** Public mirrors, tried in order. The main endpoint is the busiest. */
 export const OVERPASS_ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
@@ -29,15 +5,9 @@ export const OVERPASS_ENDPOINTS = [
   'https://overpass.private.coffee/api/interpreter',
 ]
 
-/**
- * The OSM operations policy asks automated clients to identify themselves and
- * give a contact point. This is that identification; it is not decoration, and
- * omitting it is how the 406 happened.
- */
-export const USER_AGENT =
-  'GaPowerSim/0.1 (data pipeline; +https://github.com/kevindowling/GaPowerSim)'
+export const USER_AGENT = process.env.OVERPASS_USER_AGENT
+  ?? 'GaPowerSim/0.1 (data pipeline; +https://github.com/kevindowling/GaPowerSim)'
 
-/** Statuses worth waiting out rather than failing on. */
 const RETRYABLE = new Set([429, 502, 503, 504])
 
 export interface OverpassOptions {
@@ -63,7 +33,7 @@ export function explainStatus(status: number): string {
       return 'Overpass rejected the query as malformed (400). This is a bug in the query, not the network.'
     case 403:
     case 407:
-      return 'Blocked before reaching Overpass (403/407) — an egress proxy denied the request. '
+      return 'Blocked before reaching Overpass (403/407): an egress proxy denied the request. '
         + 'Run the "Fetch map data" GitHub workflow instead, or fetch elsewhere and use --file.'
     case 406:
       return 'Overpass refused the request shape (406). The query must be form-encoded as '
@@ -72,19 +42,13 @@ export function explainStatus(status: number): string {
       return 'Overpass is rate-limiting this client (429). It allows very few concurrent '
         + 'queries; wait a few minutes and try again.'
     case 504:
-      return 'Overpass timed out running the query (504). Statewide queries are expensive — '
+      return 'Overpass timed out running the query (504). Statewide queries are expensive: '
         + 'try again, or narrow the area.'
     default:
       return `Overpass returned ${status}.`
   }
 }
 
-/**
- * Run an Overpass QL query and return the parsed JSON.
- *
- * Retries the transient statuses with exponential backoff, then fails over to
- * the next mirror. Throws with an explanation naming the real cause.
- */
 export async function overpassQuery(
   query: string, opts: OverpassOptions = {},
 ): Promise<unknown> {
@@ -121,8 +85,6 @@ export async function overpassQuery(
 
       lastStatus = res.status
       if (!RETRYABLE.has(res.status)) {
-        // Not worth retrying here, but another mirror may be configured
-        // differently, so keep going rather than giving up outright.
         log(`  ${endpoint}: ${explainStatus(res.status)}`)
         break
       }
